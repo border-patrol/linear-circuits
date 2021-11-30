@@ -12,6 +12,7 @@ data AST = Var Ref
          | Input FileContext Direction DType Ref AST
          | Wire FileContext DType Ref Ref AST
          | Seq AST AST
+         | Mux FileContext AST AST AST AST
          | Dup FileContext AST AST AST
          | Not FileContext AST AST
          | Gate FileContext AST AST AST

@@ -231,6 +231,27 @@ typeCheck curr (Gate fc x y z)
              No contra => Left (Err fc (Mismatch (Port (OUTPUT,dtypeA)) (Port (INPUT, dtypeC))))
          No contra => Left (Err fc (Mismatch (Port (OUTPUT,dtypeA)) (Port (INPUT, dtypeB))))
 
+typeCheck curr (Mux fc v x y z)
+  = do (Port (OUTPUT,dtypeA) ** cv ** (ev,termV)) <- typeCheck curr v
+                  | ty => Left (Err fc (PortExpected OUTPUT))
+
+       (Port (INPUT,LOGIC) ** cx ** (ex,termX)) <- typeCheck ev x
+                  | (Port (INPUT,type) ** cx ** (ex,termX)) => Left (Err fc (Mismatch (Port (INPUT,LOGIC)) (Port (INPUT,type))))
+                  | ty => Left (Err fc (PortExpected INPUT))
+       (Port (INPUT,dtypeB) ** cy ** (ey,termY)) <- typeCheck ex y
+                  | ty => Left (Err fc (PortExpected INPUT))
+
+       (Port (INPUT,dtypeC) ** cz ** (ez,termZ)) <- typeCheck ey z
+                  | ty => Left (Err fc (PortExpected INPUT))
+
+       case decEq dtypeA dtypeB of
+         Yes Refl =>
+           case decEq dtypeB dtypeC of
+             Yes Refl => pure (Gate ** cz ** (ez,Mux termV termX termY termZ))
+             No contra => Left (Err fc (Mismatch (Port (OUTPUT,dtypeA)) (Port (INPUT, dtypeC))))
+         No contra => Left (Err fc (Mismatch (Port (OUTPUT,dtypeA)) (Port (INPUT, dtypeB))))
+
+
 typeCheck curr (Stop fc) with (used curr)
   typeCheck curr (Stop fc) | (Yes prf) = Right (Unit ** _ ** (Nil, Stop prf))
   typeCheck curr (Stop fc) | (No contra) = Left (Err fc (LinearityError curr))

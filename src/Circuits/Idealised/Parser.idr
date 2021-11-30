@@ -150,6 +150,7 @@ namespace Terms
             | GInst FileContext Ref Ref Ref
             | DInst FileContext Ref Ref Ref
             | NInst FileContext Ref Ref
+            | MInst FileContext Ref Ref Ref Ref
 
   gateNot : Rule Body
   gateNot
@@ -194,6 +195,23 @@ namespace Terms
          e <- Toolkit.location
          pure (DInst (newFC s e) o a b)
 
+  gateMux : Rule Body
+  gateMux
+    = do s <- Toolkit.location
+         keyword "mux"
+         symbol "("
+         o <- ref
+         symbol ","
+         c <- ref
+         symbol ","
+         a <- ref
+         symbol ","
+         b <- ref
+         symbol ")"
+         symbol ";"
+         e <- Toolkit.location
+         pure (MInst (newFC s e) o c a b)
+
   wireDecl : Rule Body
   wireDecl
       = do s <- Toolkit.location
@@ -210,7 +228,7 @@ namespace Terms
            pure (WDecl (newFC s e) t a b)
 
   expr : Rule Body
-  expr = wireDecl <|> gateNot <|> gateBin <|> gateSplit
+  expr = wireDecl <|> gateNot <|> gateBin <|> gateSplit <|> gateMux
 
   foldBody : Location
           -> List1 Body
@@ -221,6 +239,9 @@ namespace Terms
       doFold : Body -> AST -> AST
       doFold (WDecl x y z w) accum
         = Wire x y z w accum
+
+      doFold (MInst v x y z w) accum
+        = Seq (Mux v (Var x) (Var y) (Var z) (Var w)) accum
       doFold (GInst x y z w) accum
         = Seq (Gate x (Var y) (Var z) (Var w)) accum
       doFold (DInst x y z w) accum

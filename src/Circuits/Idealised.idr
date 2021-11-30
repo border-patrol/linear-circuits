@@ -34,6 +34,12 @@ namespace Circuits
                               Nil)
                  -> Term old Unit Nil
 
+      Mux : (output  : Term a (Port (OUTPUT, datatype)) b)
+         -> (control : Term b (Port (INPUT,  LOGIC))    c)
+         -> (inputA  : Term c (Port (INPUT,  datatype)) d)
+         -> (inputB  : Term d (Port (INPUT,  datatype)) e)
+                    -> Term a Gate e
+
       Dup : (outA  : Term a (Port (OUTPUT, datatype)) b)
          -> (outB  : Term b (Port (OUTPUT, datatype)) c)
          -> (input : Term c (Port (INPUT,  datatype)) d)
