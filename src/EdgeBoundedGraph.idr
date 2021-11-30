@@ -3,6 +3,7 @@ module EdgeBoundedGraph
 
 import Decidable.Equality
 
+import Data.String
 import Data.List.Elem
 import Data.List.Quantifiers
 
@@ -234,5 +235,17 @@ export
 insertEdge : (Nat, Nat) -> Graph -> Graph
 insertEdge (a, b) (MkGraph nodes edges) = MkGraph nodes (insertEdge' a b edges)
 
+
+showGraph : Graph -> String
+showGraph (MkGraph nodes edges)
+    = unlines $ ["digraph G {"]
+                ++
+                  concatMap (\(x,ys) => map (\y => unwords ["\t" <+> show x, "->", show y <+> ";"]) ys) edges
+                ++
+                ["}"]
+
+export
+Show Graph where
+  show = showGraph
 
 -- [ EOF ]

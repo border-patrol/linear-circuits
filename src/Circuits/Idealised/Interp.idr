@@ -74,6 +74,17 @@ interp env (Wire datatype body) counter graph
     let g''  = insertEdge (S (S counter), S counter) g'
     in interp env' body (S (S counter)) g''
 
+interp env (Dup outputA outputB input) counter graph
+  = let R c'   env'   a = interp env   outputA counter graph in
+    let R c''  env''  b = interp env'  outputB c'      graph in
+    let R c''' env''' i = interp env'' input   c''     graph in
+    let n               = Node (S c''') 1 2                  in
+    let g'              = insertNode n graph                 in
+    let es              = [ (ident i, S c''')
+                          , (S c''', ident a)
+                          , (S c''', ident b)
+                          ]
+    in R (S c''') env''' (foldr (insertEdge) g' es)
 
 interp env (Seq x y) counter graph
   = let R c' env' x' = interp env x counter graph

@@ -21,10 +21,9 @@ import Circuits.Idealised.Parser
 import Circuits.Idealised.Check
 import Circuits.Idealised.Interp
 
-
 main : IO Unit
 main
-  = do putStrLn "LOG : Starting Idealised Linear "
+  = do putStrLn "// LOG : Starting Idealised Linear "
        args <- getArgs
 
        case args of
@@ -38,6 +37,10 @@ main
                      Just (g ** D g prf) <- runIO term
                        | Nothing => do putStrLn "Failure Interp"
                                        exitFailure
+                     printLn g
                      exitSuccess
          _ => do putStrLn "need at least a file name"
                  exitFailure
+
+
+-- [ EOF ]

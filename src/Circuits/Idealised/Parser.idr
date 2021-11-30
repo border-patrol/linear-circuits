@@ -146,44 +146,56 @@ namespace Terms
          symbol ")"
          pure ps
 
-  mutual
-    gateN : Rule AST
-    gateN
-      = do s <- Toolkit.location
-           keyword "not"
-           symbol "("
-           o <- ref
-           symbol ","
-           i <- ref
-           symbol ")"
-           symbol ";"
-           e <- Toolkit.location
-           pure (Not (newFC s e) (Var o) (Var i))
+  data Body = WDecl FileContext DType Ref Ref
+            | GInst FileContext Ref Ref Ref
+            | DInst FileContext Ref Ref Ref
+            | NInst FileContext Ref Ref
 
-    gate : Rule AST
-    gate
-      = do s <- Toolkit.location
-           keyword "gate"
-           symbol "("
-           o <- ref
-           symbol ","
-           a <- ref
-           symbol ","
-           b <- ref
-           symbol ")"
-           symbol ";"
-           e <- Toolkit.location
-           pure (Gate (newFC s e) (Var o) (Var a) (Var b))
+  gateNot : Rule Body
+  gateNot
+    = do s <- Toolkit.location
+         keyword "not"
+         symbol "("
+         o <- ref
+         symbol ","
+         i <- ref
+         symbol ")"
+         symbol ";"
+         e <- Toolkit.location
+         pure (NInst (newFC s e) o i)
 
-  gates : Rule AST
-  gates
-      = do gs <- some (gate <|> gateN)
-           s <- Toolkit.location
-           pure (foldr Seq (Stop (newFC s s)) (forget gs))
+  gateBin : Rule Body
+  gateBin
+    = do s <- Toolkit.location
+         keyword "gate"
+         symbol "("
+         o <- ref
+         symbol ","
+         a <- ref
+         symbol ","
+         b <- ref
+         symbol ")"
+         symbol ";"
+         e <- Toolkit.location
+         pure (GInst (newFC s e) o a b)
 
-  mutual
-    wire : Rule AST
-    wire
+  gateSplit : Rule Body
+  gateSplit
+    = do s <- Toolkit.location
+         keyword "split"
+         symbol "("
+         o <- ref
+         symbol ","
+         a <- ref
+         symbol ","
+         b <- ref
+         symbol ")"
+         symbol ";"
+         e <- Toolkit.location
+         pure (DInst (newFC s e) o a b)
+
+  wireDecl : Rule Body
+  wireDecl
       = do s <- Toolkit.location
            keyword "wire"
            t <- type
@@ -194,18 +206,35 @@ namespace Terms
            b <- ref
            symbol ")"
            symbol ";"
-           rest <- body
            e <- Toolkit.location
-           pure (Wire (newFC s e) t a b rest)
+           pure (WDecl (newFC s e) t a b)
 
-    body : Rule AST
-    body = wire <|> gates
+  expr : Rule Body
+  expr = wireDecl <|> gateNot <|> gateBin <|> gateSplit
 
-  build : Location
-       -> List (Location,Ref, Direction, DType)
-       -> AST
-       -> AST
-  build e xs y = foldr (\(s,r,d,t), body => Input (newFC s e) d t r body) y xs
+  foldBody : Location
+          -> List1 Body
+          -> AST
+  foldBody l (head ::: tail)
+        = foldr doFold (Stop (newFC l l)) (head :: tail)
+    where
+      doFold : Body -> AST -> AST
+      doFold (WDecl x y z w) accum
+        = Wire x y z w accum
+      doFold (GInst x y z w) accum
+        = Seq (Gate x (Var y) (Var z) (Var w)) accum
+      doFold (DInst x y z w) accum
+        = Seq (Dup x (Var y) (Var z) (Var w)) accum
+      doFold (NInst x y z) accum
+        = Seq (Not x (Var y) (Var z)) accum
+
+
+  foldPorts : Location
+           -> List1 (Location,Ref, Direction, DType)
+           -> AST
+           -> AST
+  foldPorts e (x:::xs) y
+    = foldr (\(s,r,d,t), body => Input (newFC s e) d t r body) y (x::xs)
 
   export
   design : Rule AST
@@ -213,10 +242,10 @@ namespace Terms
     = do keyword "circuit"
          ps <- portList
          symbol "{"
-         b <- body
+         b <- some expr
          e <- Toolkit.location
          symbol "}"
-         pure (build e (forget ps) b)
+         pure (foldPorts e ps (foldBody e b))
 
 namespace Idealised
 

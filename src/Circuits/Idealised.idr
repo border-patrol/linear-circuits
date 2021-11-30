@@ -34,6 +34,11 @@ namespace Circuits
                               Nil)
                  -> Term old Unit Nil
 
+      Dup : (outA  : Term a (Port (OUTPUT, datatype)) b)
+         -> (outB  : Term b (Port (OUTPUT, datatype)) c)
+         -> (input : Term c (Port (INPUT,  datatype)) d)
+                  -> Term a Gate d
+
       Seq : Term a Gate b
          -> Term b Unit Nil
          -> Term a Unit Nil

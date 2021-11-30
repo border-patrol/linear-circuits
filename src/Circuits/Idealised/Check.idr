@@ -175,6 +175,22 @@ typeCheck curr (Wire fc x a b y)
          Nil => pure (Unit ** cz ** (Nil, (Wire x term)))
          _   => Left (Err fc (LinearityError ex))
 
+typeCheck curr (Dup fc x y z)
+  = do (Port (OUTPUT,dtypeA) ** cx ** (ex,termX)) <- typeCheck curr x
+                  | ty => Left (Err fc (PortExpected OUTPUT))
+
+       (Port (OUTPUT,dtypeB) ** cy ** (ey,termY)) <- typeCheck ex y
+                  | ty => Left (Err fc (PortExpected OUTPUT))
+
+       (Port (INPUT,dtypeC) ** cz ** (ez,termZ)) <- typeCheck ey z
+                  | ty => Left (Err fc (PortExpected INPUT))
+
+       case decEq dtypeA dtypeB of
+         Yes Refl =>
+           case decEq dtypeB dtypeC of
+             Yes Refl => pure (Gate ** cz ** (ez, Dup termX termY termZ))
+             No contra => Left (Err fc (Mismatch (Port (OUTPUT,dtypeA)) (Port (INPUT, dtypeC))))
+         No contra => Left (Err fc (Mismatch (Port (OUTPUT,dtypeA)) (Port (OUTPUT, dtypeB))))
 
 typeCheck curr (Seq x y)
   = do (Gate ** cx ** (ex,termX)) <- typeCheck curr x

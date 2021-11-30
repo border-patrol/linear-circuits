@@ -14,7 +14,7 @@ keywords : List String
 keywords = [ "input", "output"
            , "circuit", "wire"
            , "logic", "as", "in"
-           , "gate", "not"
+           , "gate", "not", "split"
            ]
 
 public export
