@@ -71,8 +71,8 @@ interp env (Wire datatype body) counter graph
     let i = Node (S (S counter)) 1 1 in
     let env' = (Extend i (Extend o env)) in
     let g'   = foldr insertNode graph [o,i] in
-    let g''  = insertEdge (S counter, S (S counter)) g'
-    in interp env' body (S counter) g'
+    let g''  = insertEdge (S (S counter), S counter) g'
+    in interp env' body (S (S counter)) g''
 
 
 interp env (Seq x y) counter graph
@@ -83,23 +83,23 @@ interp env (Not output input) counter graph
   = let R c'  env'  o = interp env  output counter graph in
     let R c'' env'' i = interp env' input  c'      graph in
 
-    let n  = Node (S counter) 1 1         in
+    let n  = Node (S c'') 1 1         in
     let g' = insertNode n  graph in
-    let es = [(S counter, ident o),(ident i, S counter)]
-    in R (S counter) env'' (foldr insertEdge g' es)
+    let es = [(S c'', ident o),(ident i, S c'')]
+    in R (S c'') env'' (foldr insertEdge g' es)
 
 
 interp env (Gate output inputA inputB) counter graph
   = let R c'   env'   o = interp env   output counter graph in
     let R c''  env''  a = interp env'  inputA c'      graph in
     let R c''' env''' b = interp env'' inputB c''     graph in
-    let n               = Node (S counter) 2 1              in
+    let n               = Node (S c''') 2 1                  in
     let g'              = insertNode n graph                in
-    let es              = [ (S counter, ident o)
-                          , (ident a, S counter)
-                          , (ident b, S counter)
+    let es              = [ (S c''', ident o)
+                          , (ident a, S c''')
+                          , (ident b, S c''')
                           ]
-    in R (S counter) env''' (foldr (insertEdge) g' es)
+    in R (S c''') env''' (foldr (insertEdge) g' es)
 
 interp env (Stop x) counter graph
   = R counter Empty graph
