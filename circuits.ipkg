@@ -4,6 +4,9 @@ depends = contrib
 
 sourcedir = "src"
 
+main = Circuits.Idealised.Main
+executable = "linearNetList"
+
 modules =
 
   -- [ Vendored Utilities ]
@@ -34,7 +37,7 @@ modules =
         , Toolkit.System
 
    -- [ Common ]
-
+        , Ref
         , Utilities
         , EdgeBoundedGraph
 
@@ -45,4 +48,10 @@ modules =
         , Circuits.Idealised
         , Circuits.Idealised.Interp
 
+        , Circuits.Idealised.AST
+        , Circuits.Idealised.Lexer
+        , Circuits.Idealised.Parser
+
+        , Circuits.Idealised.Check
+        , Circuits.Idealised.Main
 -- [ EOF ]

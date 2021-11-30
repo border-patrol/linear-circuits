@@ -2,26 +2,22 @@ module Circuits.Idealised.Check
 
 import Decidable.Equality
 
+import Data.String
 import Data.List.Elem
 import Data.List.Quantifiers
 
+import Toolkit.Data.Location
 import Toolkit.Data.List.DeBruijn
+
+import Ref
 import Utilities
 import EdgeBoundedGraph
 
 import Circuits.Types
 import Circuits.Idealised
+import Circuits.Idealised.AST
 
 %default total
-
-public export
-data AST = Var String
-         | Input Direction DType String AST
-         | Wire DType String String AST
-         | Seq AST AST
-         | Not AST AST
-         | Gate AST AST AST
-         | Stop
 
 data Entry : (String, (Ty, Usage)) -> Type where
   MkEntry : (name : String)
@@ -31,6 +27,13 @@ data Entry : (String, (Ty, Usage)) -> Type where
 
 Env : List (String, (Ty, Usage)) -> Type
 Env = Env (String, (Ty, Usage)) Entry
+
+showEnv : Env es -> String
+showEnv [] = ""
+showEnv ((MkEntry name type FREE) :: rest)
+  = name <+> " is free\n" <+> (showEnv rest)
+showEnv ((MkEntry name type USED) :: rest) = showEnv rest
+
 
 isEmpty : (s : String) -> DPair Ty (\t => Elem (s, (t, FREE)) []) -> Void
 isEmpty _ (MkDPair _ _) impossible
@@ -125,44 +128,52 @@ used ((MkEntry name type USED) :: rest) with (used rest)
 
 used ((MkEntry name type FREE) :: rest) = No (isUsed rest)
 
-
+export
 data Error = Mismatch Ty Ty | Undeclared String | PortExpected Direction
-           | LinearityError
+           | LinearityError (Env es)
+           | Err FileContext Error
+export
+Show Error where
+  show (Mismatch x y) = "Type Mismatch"
+  show (Undeclared x) = "Undeclared name: " <+> x
+  show (PortExpected INPUT) = "Expected Input"
+  show (PortExpected OUTPUT) = "Expected Output"
+  show (LinearityError env) = "Linearity Error:\n" <+> showEnv env
+  show (Err x y) = unlines [show x <+> ": ", show y]
 
 public export
 TyCheck : Type -> Type
 TyCheck = Either Error
 
-export
 typeCheck : {ctxt : List (String, (Ty,Usage))}
          -> (curr : Env ctxt)
          -> (ast  : AST)
                   -> TyCheck (type ** cout ** Pair (Env cout) (Term (map Builtin.snd ctxt) type (map Builtin.snd cout)))
-typeCheck curr (Var x) with (lookup x curr)
+typeCheck curr (Var x) with (lookup (get x) curr)
   typeCheck curr (Var x) | (Yes (MkDPair ty prf)) with (use prf curr)
     typeCheck curr (Var x) | (Yes (MkDPair ty prf)) | (MkDPair next u)
        = Right (ty ** next ** MkPair (newEnv curr u) (Var (strip prf) (strip' u)))
 
-  typeCheck curr (Var x) | (No contra) = Left (Undeclared x)
+  typeCheck curr (Var x) | (No contra) = Left (Err (span x) (Undeclared (get x)))
 
-typeCheck curr (Input x y s z)
-  = do (Unit ** cz ** (ex,term)) <- typeCheck (MkEntry s (Port (MkPair x y)) FREE :: curr) z
+typeCheck curr (Input fc x y s z)
+  = do (Unit ** cz ** (ex,term)) <- typeCheck (MkEntry (get s) (Port (MkPair x y)) FREE :: curr) z
          | (ty ** _  ** _) => Left (Mismatch Unit ty)
 
        case ex of
          Nil => pure (Unit ** cz ** (Nil, (NewSignal x y term)))
-         _   => Left LinearityError
+         _   => Left (Err fc (LinearityError ex))
 
 
 
-typeCheck curr (Wire x a b y)
-  = do (Unit ** cz ** (ex,term)) <- typeCheck (MkEntry a (Port (MkPair OUTPUT x)) FREE ::
-                                               MkEntry b (Port (MkPair INPUT  x)) FREE :: curr) y
+typeCheck curr (Wire fc x a b y)
+  = do (Unit ** cz ** (ex,term)) <- typeCheck (MkEntry (get a) (Port (MkPair OUTPUT x)) FREE ::
+                                               MkEntry (get b) (Port (MkPair INPUT  x)) FREE :: curr) y
          | (ty ** _  ** _) => Left (Mismatch Unit ty)
 
        case ex of
          Nil => pure (Unit ** cz ** (Nil, (Wire x term)))
-         _   => Left LinearityError
+         _   => Left (Err fc (LinearityError ex))
 
 
 typeCheck curr (Seq x y)
@@ -173,40 +184,51 @@ typeCheck curr (Seq x y)
 
        case ey of
          Nil => pure (Unit ** cy ** (Nil, Seq termX termY))
-         _   => Left LinearityError
+         _   => Left ((LinearityError ey))
 
 
-typeCheck curr (Not x y)
+typeCheck curr (Not fc x y)
   = do (Port (OUTPUT,dtypeA) ** cx ** (ex,termX)) <- typeCheck curr x
-                  | ty => Left (PortExpected OUTPUT)
+                  | ty => Left (Err fc (PortExpected OUTPUT))
 
        (Port (INPUT,dtypeB) ** cy ** (ey,termY)) <- typeCheck ex y
-                  | ty => Left (PortExpected INPUT)
+                  | ty => Left (Err fc (PortExpected INPUT))
 
        case decEq dtypeA dtypeB of
          Yes Refl => pure (Gate ** cy ** (ey,Not termX termY))
-         No contra => Left (Mismatch (Port (OUTPUT,dtypeA)) (Port (OUTPUT, dtypeB)))
+         No contra => Left (Err fc (Mismatch (Port (OUTPUT,dtypeA)) (Port (OUTPUT, dtypeB))))
 
-typeCheck curr (Gate x y z)
+typeCheck curr (Gate fc x y z)
   = do (Port (OUTPUT,dtypeA) ** cx ** (ex,termX)) <- typeCheck curr x
-                  | ty => Left (PortExpected OUTPUT)
+                  | ty => Left (Err fc (PortExpected OUTPUT))
 
        (Port (INPUT,dtypeB) ** cy ** (ey,termY)) <- typeCheck ex y
-                  | ty => Left (PortExpected INPUT)
+                  | ty => Left (Err fc (PortExpected INPUT))
 
-       (Port (INPUT,dtypeC) ** cz ** (ez,termz)) <- typeCheck ey z
-                  | ty => Left (PortExpected INPUT)
+       (Port (INPUT,dtypeC) ** cz ** (ez,termZ)) <- typeCheck ey z
+                  | ty => Left (Err fc (PortExpected INPUT))
 
        case decEq dtypeA dtypeB of
          Yes Refl =>
            case decEq dtypeB dtypeC of
-             Yes Refl => pure (Gate ** cy ** (ey,Not termX termY))
-             No contra => Left (Mismatch (Port (OUTPUT,dtypeA)) (Port (INPUT, dtypeC)))
-         No contra => Left (Mismatch (Port (OUTPUT,dtypeA)) (Port (INPUT, dtypeB)))
+             Yes Refl => pure (Gate ** cz ** (ez,Gate termX termY termZ))
+             No contra => Left (Err fc (Mismatch (Port (OUTPUT,dtypeA)) (Port (INPUT, dtypeC))))
+         No contra => Left (Err fc (Mismatch (Port (OUTPUT,dtypeA)) (Port (INPUT, dtypeB))))
 
-typeCheck curr Stop with (used curr)
-  typeCheck curr Stop | (Yes prf) = Right (Unit ** _ ** (Nil, Stop prf))
-  typeCheck curr Stop | (No contra) = Left LinearityError
+typeCheck curr (Stop fc) with (used curr)
+  typeCheck curr (Stop fc) | (Yes prf) = Right (Unit ** _ ** (Nil, Stop prf))
+  typeCheck curr (Stop fc) | (No contra) = Left (Err fc (LinearityError curr))
 
+namespace Design
+  export
+  typeCheck : (ast : AST) -> TyCheck (Term Nil Unit Nil)
+  typeCheck ast with (typeCheck Nil ast)
+    typeCheck ast | (Left x) = Left x
+    typeCheck ast | (Right (MkDPair Unit (MkDPair Nil (env,term)))) = Right term
+    typeCheck ast | (Right (MkDPair ty snd)) = Left (Mismatch Unit ty)
+
+  export
+  typeCheckIO : (ast : AST) -> IO (TyCheck (Term Nil Unit Nil))
+  typeCheckIO ast = pure (typeCheck ast)
 
 -- [ EOF ]

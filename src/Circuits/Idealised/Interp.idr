@@ -135,3 +135,15 @@ run term with (interp Empty term Z (MkGraph Nil Nil))
       = Yes (D gout prf)
     run term | R cout eout gout | (No contra)
       = No (\(D g prf) => contra prf)
+
+export
+runIO : (term : Term Nil Unit Nil)
+             -> IO (Maybe (g ** Valid Unit g))
+runIO term with (interp Empty term Z (MkGraph Nil Nil))
+  runIO term | (R counter env result) with (validGraph result)
+    runIO term | (R counter Empty (MkGraph vs es)) | (Yes (IsValid x))
+      = pure (Just ((MkGraph vs es) ** D (MkGraph vs es) (IsValid x)))
+    runIO term | (R counter env result) | (No contra)
+      = pure Nothing
+
+-- [ EOF ]

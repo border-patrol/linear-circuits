@@ -99,7 +99,7 @@ data Used : (Ty, Usage) -> Type where
   IsUsed : Used (type, USED)
 
 Uninhabited (Used (type,FREE)) where
-  uninhabited a = ?as
+  uninhabited IsUsed impossible
 
 export
 used : (p : (Ty,Usage)) -> Dec (Used p)
