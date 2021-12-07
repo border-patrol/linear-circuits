@@ -18,7 +18,7 @@ data AST = Var Ref
          | Mux FileContext AST AST AST AST
          | Dup FileContext AST AST AST
          | Not FileContext AST AST
-         | Gate FileContext AST AST AST
+         | Gate FileContext GateKind AST AST AST
          | Stop FileContext
          | IndexS FileContext AST AST
          | IndexE FileContext End AST AST AST

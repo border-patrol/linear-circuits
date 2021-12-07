@@ -233,43 +233,38 @@ typeCheck curr (Seq x y)
 
 
 typeCheck curr (Not fc x y)
-  = do (Port (OUTPUT,dtypeA) ** cx ** (ex,termX)) <- typeCheck curr x
-                  | ty => Left (Err fc (PortExpected OUTPUT))
+  = do (Port (OUTPUT,LOGIC) ** cx ** (ex,termX)) <- typeCheck curr x
+         | (ty ** cx ** (ex,termX))
+             => Left (Err fc (Mismatch (Port (OUTPUT,LOGIC)) ty))
 
-       (Port (INPUT,dtypeB) ** cy ** (ey,termY)) <- typeCheck ex y
-                  | ty => Left (Err fc (PortExpected INPUT))
-
-       Refl <- lift (decEq dtypeA dtypeB)
-                    (Err fc (MismatchGate dtypeA dtypeB))
+       (Port (INPUT,LOGIC) ** cy ** (ey,termY)) <- typeCheck ex y
+         | (ty ** cy ** (ey,termY))
+             => Left (Err fc (Mismatch (Port (INPUT,LOGIC)) ty))
 
        pure (Gate ** cy ** (ey,Not termX termY))
 
-typeCheck curr (Gate fc x y z)
-  = do (Port (OUTPUT,dtypeA) ** cx ** (ex,termX)) <- typeCheck curr x
-                  | ty => Left (Err fc (PortExpected OUTPUT))
+typeCheck curr (Gate fc k x y z)
+  = do (Port (OUTPUT,LOGIC) ** cx ** (ex,termX)) <- typeCheck curr x
+         | (ty ** cx ** (ex,termX)) => Left (Err fc (Mismatch (Port (OUTPUT, LOGIC)) ty))
 
-       (Port (INPUT,dtypeB) ** cy ** (ey,termY)) <- typeCheck ex y
-                  | ty => Left (Err fc (PortExpected INPUT))
+       (Port (INPUT,LOGIC) ** cy ** (ey,termY)) <- typeCheck ex y
+         | (ty ** cy ** (ey,termY))
+             => Left (Err fc (Mismatch (Port (INPUT,LOGIC)) ty))
 
-       (Port (INPUT,dtypeC) ** cz ** (ez,termZ)) <- typeCheck ey z
-                  | ty => Left (Err fc (PortExpected INPUT))
+       (Port (INPUT,LOGIC) ** cz ** (ez,termZ)) <- typeCheck ey z
+         | (ty ** cz ** (ez,termZ))
+             => Left (Err fc (Mismatch (Port (INPUT,LOGIC)) ty))
 
-       Refl <- lift (decEq dtypeA dtypeB)
-                    (Err fc (MismatchGate dtypeA dtypeB))
-
-       Refl <- lift (decEq dtypeB dtypeC)
-                    (Err fc (MismatchGate dtypeA dtypeC))
-
-       pure (Gate ** cz ** (ez,Gate termX termY termZ))
+       pure (Gate ** cz ** (ez,Gate k termX termY termZ))
 
 typeCheck curr (Mux fc v x y z)
   = do (Port (OUTPUT,dtypeA) ** cv ** (ev,termV)) <- typeCheck curr v
                   | ty => Left (Err fc (PortExpected OUTPUT))
 
        (Port (INPUT,LOGIC) ** cx ** (ex,termX)) <- typeCheck ev x
-                  | (Port (INPUT,type) ** cx ** (ex,termX))
-                       => Left (Err fc (Mismatch (Port (INPUT,LOGIC)) (Port (INPUT,type))))
-                  | ty => Left (Err fc (PortExpected INPUT))
+                  | (ty ** cx ** (ex,termX))
+                       => Left (Err fc (Mismatch (Port (INPUT,LOGIC)) ty))
+
        (Port (INPUT,dtypeB) ** cy ** (ey,termY)) <- typeCheck ex y
                   | ty => Left (Err fc (PortExpected INPUT))
 

@@ -129,6 +129,17 @@ namespace Types
     type : Rule DType
     type = array <|> logic
 
+namespace Kinds
+
+  export
+  gateKind : Rule GateKind
+  gateKind =  gives "nand" ANDN
+          <|> gives "and"  AND
+          <|> gives "xor"  XOR
+          <|> gives "xnor" XORN
+          <|> gives "ior"  IOR
+          <|> gives "nior" IORN
+
 namespace Terms
 
   portDecl : Rule (Location, Ref, Direction, DType)
@@ -147,7 +158,7 @@ namespace Terms
          pure ps
 
   data Body = WDecl  FileContext DType Ref Ref
-            | GInst  FileContext Ref Ref Ref
+            | GInst  FileContext GateKind Ref Ref Ref
             | DInst  FileContext Ref Ref Ref
             | NInst  FileContext Ref Ref
             | MInst  FileContext Ref Ref Ref Ref
@@ -172,7 +183,7 @@ namespace Terms
   gateBin : Rule Body
   gateBin
     = do s <- Toolkit.location
-         keyword "gate"
+         k <- gateKind
          symbol "("
          o <- ref
          symbol ","
@@ -182,7 +193,7 @@ namespace Terms
          symbol ")"
          symbol ";"
          e <- Toolkit.location
-         pure (GInst (newFC s e) o a b)
+         pure (GInst (newFC s e) k o a b)
 
   gateCopy : Rule Body
   gateCopy

@@ -46,17 +46,19 @@ namespace Circuits
          -> (input : Term c (Port (INPUT,  datatype)) d)
                   -> Term a Gate d
 
+
       Seq : Term a Gate b
          -> Term b Unit Nil
          -> Term a Unit Nil
 
-      Not : (output : Term a (Port (OUTPUT, datatype)) b)
-         -> (input  : Term b (Port (INPUT,  datatype)) c)
+      Not : (output : Term a (Port (OUTPUT, LOGIC)) b)
+         -> (input  : Term b (Port (INPUT,  LOGIC)) c)
                    -> Term a Gate c
 
-      Gate : (output : Term a (Port (OUTPUT, datatype)) b)
-          -> (inputA : Term b (Port (INPUT,  datatype)) c)
-          -> (inputB : Term c (Port (INPUT,  datatype)) d)
+      Gate : (kind   : GateKind)
+          -> (output : Term a (Port (OUTPUT, LOGIC)) b)
+          -> (inputA : Term b (Port (INPUT,  LOGIC)) c)
+          -> (inputB : Term c (Port (INPUT,  LOGIC)) d)
                     -> Term a Gate d
 
       IndexSingleton : (output : Term a (Port (OUTPUT,             datatype))  b)

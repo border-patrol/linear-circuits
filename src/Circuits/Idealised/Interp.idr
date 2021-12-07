@@ -115,7 +115,7 @@ interp env (Not output input) counter graph
     in R (S c'') env'' (foldr insertEdge g' es)
 
 
-interp env (Gate output inputA inputB) counter graph
+interp env (Gate k output inputA inputB) counter graph
   = let R c'   env'   o = interp env   output counter graph in
     let R c''  env''  a = interp env'  inputA c'      graph in
     let R c''' env''' b = interp env'' inputB c''     graph in

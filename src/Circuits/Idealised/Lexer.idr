@@ -14,7 +14,7 @@ keywords : List String
 keywords = [ "input", "output"
            , "circuit", "wire"
            , "logic", "as", "in"
-           , "gate", "not"
+           , "and", "ior", "xor", "nand", "nior", "xnor", "not"
            , "copy"
            , "singleton", "first", "last", "split"
            , "mux"

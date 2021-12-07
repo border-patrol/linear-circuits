@@ -7,6 +7,10 @@ import Data.List.Elem
 %default total
 
 public export
+data GateKind = AND  | IOR  | XOR
+              | ANDN | IORN | XORN
+
+public export
 data Usage = USED | FREE
 
 Uninhabited (USED = FREE) where
