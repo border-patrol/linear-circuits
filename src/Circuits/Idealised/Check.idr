@@ -6,6 +6,8 @@ import Data.String
 import Data.List.Elem
 import Data.List.Quantifiers
 
+import Toolkit.Decidable.Informative
+
 import Toolkit.Data.Location
 import Toolkit.Data.List.DeBruijn
 
@@ -14,6 +16,7 @@ import Utilities
 import EdgeBoundedGraph
 
 import Circuits.Types
+import Circuits.Split
 import Circuits.Idealised
 import Circuits.Idealised.AST
 
@@ -31,14 +34,17 @@ Env = Env (String, (Ty, Usage)) Entry
 showEnv : Env es -> String
 showEnv [] = ""
 showEnv ((MkEntry name type FREE) :: rest)
-  = name <+> " is free\n" <+> (showEnv rest)
+  = name <+> " : " <+> show type <+> "\n" <+> (showEnv rest)
 showEnv ((MkEntry name type USED) :: rest) = showEnv rest
 
 
 isEmpty : (s : String) -> DPair Ty (\t => Elem (s, (t, FREE)) []) -> Void
 isEmpty _ (MkDPair _ _) impossible
 
-lookupLaterFail : (DPair Ty (\t => Elem (s, (t, FREE)) xs) -> Void) -> (s = name -> Void) -> DPair Ty (\t => Elem (s, (t, FREE)) ((name, (type, u)) :: xs)) -> Void
+lookupLaterFail : (DPair Ty (\t => Elem (s, (t, FREE)) xs) -> Void)
+               -> (s = name -> Void)
+               -> DPair Ty (\t => Elem (s, (t, FREE)) ((name, (type, u)) :: xs))
+               -> Void
 lookupLaterFail f g (MkDPair type Here) = g Refl
 lookupLaterFail f g (MkDPair fst (There x)) = f (MkDPair fst x)
 
@@ -46,25 +52,27 @@ lookupLaterFailAlt : (DPair Ty (\t => Elem (s, (t, FREE)) xs) -> Void)
                    -> DPair Ty (\t => Elem (s, (t, FREE)) ((s, (type, USED)) :: xs)) -> Void
 lookupLaterFailAlt f (MkDPair fst (There z)) = f (MkDPair fst z)
 
+data LookupFail = NotFound String | IsUsed String
+
 lookup : (s : String)
       -> Env ctxt
-      -> Dec (t ** Elem (s,(t,FREE)) ctxt)
-lookup s [] = No (isEmpty s)
+      -> DecInfo LookupFail (t ** Elem (s,(t,FREE)) ctxt)
+lookup s [] = No (NotFound s) (isEmpty s)
 lookup s ((MkEntry name type u) :: rest) with (decEq s name)
   lookup s ((MkEntry s type u) :: rest) | (Yes Refl) with (u)
     lookup s ((MkEntry s type u) :: rest) | (Yes Refl) | USED with (lookup s rest)
       lookup s ((MkEntry s type u) :: rest) | (Yes Refl) | USED | (Yes (MkDPair fst snd))
         = Yes (MkDPair fst (There snd))
-      lookup s ((MkEntry s type u) :: rest) | (Yes Refl) | USED | (No contra)
-        = No (lookupLaterFailAlt contra)
+      lookup s ((MkEntry s type u) :: rest) | (Yes Refl) | USED | (No reason contra)
+        = No (IsUsed s) (lookupLaterFailAlt contra)
     lookup s ((MkEntry s type u) :: rest) | (Yes Refl) | FREE
       = Yes (MkDPair type Here)
 
   lookup s ((MkEntry name type u) :: rest) | (No contra) with (lookup s rest)
     lookup s ((MkEntry name type u) :: rest) | (No contra) | (Yes (MkDPair fst snd))
       = Yes (MkDPair fst (There snd))
-    lookup s ((MkEntry name type u) :: rest) | (No contra) | (No f)
-      = No (lookupLaterFail f contra)
+    lookup s ((MkEntry name type u) :: rest) | (No contra) | (No reason f)
+      = No reason (lookupLaterFail f contra)
 
 strip : {ctxt : List (String, (Ty, Usage))}
      -> Elem (s,(type,usage)) ctxt -> Elem (type,usage) (map Builtin.snd ctxt)
@@ -115,8 +123,8 @@ laterUsed : (All Used (map Builtin.snd xs) -> Void) -> All Used ((type, USED) ::
 laterUsed f (x :: y) = f y
 
 isUsed : DList (String, (Ty, Usage)) Entry xs -> All Used ((type, FREE) :: map Builtin.snd xs) -> Void
-isUsed [] (IsUsed :: _) impossible
-isUsed (_ :: _) (IsUsed :: _) impossible
+isUsed [] (Types.IsUsed :: _) impossible
+isUsed (_ :: _) (Types.IsUsed :: _) impossible
 
 used : Env ctxt
     -> Dec (All Used (map Builtin.snd ctxt))
@@ -129,21 +137,40 @@ used ((MkEntry name type USED) :: rest) with (used rest)
 used ((MkEntry name type FREE) :: rest) = No (isUsed rest)
 
 export
-data Error = Mismatch Ty Ty | Undeclared String | PortExpected Direction
+data FailingEdgeCase = InvalidSplit Nat Nat Nat Nat
+                     | InvalidEdge  Nat Nat Nat
+
+export
+Show FailingEdgeCase where
+  show (InvalidSplit p s l r) = "Pivot (" <+> show p <+> ") is wrong do not add up: " <+> unwords [show s, "= 1 + ", show l, "+", show r]
+  show (InvalidEdge  s l r) = "Indices do not add up: " <+> unwords [show s, "= 1 + ", show l, "+", show r]
+
+export
+data Error = Mismatch Ty Ty | ElemFail LookupFail | PortExpected Direction
            | LinearityError (Env es)
            | Err FileContext Error
+           | NotEdgeCase FailingEdgeCase
+           | MismatchGate DType DType
 export
 Show Error where
-  show (Mismatch x y) = "Type Mismatch"
-  show (Undeclared x) = "Undeclared name: " <+> x
-  show (PortExpected INPUT) = "Expected Input"
-  show (PortExpected OUTPUT) = "Expected Output"
-  show (LinearityError env) = "Linearity Error:\n" <+> showEnv env
-  show (Err x y) = unlines [show x <+> ": ", show y]
+  show (Mismatch x y) = "Type Mismatch:\n\n" <+> unlines [unwords ["\tExpected:",show x], unwords ["\tGiven:", show y]]
+  show (MismatchGate x y) = "Type Mismatch:\n\n" <+> unlines [unwords ["\tExpected:",show x], unwords ["\tGiven:", show y]]
+  show (ElemFail (IsUsed x))   = unwords ["Port is used:", x]
+  show (ElemFail (NotFound x)) = unwords ["Undeclared variable::", x]
+  show (NotEdgeCase r)  = "Not an edge case:\n\n" <+> show r
+  show (PortExpected INPUT) = "Expected an Input Port"
+  show (PortExpected OUTPUT) = "Expected an Output Port"
+  show (LinearityError env) = "Dangling Ports:\n\n" <+> showEnv env
+  show (Err x y) = unwords [show x, show y]
+
 
 public export
 TyCheck : Type -> Type
 TyCheck = Either Error
+
+lift : Dec a -> Error -> TyCheck a
+lift (Yes prf) _ = Right prf
+lift (No contra) e = Left e
 
 typeCheck : {ctxt : List (String, (Ty,Usage))}
          -> (curr : Env ctxt)
@@ -154,7 +181,7 @@ typeCheck curr (Var x) with (lookup (get x) curr)
     typeCheck curr (Var x) | (Yes (MkDPair ty prf)) | (MkDPair next u)
        = Right (ty ** next ** MkPair (newEnv curr u) (Var (strip prf) (strip' u)))
 
-  typeCheck curr (Var x) | (No contra) = Left (Err (span x) (Undeclared (get x)))
+  typeCheck curr (Var x) | (No reason contra) = Left (Err (span x) (ElemFail reason))
 
 typeCheck curr (Input fc x y s z)
   = do (Unit ** cz ** (ex,term)) <- typeCheck (MkEntry (get s) (Port (MkPair x y)) FREE :: curr) z
@@ -185,18 +212,20 @@ typeCheck curr (Dup fc x y z)
        (Port (INPUT,dtypeC) ** cz ** (ez,termZ)) <- typeCheck ey z
                   | ty => Left (Err fc (PortExpected INPUT))
 
-       case decEq dtypeA dtypeB of
-         Yes Refl =>
-           case decEq dtypeB dtypeC of
-             Yes Refl => pure (Gate ** cz ** (ez, Dup termX termY termZ))
-             No contra => Left (Err fc (Mismatch (Port (OUTPUT,dtypeA)) (Port (INPUT, dtypeC))))
-         No contra => Left (Err fc (Mismatch (Port (OUTPUT,dtypeA)) (Port (OUTPUT, dtypeB))))
+       Refl <- lift (decEq dtypeA dtypeB)
+                    (Err fc (MismatchGate dtypeA dtypeB))
+
+       Refl <- lift (decEq dtypeB dtypeC)
+                    (Err fc (MismatchGate dtypeA dtypeC))
+
+       pure (Gate ** cz ** (ez, Dup termX termY termZ))
 
 typeCheck curr (Seq x y)
   = do (Gate ** cx ** (ex,termX)) <- typeCheck curr x
-         | (ty ** _ ** _) => Left (Mismatch Gate ty)
+            | (ty ** _ ** _) => Left (Mismatch Gate ty)
+
        (Unit ** cy ** (ey, termY)) <- typeCheck ex y
-         | (ty ** _ ** _) => Left (Mismatch Unit ty)
+             | (ty ** _ ** _) => Left (Mismatch Unit ty)
 
        case ey of
          Nil => pure (Unit ** cy ** (Nil, Seq termX termY))
@@ -210,9 +239,10 @@ typeCheck curr (Not fc x y)
        (Port (INPUT,dtypeB) ** cy ** (ey,termY)) <- typeCheck ex y
                   | ty => Left (Err fc (PortExpected INPUT))
 
-       case decEq dtypeA dtypeB of
-         Yes Refl => pure (Gate ** cy ** (ey,Not termX termY))
-         No contra => Left (Err fc (Mismatch (Port (OUTPUT,dtypeA)) (Port (OUTPUT, dtypeB))))
+       Refl <- lift (decEq dtypeA dtypeB)
+                    (Err fc (MismatchGate dtypeA dtypeB))
+
+       pure (Gate ** cy ** (ey,Not termX termY))
 
 typeCheck curr (Gate fc x y z)
   = do (Port (OUTPUT,dtypeA) ** cx ** (ex,termX)) <- typeCheck curr x
@@ -224,19 +254,21 @@ typeCheck curr (Gate fc x y z)
        (Port (INPUT,dtypeC) ** cz ** (ez,termZ)) <- typeCheck ey z
                   | ty => Left (Err fc (PortExpected INPUT))
 
-       case decEq dtypeA dtypeB of
-         Yes Refl =>
-           case decEq dtypeB dtypeC of
-             Yes Refl => pure (Gate ** cz ** (ez,Gate termX termY termZ))
-             No contra => Left (Err fc (Mismatch (Port (OUTPUT,dtypeA)) (Port (INPUT, dtypeC))))
-         No contra => Left (Err fc (Mismatch (Port (OUTPUT,dtypeA)) (Port (INPUT, dtypeB))))
+       Refl <- lift (decEq dtypeA dtypeB)
+                    (Err fc (MismatchGate dtypeA dtypeB))
+
+       Refl <- lift (decEq dtypeB dtypeC)
+                    (Err fc (MismatchGate dtypeA dtypeC))
+
+       pure (Gate ** cz ** (ez,Gate termX termY termZ))
 
 typeCheck curr (Mux fc v x y z)
   = do (Port (OUTPUT,dtypeA) ** cv ** (ev,termV)) <- typeCheck curr v
                   | ty => Left (Err fc (PortExpected OUTPUT))
 
        (Port (INPUT,LOGIC) ** cx ** (ex,termX)) <- typeCheck ev x
-                  | (Port (INPUT,type) ** cx ** (ex,termX)) => Left (Err fc (Mismatch (Port (INPUT,LOGIC)) (Port (INPUT,type))))
+                  | (Port (INPUT,type) ** cx ** (ex,termX))
+                       => Left (Err fc (Mismatch (Port (INPUT,LOGIC)) (Port (INPUT,type))))
                   | ty => Left (Err fc (PortExpected INPUT))
        (Port (INPUT,dtypeB) ** cy ** (ey,termY)) <- typeCheck ex y
                   | ty => Left (Err fc (PortExpected INPUT))
@@ -244,13 +276,87 @@ typeCheck curr (Mux fc v x y z)
        (Port (INPUT,dtypeC) ** cz ** (ez,termZ)) <- typeCheck ey z
                   | ty => Left (Err fc (PortExpected INPUT))
 
-       case decEq dtypeA dtypeB of
-         Yes Refl =>
-           case decEq dtypeB dtypeC of
-             Yes Refl => pure (Gate ** cz ** (ez,Mux termV termX termY termZ))
-             No contra => Left (Err fc (Mismatch (Port (OUTPUT,dtypeA)) (Port (INPUT, dtypeC))))
-         No contra => Left (Err fc (Mismatch (Port (OUTPUT,dtypeA)) (Port (INPUT, dtypeB))))
+       Refl <- lift (decEq dtypeA dtypeB)
+                    (Err fc (MismatchGate dtypeA dtypeB))
 
+       Refl <- lift (decEq dtypeB dtypeC)
+                    (Err fc (MismatchGate dtypeA dtypeC))
+
+       pure (Gate ** cz ** (ez,Mux termV termX termY termZ))
+
+typeCheck curr (IndexS fc o i)
+  = do (Port (OUTPUT,dtypeO) ** co ** (eo,termO)) <- typeCheck curr o
+                  | ty => Left (Err fc (PortExpected INPUT))
+
+       (Port (INPUT,BVECT (S Z) dtypeI) ** ci ** (ei,termI)) <- typeCheck eo i
+                  | (Port (INPUT, BVECT s type) ** cx ** (ex,termX))
+                       => Left (Err fc (Mismatch (Port (INPUT,BVECT (S Z) type)) (Port (INPUT, BVECT s type))))
+                  | ty => Left (Err fc (PortExpected INPUT))
+
+       Refl <- lift (decEq dtypeO dtypeI)
+                    (Err fc (MismatchGate dtypeO  dtypeI))
+
+       pure (Gate ** ci ** (ei,IndexSingleton termO termI))
+
+
+typeCheck curr (IndexE fc k a b i)
+  = do (Port (OUTPUT,dtypeA) ** cA ** (eA,termA)) <- typeCheck curr a
+                  | ty => Left (Err fc (PortExpected OUTPUT))
+
+       (Port (OUTPUT,BVECT free dtypeB) ** cB ** (eB,termB)) <- typeCheck eA b
+                  | ty => Left (Err fc (PortExpected OUTPUT))
+
+       (Port (INPUT,BVECT size dtypeC) ** cC ** (eC,termC)) <- typeCheck eB i
+                  | ty => Left (Err fc (PortExpected INPUT))
+
+       Refl <- lift (decEq dtypeA dtypeB)
+                    (Err fc (MismatchGate dtypeA dtypeB))
+
+       Refl <- lift (decEq dtypeB dtypeC)
+                    (Err fc (MismatchGate dtypeB dtypeC))
+
+       let p = case k of { F => minus size 2; L => 0}
+
+       (s ** prf) <- lift (index size p)
+                          (Err fc (NotEdgeCase (InvalidEdge size (S Z) free)))
+
+       Refl <- lift (decEq free s)
+                    (Err fc (NotEdgeCase (InvalidEdge size (S Z) free)))
+
+       pure (Gate ** cC ** (eC,IndexEdge p prf termA termB termC))
+
+typeCheck curr (IndexP fc p a b c i)
+  = do (Port (OUTPUT,dtypeA) ** cA ** (eA,termA)) <- typeCheck curr a
+                  | ty => Left (Err fc (PortExpected OUTPUT))
+
+       (Port (OUTPUT,BVECT freeA dtypeB) ** cB ** (eB,termB)) <- typeCheck eA b
+                  | ty => Left (Err fc (PortExpected OUTPUT))
+
+       (Port (OUTPUT,BVECT freeB dtypeC) ** cC ** (eC,termC)) <- typeCheck eB c
+                  | ty => Left (Err fc (PortExpected OUTPUT))
+
+       (Port (INPUT,BVECT size dtypeD) ** cI ** (eI,termI)) <- typeCheck eC i
+                  | ty => Left (Err fc (PortExpected INPUT))
+
+       Refl <- lift (decEq dtypeA dtypeB)
+                    (Err fc (MismatchGate dtypeA (BVECT freeA dtypeB)))
+
+       Refl <- lift (decEq dtypeB dtypeC)
+                    (Err fc (MismatchGate (BVECT freeA dtypeB) (BVECT freeB dtypeC)))
+
+       Refl <- lift (decEq dtypeC dtypeD)
+                    (Err fc (MismatchGate (BVECT freeB dtypeC) (BVECT size dtypeD)))
+
+       (a ** b ** prf) <- lift (index Z p size)
+                               (Err fc (NotEdgeCase (InvalidSplit p size freeA freeB)))
+
+       Refl <- lift (decEq freeA a)
+                    (Err fc (NotEdgeCase (InvalidSplit p size freeA freeB)))
+
+       Refl <- lift (decEq freeB b)
+                    (Err fc (NotEdgeCase (InvalidSplit p size freeA freeB)))
+
+       pure (Gate ** cI ** (eI,IndexSplit p prf termA termB termC termI))
 
 typeCheck curr (Stop fc) with (used curr)
   typeCheck curr (Stop fc) | (Yes prf) = Right (Unit ** _ ** (Nil, Stop prf))

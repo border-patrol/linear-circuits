@@ -42,7 +42,7 @@ modules =
         , EdgeBoundedGraph
 
         , Circuits.Types
-
+        , Circuits.Split
    -- [ Idealised ]
 
         , Circuits.Idealised

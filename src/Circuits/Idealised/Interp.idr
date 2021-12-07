@@ -127,6 +127,48 @@ interp env (Gate output inputA inputB) counter graph
                           ]
     in R (S c''') env''' (foldr (insertEdge) g' es)
 
+interp env (IndexSingleton o i) counter graph
+  = let R c'   env'   o = interp env   o counter graph in
+    let R c''  env''  i = interp env'  i c'      graph in
+    let c''' = S c'' in
+    let n    = Node c''' 1 1 in
+    let g'   = insertNode n graph in
+    let es   = [ (ident i, c''')
+               , (c'''   , ident o)
+               ]
+    in R c''' env'' (foldr insertEdge g' es)
+
+interp env (IndexEdge p idx oused ofree i) counter graph
+  = let R c'    env'    oused = interp env    oused counter graph in
+    let R c''   env''   ofree = interp env'   ofree c'      graph in
+    let R c'''  env'''  input = interp env''  i     c''     graph in
+
+    let c'''' = S c''' in
+    let n     = Node c'''' 1 2 in
+    let g'    = insertNode n graph in
+    let es    = [ (ident input, c'''')
+               , (c''''       , ident oused)
+               , (c''''       , ident ofree)
+               ]
+    in R c'''' env''' (foldr insertEdge g' es)
+
+
+interp env (IndexSplit p idx used freeA freeB i) counter graph
+  = let R c'     env'     oused = interp env    used  counter graph in
+    let R c''    env''    freeA = interp env'   freeA c'      graph in
+    let R c'''   env'''   freeB = interp env''  freeB c''     graph in
+    let R c''''  env''''  input = interp env''' i     c'''    graph in
+
+    let c''''' = S c'''' in
+    let n      = Node c''''' 1 3 in
+    let g'     = insertNode n graph in
+    let es     = [ (ident input  , c''''')
+                 , (c'''''       , ident oused)
+                 , (c'''''       , ident freeA)
+                 , (c'''''       , ident freeB)
+                 ]
+    in R c''''' env'''' (foldr insertEdge g' es)
+
 interp env (Stop x) counter graph
   = R counter Empty graph
 

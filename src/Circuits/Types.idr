@@ -13,6 +13,11 @@ Uninhabited (USED = FREE) where
   uninhabited Refl impossible
 
 export
+Show Usage where
+  show USED = "Used"
+  show FREE = "Free"
+
+export
 DecEq Usage where
   decEq USED USED = Yes Refl
   decEq USED FREE = No absurd
@@ -31,11 +36,21 @@ DecEq Direction where
   decEq OUTPUT INPUT  = No (negEqSym absurd)
   decEq OUTPUT OUTPUT = Yes Refl
 
+export
+Show Direction where
+  show INPUT  = "input"
+  show OUTPUT = "output"
+
 public export
 data DType = LOGIC | BVECT Nat DType
 
 Uninhabited (LOGIC = BVECT n k) where
   uninhabited Refl impossible
+
+export
+Show DType where
+  show LOGIC = "logic"
+  show (BVECT n type) = show type <+> concat ["[", show n, "]"]
 
 export
 DecEq DType where
@@ -64,6 +79,12 @@ data Ty : Type where
   Port : (Direction, DType) -> Ty
 
   Gate : Ty
+
+export
+Show Ty where
+  show Unit = "()"
+  show (Port (d,t)) = concat ["Port(", show d, ",", show t, ")"]
+  show Gate = "Gate"
 
 
 Uninhabited (Unit = (Port x)) where

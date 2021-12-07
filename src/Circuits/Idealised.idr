@@ -6,6 +6,7 @@ import Data.List.Elem
 import Data.List.Quantifiers
 
 import Circuits.Types
+import Circuits.Split
 
 %default total
 
@@ -57,6 +58,25 @@ namespace Circuits
           -> (inputA : Term b (Port (INPUT,  datatype)) c)
           -> (inputB : Term c (Port (INPUT,  datatype)) d)
                     -> Term a Gate d
+
+      IndexSingleton : (output : Term a (Port (OUTPUT,             datatype))  b)
+                    -> (input  : Term b (Port (INPUT, (BVECT (S Z) datatype))) c)
+                              -> Term a Gate c
+
+      IndexEdge : (pivot : Nat)
+               -> (idx   : Index size pivot free)
+               -> (outu  : Term a (Port (OUTPUT,             datatype))  b)
+               -> (outf  : Term b (Port (OUTPUT, (BVECT free datatype))) c)
+               -> (input : Term c (Port (INPUT,  (BVECT size datatype))) d)
+                        -> Term a Gate d
+
+      IndexSplit : (pivot : Nat)
+                -> (idx   : Index Z pivot size sizeA sizeB)
+                -> (usedA : Term a (Port (OUTPUT,              datatype))  b)
+                -> (freeA : Term b (Port (OUTPUT, (BVECT sizeA datatype))) c)
+                -> (freeB : Term c (Port (OUTPUT, (BVECT sizeB datatype))) d)
+                -> (input : Term d (Port (INPUT,  (BVECT size  datatype))) e)
+                         -> Term a Gate e
 
       Stop : All Used old -> Term old Unit Nil
 

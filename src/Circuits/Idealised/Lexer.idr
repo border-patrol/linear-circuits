@@ -8,13 +8,16 @@ import Toolkit.Text.Lexer.Run
 
 
 symbols : List String
-symbols = ["->", "-", "[", "]", ";", "{", "}", ":", ",", "=", "?", "(", ")", ".", "#", "!", "&", "|", "+"]
+symbols = ["[", "]", ";", "{", "}", ":", ",", "=", "?", "(", ")", ".", "#", "!", "&", "|", "+"]
 
 keywords : List String
 keywords = [ "input", "output"
            , "circuit", "wire"
            , "logic", "as", "in"
-           , "gate", "not", "split", "mux"
+           , "gate", "not"
+           , "copy"
+           , "singleton", "first", "last", "split"
+           , "mux"
            ]
 
 public export
@@ -51,6 +54,23 @@ namespace Idealised
     (==) EndInput EndInput = True
     (==) _ _ = False
 
+  showToken : Show a => String -> a -> String
+  showToken n a = "(" <+> n <+> " " <+> show a <+> ")"
+
+  export
+  Show Token where
+    show (ID id)             = showToken "ID" id
+    show (Keyword str)       = showToken "Keyword" str
+    show (LineComment str)   = showToken "LineComment" str
+    show (BlockComment str)  = showToken "BlockComment" str
+    show (Documentation str) = showToken "Documentation" str
+
+    show (LitNat n) = showToken "Nat" n
+
+    show (Symbol s) = showToken "Symbol" s
+    show (WS ws) = "WS"
+    show (NotRecognised s) = showToken "Urgh" s
+    show EndInput          = "EndInput"
 
   identifier : Lexer
   identifier = pred startIdent <+> many (pred validIdent)

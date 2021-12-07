@@ -127,7 +127,7 @@ namespace Types
 
     export
     type : Rule DType
-    type = logic <|> array
+    type = array <|> logic
 
 namespace Terms
 
@@ -146,11 +146,15 @@ namespace Terms
          symbol ")"
          pure ps
 
-  data Body = WDecl FileContext DType Ref Ref
-            | GInst FileContext Ref Ref Ref
-            | DInst FileContext Ref Ref Ref
-            | NInst FileContext Ref Ref
-            | MInst FileContext Ref Ref Ref Ref
+  data Body = WDecl  FileContext DType Ref Ref
+            | GInst  FileContext Ref Ref Ref
+            | DInst  FileContext Ref Ref Ref
+            | NInst  FileContext Ref Ref
+            | MInst  FileContext Ref Ref Ref Ref
+            | ISInst FileContext Ref Ref
+            | IEInst FileContext End Ref Ref Ref
+            | IPInst FileContext Nat Ref Ref Ref Ref
+
 
   gateNot : Rule Body
   gateNot
@@ -180,10 +184,10 @@ namespace Terms
          e <- Toolkit.location
          pure (GInst (newFC s e) o a b)
 
-  gateSplit : Rule Body
-  gateSplit
+  gateCopy : Rule Body
+  gateCopy
     = do s <- Toolkit.location
-         keyword "split"
+         keyword "copy"
          symbol "("
          o <- ref
          symbol ","
@@ -212,6 +216,63 @@ namespace Terms
          e <- Toolkit.location
          pure (MInst (newFC s e) o c a b)
 
+  gateSplit : Rule Body
+  gateSplit
+      = singleton <|> edge <|> split
+    where
+      sFooter : Location -> Rule FileContext
+      sFooter s
+        = do symbol ")"
+             symbol ";"
+             e <- Toolkit.location
+             pure (newFC s e)
+
+      singleton : Rule Body
+      singleton
+        = do s <- Toolkit.location
+             keyword "singleton"
+             symbol "("
+             o <- ref
+             symbol ","
+             i <- ref
+             fc <- sFooter s
+             pure (ISInst fc o i)
+
+      kind : Rule End
+      kind = gives "first" F <|> gives "last" L
+
+      edge : Rule Body
+      edge
+        = do s <- Toolkit.location
+             k <- kind
+             symbol "("
+             a <- ref
+             symbol ","
+             b <- ref
+             symbol ","
+             i <- ref
+             fc <- sFooter s
+             pure (IEInst fc k a b i)
+
+      split : Rule Body
+      split
+        = do s <- Toolkit.location
+             keyword "split"
+             symbol "["
+             n <- nat
+             symbol "]"
+             symbol "("
+             a <- ref
+             symbol ","
+             b <- ref
+             symbol ","
+             x <- ref
+             symbol ","
+             y <- ref
+             fc <- sFooter s
+             pure (IPInst fc n a b x y)
+
+
   wireDecl : Rule Body
   wireDecl
       = do s <- Toolkit.location
@@ -228,7 +289,7 @@ namespace Terms
            pure (WDecl (newFC s e) t a b)
 
   expr : Rule Body
-  expr = wireDecl <|> gateNot <|> gateBin <|> gateSplit <|> gateMux
+  expr = wireDecl <|> gateNot <|> gateBin <|> gateCopy <|> gateSplit <|> gateMux <|> gateSplit
 
   foldBody : Location
           -> List1 Body
@@ -248,6 +309,15 @@ namespace Terms
         = Seq (Dup x (Var y) (Var z) (Var w)) accum
       doFold (NInst x y z) accum
         = Seq (Not x (Var y) (Var z)) accum
+
+      doFold (ISInst x y z) accum
+        = Seq (IndexS x (Var y) (Var z)) accum
+
+      doFold (IEInst v w x y z) accum
+        = Seq (IndexE v w (Var x) (Var y) (Var z)) accum
+
+      doFold (IPInst u v w x y z) accum
+        = Seq (IndexP u v (Var w) (Var x) (Var y) (Var z)) accum
 
 
   foldPorts : Location

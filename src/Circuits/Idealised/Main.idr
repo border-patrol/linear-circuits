@@ -1,7 +1,9 @@
 module Circuits.Idealised.Main
 
 import System
+import System.File
 
+import Data.String
 import Data.List1
 
 import Text.Lexer
@@ -21,6 +23,23 @@ import Circuits.Idealised.Parser
 import Circuits.Idealised.Check
 import Circuits.Idealised.Interp
 
+export
+Show a => Show (ParseFailure a) where
+  show err
+    = trim $ unlines [show (location err), (error err)]
+
+export
+Show a => Show (ParseError a) where
+  show (FError err)
+    = trim $ unlines ["File Error: "
+                     , show err]
+  show (PError err)
+    = trim $ unlines (forget (map show err))
+
+  show (LError (MkLexFail l i))
+    = trim $ unlines [show l, show i]
+
+
 main : IO Unit
 main
   = do putStrLn "// LOG : Starting Idealised Linear "
@@ -28,14 +47,15 @@ main
 
        case args of
          [x,y] => do Right ast <- fromFile y
-                       | Left err => do putStrLn "Failure AST"
+                       | Left err => do putStrLn "// LOG : Failure AST"
+                                        printLn err
                                         exitFailure
                      Right term <- typeCheckIO ast
-                       | Left err => do putStrLn "Failure TyCheck"
+                       | Left err => do putStrLn "// LOG : Failure TyCheck"
                                         printLn err
                                         exitFailure
                      Just (g ** D g prf) <- runIO term
-                       | Nothing => do putStrLn "Failure Interp"
+                       | Nothing => do putStrLn "// LOG : Failure Interp"
                                        exitFailure
                      printLn g
                      exitSuccess
