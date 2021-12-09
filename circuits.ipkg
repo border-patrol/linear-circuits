@@ -58,4 +58,8 @@ modules =
         , Circuits.Idealised.Check
         , Circuits.Idealised.Main
 
+   -- [ Unrestricted ]
+
+        , Circuits.NetList.Types
+        , Circuits.NetList.Terms
 -- [ EOF ]
