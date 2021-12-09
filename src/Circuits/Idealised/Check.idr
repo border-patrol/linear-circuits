@@ -18,7 +18,7 @@ import EdgeBoundedGraph
 
 import Circuits.Split
 import Circuits.Idealised.Types
-import Circuits.Idealised
+import Circuits.Idealised.Terms
 import Circuits.Idealised.AST
 
 %default total

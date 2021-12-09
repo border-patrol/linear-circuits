@@ -1,4 +1,4 @@
-module Circuits.Idealised
+module Circuits.Idealised.Terms
 
 import Decidable.Equality
 

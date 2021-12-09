@@ -47,7 +47,7 @@ modules =
    -- [ Idealised ]
 
         , Circuits.Idealised.Types
-        , Circuits.Idealised
+        , Circuits.Idealised.Terms
         , Circuits.Idealised.Interp
 
         , Circuits.Idealised.AST

@@ -9,7 +9,7 @@ import Utilities
 import EdgeBoundedGraph
 
 import Circuits.Idealised.Types
-import Circuits.Idealised
+import Circuits.Idealised.Terms
 
 %default total
 

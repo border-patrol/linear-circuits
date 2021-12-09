@@ -16,7 +16,7 @@ import Toolkit.Text.Parser.Run
 import EdgeBoundedGraph
 
 import Circuits.Idealised.Types
-import Circuits.Idealised
+import Circuits.Idealised.Terms
 import Circuits.Idealised.AST
 import Circuits.Idealised.Lexer
 import Circuits.Idealised.Parser
