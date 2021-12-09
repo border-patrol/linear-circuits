@@ -43,6 +43,7 @@ modules =
 
 
         , Circuits.Split
+        , Circuits.Common
 
    -- [ Idealised ]
 
