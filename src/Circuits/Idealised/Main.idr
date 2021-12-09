@@ -14,8 +14,8 @@ import Toolkit.Text.Lexer.Run
 import Toolkit.Text.Parser.Run
 
 import EdgeBoundedGraph
-import Circuits.Types
 
+import Circuits.Idealised.Types
 import Circuits.Idealised
 import Circuits.Idealised.AST
 import Circuits.Idealised.Lexer
@@ -47,15 +47,15 @@ main
 
        case args of
          [x,y] => do Right ast <- fromFile y
-                       | Left err => do putStrLn "// LOG : Failure AST"
+                       | Left err => do putStrLn "// LOG : Failure Parsing"
                                         printLn err
                                         exitFailure
                      Right term <- typeCheckIO ast
-                       | Left err => do putStrLn "// LOG : Failure TyCheck"
+                       | Left err => do putStrLn "// LOG : Failure Type Checking"
                                         printLn err
                                         exitFailure
                      Just (g ** D g prf) <- runIO term
-                       | Nothing => do putStrLn "// LOG : Failure Interp"
+                       | Nothing => do putStrLn "// LOG : Failure Interpreting"
                                        exitFailure
                      printLn g
                      exitSuccess

@@ -15,7 +15,7 @@ keywords = [ "input", "output"
            , "circuit", "wire"
            , "logic", "as", "in"
            , "and", "ior", "xor", "nand", "nior", "xnor", "not"
-           , "copy"
+           , "copy", "merge"
            , "singleton", "first", "last", "split"
            , "mux"
            ]

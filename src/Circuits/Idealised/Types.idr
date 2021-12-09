@@ -1,4 +1,4 @@
-module Circuits.Types
+module Circuits.Idealised.Types
 
 import Decidable.Equality
 
@@ -8,7 +8,7 @@ import Data.List.Elem
 
 public export
 data GateKind = AND  | IOR  | XOR
-              | ANDN | IORN | XORN
+              | ANDN | IORN | XORN | MERGE
 
 public export
 data Usage = USED | FREE
@@ -79,44 +79,44 @@ data PortHasProperties : Direction -> DType -> (Direction, DType) -> Type
 
 public export
 data Ty : Type where
-  Unit : Ty
-  Port : (Direction, DType) -> Ty
+  TyUnit : Ty
+  TyPort : (Direction, DType) -> Ty
 
-  Gate : Ty
+  TyGate : Ty
 
 export
 Show Ty where
-  show Unit = "()"
-  show (Port (d,t)) = concat ["Port(", show d, ",", show t, ")"]
-  show Gate = "Gate"
+  show TyUnit = "()"
+  show (TyPort (d,t)) = concat ["TyPort(", show d, ",", show t, ")"]
+  show TyGate = "TyGate"
 
 
-Uninhabited (Unit = (Port x)) where
+Uninhabited (TyUnit = (TyPort x)) where
   uninhabited Refl impossible
 
-Uninhabited (Unit = Gate) where
+Uninhabited (TyUnit = TyGate) where
   uninhabited Refl impossible
 
-Uninhabited (Port x = Gate) where
+Uninhabited (TyPort x = TyGate) where
   uninhabited Refl impossible
 
 export
 DecEq Ty where
-  decEq Unit Unit = Yes Refl
-  decEq Unit (Port x) = No absurd
-  decEq Unit Gate = No absurd
+  decEq TyUnit TyUnit = Yes Refl
+  decEq TyUnit (TyPort x) = No absurd
+  decEq TyUnit TyGate = No absurd
 
-  decEq (Port x) Unit = No (negEqSym absurd)
-  decEq (Port x) (Port y) with (decEq x y)
-    decEq (Port x) (Port x) | (Yes Refl)
+  decEq (TyPort x) TyUnit = No (negEqSym absurd)
+  decEq (TyPort x) (TyPort y) with (decEq x y)
+    decEq (TyPort x) (TyPort x) | (Yes Refl)
       = Yes Refl
-    decEq (Port x) (Port y) | (No contra)
+    decEq (TyPort x) (TyPort y) | (No contra)
       = No (\Refl => contra Refl)
-  decEq (Port x) Gate = No (absurd)
+  decEq (TyPort x) TyGate = No (absurd)
 
-  decEq Gate Unit = No (negEqSym absurd)
-  decEq Gate (Port x) = No (negEqSym absurd)
-  decEq Gate Gate = Yes Refl
+  decEq TyGate TyUnit = No (negEqSym absurd)
+  decEq TyGate (TyPort x) = No (negEqSym absurd)
+  decEq TyGate TyGate = Yes Refl
 
 
 public export

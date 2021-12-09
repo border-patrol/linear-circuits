@@ -41,10 +41,12 @@ modules =
         , Utilities
         , EdgeBoundedGraph
 
-        , Circuits.Types
+
         , Circuits.Split
+
    -- [ Idealised ]
 
+        , Circuits.Idealised.Types
         , Circuits.Idealised
         , Circuits.Idealised.Interp
 
@@ -54,4 +56,5 @@ modules =
 
         , Circuits.Idealised.Check
         , Circuits.Idealised.Main
+
 -- [ EOF ]

@@ -15,8 +15,9 @@ import Ref
 import Utilities
 import EdgeBoundedGraph
 
-import Circuits.Types
+
 import Circuits.Split
+import Circuits.Idealised.Types
 import Circuits.Idealised
 import Circuits.Idealised.AST
 
@@ -175,7 +176,9 @@ lift (No contra) e = Left e
 typeCheck : {ctxt : List (String, (Ty,Usage))}
          -> (curr : Env ctxt)
          -> (ast  : AST)
-                  -> TyCheck (type ** cout ** Pair (Env cout) (Term (map Builtin.snd ctxt) type (map Builtin.snd cout)))
+                  -> TyCheck (type ** cout ** Pair (Env cout) (Term (map Builtin.snd ctxt)
+                                                                    type
+                                                                    (map Builtin.snd cout)))
 typeCheck curr (Var x) with (lookup (get x) curr)
   typeCheck curr (Var x) | (Yes (MkDPair ty prf)) with (use prf curr)
     typeCheck curr (Var x) | (Yes (MkDPair ty prf)) | (MkDPair next u)
@@ -184,32 +187,32 @@ typeCheck curr (Var x) with (lookup (get x) curr)
   typeCheck curr (Var x) | (No reason contra) = Left (Err (span x) (ElemFail reason))
 
 typeCheck curr (Input fc x y s z)
-  = do (Unit ** cz ** (ex,term)) <- typeCheck (MkEntry (get s) (Port (MkPair x y)) FREE :: curr) z
-         | (ty ** _  ** _) => Left (Mismatch Unit ty)
+  = do (TyUnit ** cz ** (ex,term)) <- typeCheck (MkEntry (get s) (TyPort (MkPair x y)) FREE :: curr) z
+         | (ty ** _  ** _) => Left (Mismatch TyUnit ty)
 
        case ex of
-         Nil => pure (Unit ** cz ** (Nil, (NewSignal x y term)))
+         Nil => pure (TyUnit ** cz ** (Nil, (NewSignal x y term)))
          _   => Left (Err fc (LinearityError ex))
 
 
 
 typeCheck curr (Wire fc x a b y)
-  = do (Unit ** cz ** (ex,term)) <- typeCheck (MkEntry (get a) (Port (MkPair OUTPUT x)) FREE ::
-                                               MkEntry (get b) (Port (MkPair INPUT  x)) FREE :: curr) y
-         | (ty ** _  ** _) => Left (Mismatch Unit ty)
+  = do (TyUnit ** cz ** (ex,term)) <- typeCheck (MkEntry (get a) (TyPort (MkPair OUTPUT x)) FREE ::
+                                               MkEntry (get b) (TyPort (MkPair INPUT  x)) FREE :: curr) y
+         | (ty ** _  ** _) => Left (Mismatch TyUnit ty)
 
        case ex of
-         Nil => pure (Unit ** cz ** (Nil, (Wire x term)))
+         Nil => pure (TyUnit ** cz ** (Nil, (Wire x term)))
          _   => Left (Err fc (LinearityError ex))
 
 typeCheck curr (Dup fc x y z)
-  = do (Port (OUTPUT,dtypeA) ** cx ** (ex,termX)) <- typeCheck curr x
+  = do (TyPort (OUTPUT,dtypeA) ** cx ** (ex,termX)) <- typeCheck curr x
                   | ty => Left (Err fc (PortExpected OUTPUT))
 
-       (Port (OUTPUT,dtypeB) ** cy ** (ey,termY)) <- typeCheck ex y
+       (TyPort (OUTPUT,dtypeB) ** cy ** (ey,termY)) <- typeCheck ex y
                   | ty => Left (Err fc (PortExpected OUTPUT))
 
-       (Port (INPUT,dtypeC) ** cz ** (ez,termZ)) <- typeCheck ey z
+       (TyPort (INPUT,dtypeC) ** cz ** (ez,termZ)) <- typeCheck ey z
                   | ty => Left (Err fc (PortExpected INPUT))
 
        Refl <- lift (decEq dtypeA dtypeB)
@@ -218,57 +221,57 @@ typeCheck curr (Dup fc x y z)
        Refl <- lift (decEq dtypeB dtypeC)
                     (Err fc (MismatchGate dtypeA dtypeC))
 
-       pure (Gate ** cz ** (ez, Dup termX termY termZ))
+       pure (TyGate ** cz ** (ez, Dup termX termY termZ))
 
 typeCheck curr (Seq x y)
-  = do (Gate ** cx ** (ex,termX)) <- typeCheck curr x
-            | (ty ** _ ** _) => Left (Mismatch Gate ty)
+  = do (TyGate ** cx ** (ex,termX)) <- typeCheck curr x
+            | (ty ** _ ** _) => Left (Mismatch TyGate ty)
 
-       (Unit ** cy ** (ey, termY)) <- typeCheck ex y
-             | (ty ** _ ** _) => Left (Mismatch Unit ty)
+       (TyUnit ** cy ** (ey, termY)) <- typeCheck ex y
+             | (ty ** _ ** _) => Left (Mismatch TyUnit ty)
 
        case ey of
-         Nil => pure (Unit ** cy ** (Nil, Seq termX termY))
+         Nil => pure (TyUnit ** cy ** (Nil, Seq termX termY))
          _   => Left ((LinearityError ey))
 
 
 typeCheck curr (Not fc x y)
-  = do (Port (OUTPUT,LOGIC) ** cx ** (ex,termX)) <- typeCheck curr x
+  = do (TyPort (OUTPUT,LOGIC) ** cx ** (ex,termX)) <- typeCheck curr x
          | (ty ** cx ** (ex,termX))
-             => Left (Err fc (Mismatch (Port (OUTPUT,LOGIC)) ty))
+             => Left (Err fc (Mismatch (TyPort (OUTPUT,LOGIC)) ty))
 
-       (Port (INPUT,LOGIC) ** cy ** (ey,termY)) <- typeCheck ex y
+       (TyPort (INPUT,LOGIC) ** cy ** (ey,termY)) <- typeCheck ex y
          | (ty ** cy ** (ey,termY))
-             => Left (Err fc (Mismatch (Port (INPUT,LOGIC)) ty))
+             => Left (Err fc (Mismatch (TyPort (INPUT,LOGIC)) ty))
 
-       pure (Gate ** cy ** (ey,Not termX termY))
+       pure (TyGate ** cy ** (ey,Not termX termY))
 
 typeCheck curr (Gate fc k x y z)
-  = do (Port (OUTPUT,LOGIC) ** cx ** (ex,termX)) <- typeCheck curr x
-         | (ty ** cx ** (ex,termX)) => Left (Err fc (Mismatch (Port (OUTPUT, LOGIC)) ty))
+  = do (TyPort (OUTPUT,LOGIC) ** cx ** (ex,termX)) <- typeCheck curr x
+         | (ty ** cx ** (ex,termX)) => Left (Err fc (Mismatch (TyPort (OUTPUT, LOGIC)) ty))
 
-       (Port (INPUT,LOGIC) ** cy ** (ey,termY)) <- typeCheck ex y
+       (TyPort (INPUT,LOGIC) ** cy ** (ey,termY)) <- typeCheck ex y
          | (ty ** cy ** (ey,termY))
-             => Left (Err fc (Mismatch (Port (INPUT,LOGIC)) ty))
+             => Left (Err fc (Mismatch (TyPort (INPUT,LOGIC)) ty))
 
-       (Port (INPUT,LOGIC) ** cz ** (ez,termZ)) <- typeCheck ey z
+       (TyPort (INPUT,LOGIC) ** cz ** (ez,termZ)) <- typeCheck ey z
          | (ty ** cz ** (ez,termZ))
-             => Left (Err fc (Mismatch (Port (INPUT,LOGIC)) ty))
+             => Left (Err fc (Mismatch (TyPort (INPUT,LOGIC)) ty))
 
-       pure (Gate ** cz ** (ez,Gate k termX termY termZ))
+       pure (TyGate ** cz ** (ez,Gate k termX termY termZ))
 
 typeCheck curr (Mux fc v x y z)
-  = do (Port (OUTPUT,dtypeA) ** cv ** (ev,termV)) <- typeCheck curr v
+  = do (TyPort (OUTPUT,dtypeA) ** cv ** (ev,termV)) <- typeCheck curr v
                   | ty => Left (Err fc (PortExpected OUTPUT))
 
-       (Port (INPUT,LOGIC) ** cx ** (ex,termX)) <- typeCheck ev x
+       (TyPort (INPUT,LOGIC) ** cx ** (ex,termX)) <- typeCheck ev x
                   | (ty ** cx ** (ex,termX))
-                       => Left (Err fc (Mismatch (Port (INPUT,LOGIC)) ty))
+                       => Left (Err fc (Mismatch (TyPort (INPUT,LOGIC)) ty))
 
-       (Port (INPUT,dtypeB) ** cy ** (ey,termY)) <- typeCheck ex y
+       (TyPort (INPUT,dtypeB) ** cy ** (ey,termY)) <- typeCheck ex y
                   | ty => Left (Err fc (PortExpected INPUT))
 
-       (Port (INPUT,dtypeC) ** cz ** (ez,termZ)) <- typeCheck ey z
+       (TyPort (INPUT,dtypeC) ** cz ** (ez,termZ)) <- typeCheck ey z
                   | ty => Left (Err fc (PortExpected INPUT))
 
        Refl <- lift (decEq dtypeA dtypeB)
@@ -277,31 +280,31 @@ typeCheck curr (Mux fc v x y z)
        Refl <- lift (decEq dtypeB dtypeC)
                     (Err fc (MismatchGate dtypeA dtypeC))
 
-       pure (Gate ** cz ** (ez,Mux termV termX termY termZ))
+       pure (TyGate ** cz ** (ez,Mux termV termX termY termZ))
 
 typeCheck curr (IndexS fc o i)
-  = do (Port (OUTPUT,dtypeO) ** co ** (eo,termO)) <- typeCheck curr o
+  = do (TyPort (OUTPUT,dtypeO) ** co ** (eo,termO)) <- typeCheck curr o
                   | ty => Left (Err fc (PortExpected INPUT))
 
-       (Port (INPUT,BVECT (S Z) dtypeI) ** ci ** (ei,termI)) <- typeCheck eo i
-                  | (Port (INPUT, BVECT s type) ** cx ** (ex,termX))
-                       => Left (Err fc (Mismatch (Port (INPUT,BVECT (S Z) type)) (Port (INPUT, BVECT s type))))
+       (TyPort (INPUT,BVECT (S Z) dtypeI) ** ci ** (ei,termI)) <- typeCheck eo i
+                  | (TyPort (INPUT, BVECT s type) ** cx ** (ex,termX))
+                       => Left (Err fc (Mismatch (TyPort (INPUT,BVECT (S Z) type)) (TyPort (INPUT, BVECT s type))))
                   | ty => Left (Err fc (PortExpected INPUT))
 
        Refl <- lift (decEq dtypeO dtypeI)
                     (Err fc (MismatchGate dtypeO  dtypeI))
 
-       pure (Gate ** ci ** (ei,IndexSingleton termO termI))
+       pure (TyGate ** ci ** (ei,IndexSingleton termO termI))
 
 
 typeCheck curr (IndexE fc k a b i)
-  = do (Port (OUTPUT,dtypeA) ** cA ** (eA,termA)) <- typeCheck curr a
+  = do (TyPort (OUTPUT,dtypeA) ** cA ** (eA,termA)) <- typeCheck curr a
                   | ty => Left (Err fc (PortExpected OUTPUT))
 
-       (Port (OUTPUT,BVECT free dtypeB) ** cB ** (eB,termB)) <- typeCheck eA b
+       (TyPort (OUTPUT,BVECT free dtypeB) ** cB ** (eB,termB)) <- typeCheck eA b
                   | ty => Left (Err fc (PortExpected OUTPUT))
 
-       (Port (INPUT,BVECT size dtypeC) ** cC ** (eC,termC)) <- typeCheck eB i
+       (TyPort (INPUT,BVECT size dtypeC) ** cC ** (eC,termC)) <- typeCheck eB i
                   | ty => Left (Err fc (PortExpected INPUT))
 
        Refl <- lift (decEq dtypeA dtypeB)
@@ -318,19 +321,19 @@ typeCheck curr (IndexE fc k a b i)
        Refl <- lift (decEq free s)
                     (Err fc (NotEdgeCase (InvalidEdge size (S Z) free)))
 
-       pure (Gate ** cC ** (eC,IndexEdge p prf termA termB termC))
+       pure (TyGate ** cC ** (eC,IndexEdge p prf termA termB termC))
 
 typeCheck curr (IndexP fc p a b c i)
-  = do (Port (OUTPUT,dtypeA) ** cA ** (eA,termA)) <- typeCheck curr a
+  = do (TyPort (OUTPUT,dtypeA) ** cA ** (eA,termA)) <- typeCheck curr a
                   | ty => Left (Err fc (PortExpected OUTPUT))
 
-       (Port (OUTPUT,BVECT freeA dtypeB) ** cB ** (eB,termB)) <- typeCheck eA b
+       (TyPort (OUTPUT,BVECT freeA dtypeB) ** cB ** (eB,termB)) <- typeCheck eA b
                   | ty => Left (Err fc (PortExpected OUTPUT))
 
-       (Port (OUTPUT,BVECT freeB dtypeC) ** cC ** (eC,termC)) <- typeCheck eB c
+       (TyPort (OUTPUT,BVECT freeB dtypeC) ** cC ** (eC,termC)) <- typeCheck eB c
                   | ty => Left (Err fc (PortExpected OUTPUT))
 
-       (Port (INPUT,BVECT size dtypeD) ** cI ** (eI,termI)) <- typeCheck eC i
+       (TyPort (INPUT,BVECT size dtypeD) ** cI ** (eI,termI)) <- typeCheck eC i
                   | ty => Left (Err fc (PortExpected INPUT))
 
        Refl <- lift (decEq dtypeA dtypeB)
@@ -351,22 +354,22 @@ typeCheck curr (IndexP fc p a b c i)
        Refl <- lift (decEq freeB b)
                     (Err fc (NotEdgeCase (InvalidSplit p size freeA freeB)))
 
-       pure (Gate ** cI ** (eI,IndexSplit p prf termA termB termC termI))
+       pure (TyGate ** cI ** (eI,IndexSplit p prf termA termB termC termI))
 
 typeCheck curr (Stop fc) with (used curr)
-  typeCheck curr (Stop fc) | (Yes prf) = Right (Unit ** _ ** (Nil, Stop prf))
+  typeCheck curr (Stop fc) | (Yes prf) = Right (TyUnit ** _ ** (Nil, Stop prf))
   typeCheck curr (Stop fc) | (No contra) = Left (Err fc (LinearityError curr))
 
 namespace Design
   export
-  typeCheck : (ast : AST) -> TyCheck (Term Nil Unit Nil)
+  typeCheck : (ast : AST) -> TyCheck (Term Nil TyUnit Nil)
   typeCheck ast with (typeCheck Nil ast)
     typeCheck ast | (Left x) = Left x
-    typeCheck ast | (Right (MkDPair Unit (MkDPair Nil (env,term)))) = Right term
-    typeCheck ast | (Right (MkDPair ty snd)) = Left (Mismatch Unit ty)
+    typeCheck ast | (Right (MkDPair TyUnit (MkDPair Nil (env,term)))) = Right term
+    typeCheck ast | (Right (MkDPair ty snd)) = Left (Mismatch TyUnit ty)
 
   export
-  typeCheckIO : (ast : AST) -> IO (TyCheck (Term Nil Unit Nil))
+  typeCheckIO : (ast : AST) -> IO (TyCheck (Term Nil TyUnit Nil))
   typeCheckIO ast = pure (typeCheck ast)
 
 -- [ EOF ]

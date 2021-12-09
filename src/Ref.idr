@@ -8,4 +8,8 @@ record Ref where
   span : FileContext
   get  : String
 
+export
+setSource : String -> Ref -> Ref
+setSource new ref = record {span $= setSource new} ref
+
 -- [ EOF ]

@@ -8,16 +8,16 @@ import Data.List.Quantifiers
 import Utilities
 import EdgeBoundedGraph
 
-import Circuits.Types
+import Circuits.Idealised.Types
 import Circuits.Idealised
 
 %default total
 
 public export
 InterpTy : Ty -> Type
-InterpTy Unit = Graph
-InterpTy (Port x) = Vertex
-InterpTy Gate = Graph
+InterpTy TyUnit = Graph
+InterpTy (TyPort x) = Vertex
+InterpTy TyGate = Graph
 
 namespace Environments
   public export
@@ -174,29 +174,29 @@ interp env (Stop x) counter graph
 
 public export
 data Valid : (type : Ty) -> InterpTy type -> Type where
-  P : Valid (Port x) v
-  G : (g : Graph) -> ValidGraph g -> Valid Gate g
-  D : (g : Graph) -> ValidGraph g -> Valid Unit g
+  P : Valid (TyPort x) v
+  G : (g : Graph) -> ValidGraph g -> Valid TyGate g
+  D : (g : Graph) -> ValidGraph g -> Valid TyUnit g
 
 isValid : {type : Ty}
         -> (g   : InterpTy type)
                -> Dec (Valid type g)
-isValid g {type = Unit} with (validGraph g)
-  isValid g {type = Unit} | (Yes prf)
+isValid g {type = TyUnit} with (validGraph g)
+  isValid g {type = TyUnit} | (Yes prf)
     = Yes (D g prf)
-  isValid g {type = Unit} | (No contra)
+  isValid g {type = TyUnit} | (No contra)
     = No (\(D g prf) => contra prf)
-isValid g {type = (Port x)} = Yes P
-isValid g {type = Gate} with (validGraph g)
-  isValid g {type = Gate} | (Yes prf)
+isValid g {type = (TyPort x)} = Yes P
+isValid g {type = TyGate} with (validGraph g)
+  isValid g {type = TyGate} | (Yes prf)
     = Yes (G g prf)
-  isValid g {type = Gate} | (No contra)
+  isValid g {type = TyGate} | (No contra)
     = No (\(G g prf) => contra prf)
 
 
 export
-run : (term : Term Nil Unit Nil)
-           -> Dec (Valid Unit (getResult (interp Empty term Z (MkGraph Nil Nil))))
+run : (term : Term Nil TyUnit Nil)
+           -> Dec (Valid TyUnit (getResult (interp Empty term Z (MkGraph Nil Nil))))
 run term with (interp Empty term Z (MkGraph Nil Nil))
   run term | R cout eout gout with (validGraph gout)
     run term | R cout eout gout | (Yes prf)
@@ -205,8 +205,8 @@ run term with (interp Empty term Z (MkGraph Nil Nil))
       = No (\(D g prf) => contra prf)
 
 export
-runIO : (term : Term Nil Unit Nil)
-             -> IO (Maybe (g ** Valid Unit g))
+runIO : (term : Term Nil TyUnit Nil)
+             -> IO (Maybe (g ** Valid TyUnit g))
 runIO term with (interp Empty term Z (MkGraph Nil Nil))
   runIO term | (R counter env result) with (validGraph result)
     runIO term | (R counter Empty (MkGraph vs es)) | (Yes (IsValid x))

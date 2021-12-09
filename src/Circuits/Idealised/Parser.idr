@@ -13,7 +13,7 @@ import Toolkit.Text.Parser.Run
 
 import Ref
 
-import Circuits.Types
+import Circuits.Idealised.Types
 import Circuits.Idealised.AST
 import Circuits.Idealised.Lexer
 
@@ -139,6 +139,7 @@ namespace Kinds
           <|> gives "xnor" XORN
           <|> gives "ior"  IOR
           <|> gives "nior" IORN
+          <|> gives "merge" MERGE
 
 namespace Terms
 
@@ -314,8 +315,8 @@ namespace Terms
 
       doFold (MInst v x y z w) accum
         = Seq (Mux v (Var x) (Var y) (Var z) (Var w)) accum
-      doFold (GInst x y z w) accum
-        = Seq (Gate x (Var y) (Var z) (Var w)) accum
+      doFold (GInst x k y z w) accum
+        = Seq (Gate x k (Var y) (Var z) (Var w)) accum
       doFold (DInst x y z w) accum
         = Seq (Dup x (Var y) (Var z) (Var w)) accum
       doFold (NInst x y z) accum
@@ -357,5 +358,5 @@ namespace Idealised
   fromFile fname
     = case !(parseFile Idealised.Lexer design fname) of
         Left err  => pure (Left err)
-        Right ast => pure (Right ast) -- @TODO add name
+        Right ast => pure (Right (setSource fname ast)) -- @TODO add name
 -- [ EOF ]

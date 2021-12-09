@@ -3,8 +3,6 @@ module Circuits.Split
 import Decidable.Equality
 import Data.Nat
 
-import Circuits.Types
-
 %default total
 
 namespace Edgecases

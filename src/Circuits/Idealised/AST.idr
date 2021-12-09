@@ -3,7 +3,7 @@ module Circuits.Idealised.AST
 import Toolkit.Data.Location
 
 import Ref
-import Circuits.Types
+import Circuits.Idealised.Types
 
 %default total
 
@@ -23,5 +23,76 @@ data AST = Var Ref
          | IndexS FileContext AST AST
          | IndexE FileContext End AST AST AST
          | IndexP FileContext Nat AST AST AST AST
+
+export
+setSource : String -> AST -> AST
+setSource new (Var x)
+  = Var (record {span $= setSource new} x)
+
+setSource new (Input x y z w v)
+  = (Input (setSource new x)
+           y
+           z
+           (setSource new w)
+           (setSource new v))
+
+setSource new (Wire x y z w v)
+  = (Wire (setSource new x)
+          y
+          (setSource new z)
+          (setSource new w)
+          (setSource new v))
+
+setSource new (Seq x y)
+  = Seq (setSource new x)
+        (setSource new y)
+
+setSource new (Mux x y z w v)
+  = (Mux (setSource new x)
+         (setSource new y)
+         (setSource new z)
+         (setSource new w)
+         (setSource new v))
+
+setSource new (Dup x y z w)
+  = (Dup (setSource new x)
+         (setSource new y)
+         (setSource new z)
+         (setSource new w))
+
+setSource new (Not x y z)
+  = (Not (setSource new x)
+         (setSource new y)
+         (setSource new z))
+
+setSource new (Gate x y z w v)
+  = (Gate (setSource new x)
+          y
+          (setSource new z)
+          (setSource new w)
+          (setSource new v))
+
+setSource new (Stop x)
+  = (Stop (setSource new x))
+
+setSource new (IndexS x y z)
+  = (IndexS (setSource new x)
+            (setSource new y)
+            (setSource new z))
+
+setSource new (IndexE x y z w v)
+  = (IndexE (setSource new x)
+            y
+            (setSource new z)
+            (setSource new w)
+            (setSource new v))
+
+setSource new (IndexP x k y z w v)
+  = (IndexP (setSource new x)
+            k
+            (setSource new y)
+            (setSource new z)
+            (setSource new w)
+            (setSource new v))
 
 -- [ EOF ]
