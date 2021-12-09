@@ -41,6 +41,12 @@ data Term : (context : List Ty)
          -> Fin n
          -> Term ctxt (TyPort (flow, type))
 
+    Mux : (o   : Term ctxt (TyPort (OUTPUT, LOGIC)))
+       -> (c   : Term ctxt (TyPort (INPUT,  LOGIC)))
+       -> (l,r : Term ctxt (TyPort (INPUT,  LOGIC)))
+              -> Term ctxt TyGate
+
+
     GateB : Binary.Kind
          -> (o   : Term ctxt (TyPort (OUTPUT, LOGIC)))
          -> (l,r : Term ctxt (TyPort (INPUT,  LOGIC)))
