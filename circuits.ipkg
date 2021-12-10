@@ -4,9 +4,6 @@ depends = contrib
 
 sourcedir = "src"
 
-main = Circuits.Idealised.Main
-executable = "linearNetList"
-
 modules =
 
   -- [ Vendored Utilities ]
@@ -62,4 +59,11 @@ modules =
 
         , Circuits.NetList.Types
         , Circuits.NetList.Terms
+
+        , Circuits.NetList.AST
+        , Circuits.NetList.Lexer
+        , Circuits.NetList.Parser
+
+
+        , Circuits.NetList.Main
 -- [ EOF ]

@@ -1,0 +1,12 @@
+package idealised
+
+depends = contrib
+
+sourcedir = "src"
+
+main = Circuits.Idealised.Main
+executable = "idealised"
+
+modules = Circuits.Idealised.Main
+
+-- [ EOF ]

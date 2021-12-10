@@ -1,0 +1,13 @@
+package netlist
+
+depends = contrib
+
+sourcedir = "src"
+
+main = Circuits.NetList.Main
+
+executable = "netlist"
+
+modules = Circuits.NetList.Main
+
+-- [ EOF ]
