@@ -64,6 +64,7 @@ modules =
         , Circuits.NetList.Lexer
         , Circuits.NetList.Parser
 
+        , Circuits.NetList.Check
 
         , Circuits.NetList.Main
 -- [ EOF ]

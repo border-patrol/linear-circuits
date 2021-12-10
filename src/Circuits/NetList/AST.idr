@@ -18,8 +18,6 @@ data AST = Var Ref
          | GateU FileContext Unary.Kind AST AST
          | GateB FileContext Binary.Kind AST AST AST
 
-         | Project (Project dir) AST
-         | Cast (Cast INOUT flow) AST
          | Index FileContext Nat AST
          | Stop FileContext
 
@@ -74,13 +72,5 @@ setSource new (Index x y z)
   = (Index (setSource new x)
             y
             (setSource new z))
-
-setSource new (Project p x)
-  = Project p (setSource new x)
-
-setSource new (Cast p x)
-  = Cast p (setSource new x)
-
-
 
 -- [ EOF ]

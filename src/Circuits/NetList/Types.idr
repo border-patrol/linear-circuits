@@ -46,8 +46,8 @@ namespace Proj
 
   public export
   data Project : Direction -> Type where
-    WRITE : Project INPUT
-    READ  : Project OUTPUT
+    WRITE : Project OUTPUT
+    READ  : Project INPUT
 
 namespace Cast
 
@@ -56,6 +56,26 @@ namespace Cast
     BI : Cast INOUT INPUT
     BO : Cast INOUT OUTPUT
 
+  Uninhabited (Cast OUTPUT flow) where
+    uninhabited BI impossible
+    uninhabited BO impossible
+
+  Uninhabited (Cast INPUT flow) where
+    uninhabited BI impossible
+    uninhabited BO impossible
+
+  Uninhabited (Cast INOUT INOUT) where
+    uninhabited BI impossible
+    uninhabited BO impossible
+
+  export
+  cast : (f,t : Direction) -> Dec (Cast f t)
+  cast INPUT _  = No absurd
+  cast OUTPUT _ = No absurd
+  cast INOUT INPUT = Yes BI
+  cast INOUT OUTPUT = Yes BO
+  cast INOUT INOUT = No absurd
+
 namespace Gate
 
   namespace Binary
@@ -63,9 +83,22 @@ namespace Gate
     data Kind = AND  | IOR  | XOR
               | ANDN | IORN | XORN
 
+    export
+    Show Kind where
+      show AND  = "and"
+      show IOR  = "or"
+      show XOR  = "xor"
+      show ANDN = "nand"
+      show IORN = "nor"
+      show XORN = "xnor"
+
   namespace Unary
     public export
     data Kind = NOT
+
+    export
+    Show Unary.Kind where
+      show NOT = "not"
 
 namespace Types
 
