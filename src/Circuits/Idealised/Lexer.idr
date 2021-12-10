@@ -12,7 +12,8 @@ symbols = ["[", "]", ";", "{", "}", ":", ",", "=", "?", "(", ")", ".", "#", "!",
 
 keywords : List String
 keywords = [ "input", "output"
-           , "circuit", "wire"
+           , "module", "endmodule"
+           , "wire"
            , "logic", "as", "in"
            , "and", "ior", "xor", "nand", "nior", "xnor", "not"
            , "copy", "merge"

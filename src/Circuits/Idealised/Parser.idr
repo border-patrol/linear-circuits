@@ -156,6 +156,7 @@ namespace Terms
     = do symbol "("
          ps <- sepBy1 (symbol ",") portDecl
          symbol ")"
+         symbol ";"
          pure ps
 
   data Body = WDecl  FileContext DType Ref Ref
@@ -342,12 +343,13 @@ namespace Terms
   export
   design : Rule AST
   design
-    = do keyword "circuit"
+    = do keyword "module"
+         n <- ref
          ps <- portList
-         symbol "{"
          b <- some expr
          e <- Toolkit.location
-         symbol "}"
+         keyword "endmodule"
+         symbol ";"
          pure (foldPorts e ps (foldBody e b))
 
 namespace Idealised
@@ -358,5 +360,5 @@ namespace Idealised
   fromFile fname
     = case !(parseFile Idealised.Lexer design fname) of
         Left err  => pure (Left err)
-        Right ast => pure (Right (setSource fname ast)) -- @TODO add name
+        Right ast => pure (Right (setSource fname ast))
 -- [ EOF ]
