@@ -23,6 +23,7 @@ import Circuits.NetList.AST
 import Circuits.NetList.Lexer
 import Circuits.NetList.Parser
 import Circuits.NetList.Check
+import Circuits.NetList.Interp
 
 export
 Show a => Show (ParseFailure a) where
@@ -98,7 +99,10 @@ main
                        | Left err => do putStrLn "// LOG : Failure Type Checking"
                                         printLn err
                                         exitFailure
-                     printLn term
+                     Just (g ** D g prf) <- runIO term
+                       | Nothing => do putStrLn "// LOG : Failure Interpreting"
+                                       exitFailure
+                     printLn g
                      exitSuccess
          _ => do putStrLn "need at least a file name"
                  exitFailure

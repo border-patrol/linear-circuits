@@ -29,6 +29,10 @@ export
 catcher : Nat -> Vertex
 catcher k = Node k 1 0
 
+export
+both : Nat -> Vertex
+both k = Node k 1 1
+
 public export
 decEq : (a,b : Vertex) -> Dec (a = b)
 decEq (Node x y z) (Node a b c) with (decEq x a)
@@ -235,6 +239,18 @@ export
 insertEdge : (Nat, Nat) -> Graph -> Graph
 insertEdge (a, b) (MkGraph nodes edges) = MkGraph nodes (insertEdge' a b edges)
 
+export
+flatten : AList -> List (Nat, Nat)
+flatten = concatMap makeFlat
+  where
+    makeFlat : (Nat, List Nat) -> List (Nat, Nat)
+    makeFlat (a,bs) = map (MkPair a) bs
+
+export
+merge : (a,b : Graph) -> Graph
+merge (MkGraph nodes edges) g
+  = let g' = foldr insertNode g nodes
+    in foldr insertEdge g' (flatten edges)
 
 showGraph : Graph -> String
 showGraph (MkGraph nodes edges)
