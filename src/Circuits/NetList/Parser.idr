@@ -1,5 +1,6 @@
 module Circuits.NetList.Parser
 
+import Data.Nat
 import Data.List1
 
 import Text.Lexer
@@ -10,6 +11,7 @@ import Toolkit.Text.Lexer.Run
 import Toolkit.Text.Parser.Support
 import Toolkit.Text.Parser.Location
 import Toolkit.Text.Parser.Run
+import Toolkit.Data.Whole
 
 import Ref
 
@@ -95,6 +97,17 @@ namespace API
     = do v <- value
          pure (ctor v)
 
+  export
+  whole : Rule Whole
+  whole =
+      do n <- nat
+         isWhole n
+    where
+      isWhole : Nat -> RuleEmpty Whole
+      isWhole Z = fail "expected whole"
+      isWhole (S n) = pure (W (S n) ItIsSucc)
+
+
 namespace Direction
   export
   direction : Rule Direction
@@ -112,17 +125,17 @@ namespace Types
              ns <- indices
              pure (arraytype ty ns)
       where
-        index : Rule Nat
+        index : Rule Whole
         index
           = do symbol "["
-               n <- nat
+               n <- whole
                symbol "]"
                pure n
 
-        indices : Rule (List1 Nat)
+        indices : Rule (List1 Whole)
         indices = some index
 
-        arraytype : DType -> List1 Nat -> DType
+        arraytype : DType -> List1 Whole -> DType
         arraytype ty (x:::xs) = foldl (\ty, n => BVECT n ty) ty (x::xs)
 
     export
@@ -164,10 +177,27 @@ namespace Terms
          symbol ";"
          pure ps
 
+  port : Rule AST
+  port
+      = ref' <|> idx
+    where
+      ref' : Rule AST
+      ref' = pure (Var !ref)
+
+      idx : Rule AST
+      idx
+        = do s <- Toolkit.location
+             r <- ref'
+             symbol "["
+             w <- whole
+             symbol "]"
+             e <- Toolkit.location
+             pure (Index (newFC s e) w r)
+
   data Body = WDecl  FileContext DType Ref
-            | GInst  FileContext Binary.Kind Ref Ref Ref Ref
-            | NInst  FileContext Unary.Kind Ref Ref Ref
-            | MInst  FileContext Ref Ref Ref Ref Ref
+            | GInst  FileContext Binary.Kind Ref AST AST AST
+            | NInst  FileContext Unary.Kind Ref AST AST
+            | MInst  FileContext Ref AST AST AST AST
 
 
   gateNot : Rule Body
@@ -176,9 +206,9 @@ namespace Terms
          k <- gateUnaryKind
          n <- ref
          symbol "("
-         o <- ref
+         o <- port
          symbol ","
-         i <- ref
+         i <- port
          symbol ")"
          symbol ";"
          e <- Toolkit.location
@@ -190,11 +220,11 @@ namespace Terms
          k <- gateBinaryKind
          n <- ref
          symbol "("
-         o <- ref
+         o <- port
          symbol ","
-         a <- ref
+         a <- port
          symbol ","
-         b <- ref
+         b <- port
          symbol ")"
          symbol ";"
          e <- Toolkit.location
@@ -206,13 +236,13 @@ namespace Terms
          keyword "mux"
          n <- ref
          symbol "("
-         o <- ref
+         o <- port
          symbol ","
-         c <- ref
+         c <- port
          symbol ","
-         a <- ref
+         a <- port
          symbol ","
-         b <- ref
+         b <- port
          symbol ")"
          symbol ";"
          e <- Toolkit.location
@@ -234,23 +264,24 @@ namespace Terms
   expr = wireDecl <|> gateNot <|> gateBin <|> gateMux
 
   foldBody : Location
-          -> List1 Body
+          -> List Body
           -> AST
-  foldBody l (head ::: tail)
-        = foldr doFold (Stop (newFC l l)) (head :: tail)
+  foldBody l bs
+        = foldr doFold (Stop (newFC l l)) bs
     where
       doFold : Body -> AST -> AST
+
       doFold (WDecl x y z) accum
         = Wire x y z accum
 
       doFold (MInst v n w x y z) accum
-        = GateDecl v n (Mux v (Var w) (Var x) (Var y) (Var z)) accum
+        = GateDecl v n (Mux v w x y z) accum
 
       doFold (GInst x k n y z w) accum
-        = GateDecl x n (GateB x k (Var y) (Var z) (Var w)) accum
+        = GateDecl x n (GateB x k y z w) accum
 
       doFold (NInst x k n y z) accum
-        = GateDecl x n (GateU x k (Var y) (Var z)) accum
+        = GateDecl x n (GateU x k y z) accum
 
   foldPorts : Location
            -> List1 (Location,Ref, Direction, DType)
@@ -265,7 +296,7 @@ namespace Terms
     = do keyword "module"
          n <- ref
          ps <- portList
-         b <- some expr
+         b <- many expr
          e <- Toolkit.location
          keyword "endmodule"
          symbol ";"

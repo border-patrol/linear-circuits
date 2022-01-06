@@ -10,7 +10,10 @@ import Data.Vect.Quantifiers
 
 import Data.String
 
+import Data.Nat
+
 import Toolkit.Data.DList
+import Toolkit.Data.Whole
 
 import Circuits.Common
 
@@ -37,8 +40,8 @@ data Term : (context : List Ty)
 
     Stop : Term ctxt TyUnit
 
-    Index : Term ctxt (TyPort (flow, BVECT n type))
-         -> Fin n
+    Index : Term ctxt (TyPort (flow, BVECT (W (S n) ItIsSucc) type))
+         -> Fin (S n)
          -> Term ctxt (TyPort (flow, type))
 
     Mux : (o   : Term ctxt (TyPort (OUTPUT, LOGIC)))

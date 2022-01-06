@@ -1,10 +1,12 @@
 module Circuits.Idealised.Parser
 
+import Data.Nat
 import Data.List1
 
 import Text.Lexer
 import Text.Parser
 
+import Toolkit.Data.Whole
 import Toolkit.Data.Location
 import Toolkit.Text.Lexer.Run
 import Toolkit.Text.Parser.Support
@@ -95,6 +97,24 @@ namespace API
     = do v <- value
          pure (ctor v)
 
+  export
+  whole : Rule Whole
+  whole =
+      do n <- nat
+         isWhole n
+    where
+      isWhole : Nat -> RuleEmpty Whole
+      isWhole Z = fail "expected whole"
+      isWhole (S n) = pure (W (S n) ItIsSucc)
+
+  export
+  sFooter : Location -> Rule FileContext
+  sFooter s
+    = do symbol ")"
+         symbol ";"
+         e <- Toolkit.location
+         pure (newFC s e)
+
 namespace Direction
   export
   direction : Rule Direction
@@ -112,17 +132,17 @@ namespace Types
              ns <- indices
              pure (arraytype ty ns)
       where
-        index : Rule Nat
+        index : Rule Whole
         index
           = do symbol "["
-               n <- nat
+               n <- whole
                symbol "]"
                pure n
 
-        indices : Rule (List1 Nat)
+        indices : Rule (List1 Whole)
         indices = some index
 
-        arraytype : DType -> List1 Nat -> DType
+        arraytype : DType -> List1 Whole -> DType
         arraytype ty (x:::xs) = foldl (\ty, n => BVECT n ty) ty (x::xs)
 
     export
@@ -139,7 +159,7 @@ namespace Kinds
           <|> gives "xnor" XORN
           <|> gives "ior"  IOR
           <|> gives "nior" IORN
-          <|> gives "merge" MERGE
+          <|> gives "join" JOIN
 
 namespace Terms
 
@@ -168,6 +188,9 @@ namespace Terms
             | IEInst FileContext End Ref Ref Ref
             | IPInst FileContext Nat Ref Ref Ref Ref
 
+            | ESInst FileContext Ref Ref
+            | Merge  FileContext Ref Ref Ref
+
 
   gateNot : Rule Body
   gateNot
@@ -177,10 +200,8 @@ namespace Terms
          o <- ref
          symbol ","
          i <- ref
-         symbol ")"
-         symbol ";"
-         e <- Toolkit.location
-         pure (NInst (newFC s e) o i)
+         fc <- sFooter s
+         pure (NInst fc o i)
 
   gateBin : Rule Body
   gateBin
@@ -192,10 +213,9 @@ namespace Terms
          a <- ref
          symbol ","
          b <- ref
-         symbol ")"
-         symbol ";"
+         fc <- sFooter s
          e <- Toolkit.location
-         pure (GInst (newFC s e) k o a b)
+         pure (GInst fc k o a b)
 
   gateCopy : Rule Body
   gateCopy
@@ -207,10 +227,8 @@ namespace Terms
          a <- ref
          symbol ","
          b <- ref
-         symbol ")"
-         symbol ";"
-         e <- Toolkit.location
-         pure (DInst (newFC s e) o a b)
+         fc <- sFooter s
+         pure (DInst fc o a b)
 
   gateMux : Rule Body
   gateMux
@@ -224,32 +242,48 @@ namespace Terms
          a <- ref
          symbol ","
          b <- ref
-         symbol ")"
-         symbol ";"
-         e <- Toolkit.location
-         pure (MInst (newFC s e) o c a b)
+         fc <- sFooter s
+         pure (MInst fc o c a b)
+
+  gateMerge : Rule Body
+  gateMerge
+    = do s <- Toolkit.location
+         keyword "merge"
+         symbol "("
+         o <- ref
+         symbol ","
+         a <- ref
+         symbol ","
+         b <- ref
+         fc <- sFooter s
+         pure (Merge fc o a b)
 
   gateSplit : Rule Body
   gateSplit
-      = singleton <|> edge <|> split
+      = singletonI <|> singletonE <|> edge <|> split
     where
-      sFooter : Location -> Rule FileContext
-      sFooter s
-        = do symbol ")"
-             symbol ";"
-             e <- Toolkit.location
-             pure (newFC s e)
 
-      singleton : Rule Body
-      singleton
+      singletonE : Rule Body
+      singletonE
         = do s <- Toolkit.location
-             keyword "singleton"
+             keyword "extract"
              symbol "("
              o <- ref
              symbol ","
              i <- ref
              fc <- sFooter s
              pure (ISInst fc o i)
+
+      singletonI : Rule Body
+      singletonI
+        = do s <- Toolkit.location
+             keyword "insert"
+             symbol "("
+             o <- ref
+             symbol ","
+             i <- ref
+             fc <- sFooter s
+             pure (ESInst fc o i)
 
       kind : Rule End
       kind = gives "first" F <|> gives "last" L
@@ -270,7 +304,7 @@ namespace Terms
       split : Rule Body
       split
         = do s <- Toolkit.location
-             keyword "split"
+             keyword "index"
              symbol "["
              n <- nat
              symbol "]"
@@ -302,12 +336,21 @@ namespace Terms
            pure (WDecl (newFC s e) t a b)
 
   expr : Rule Body
-  expr = wireDecl <|> gateNot <|> gateBin <|> gateCopy <|> gateSplit <|> gateMux <|> gateSplit
+  expr =  wireDecl
+      <|> gateNot
+      <|> gateBin
+      <|> gateCopy
+      <|> gateSplit
+      <|> gateMux
+      <|> gateSplit
+      <|> gateMerge
 
   foldBody : Location
-          -> List1 Body
+          -> List Body
           -> AST
-  foldBody l (head ::: tail)
+  foldBody l Nil
+        = Stop (newFC l l)
+  foldBody l (head :: tail)
         = foldr doFold (Stop (newFC l l)) (head :: tail)
     where
       doFold : Body -> AST -> AST
@@ -315,23 +358,40 @@ namespace Terms
         = Wire x y z w accum
 
       doFold (MInst v x y z w) accum
-        = Seq (Mux v (Var x) (Var y) (Var z) (Var w)) accum
+        = Seq (Mux v (Var x) (Var y) (Var z) (Var w))
+              accum
+
       doFold (GInst x k y z w) accum
-        = Seq (Gate x k (Var y) (Var z) (Var w)) accum
+        = Seq (Gate x k (Var y) (Var z) (Var w))
+              accum
+
       doFold (DInst x y z w) accum
-        = Seq (Dup x (Var y) (Var z) (Var w)) accum
+        = Seq (Dup x (Var y) (Var z) (Var w))
+              accum
+
       doFold (NInst x y z) accum
-        = Seq (Not x (Var y) (Var z)) accum
+        = Seq (Not x (Var y) (Var z))
+              accum
 
       doFold (ISInst x y z) accum
-        = Seq (IndexS x (Var y) (Var z)) accum
+        = Seq (IndexS x (Var y) (Var z))
+              accum
 
       doFold (IEInst v w x y z) accum
-        = Seq (IndexE v w (Var x) (Var y) (Var z)) accum
+        = Seq (IndexE v w (Var x) (Var y) (Var z))
+              accum
 
       doFold (IPInst u v w x y z) accum
-        = Seq (IndexP u v (Var w) (Var x) (Var y) (Var z)) accum
+        = Seq (IndexP u v (Var w) (Var x) (Var y) (Var z))
+              accum
 
+      doFold (ESInst fc o i) accum
+        = Seq (MergeS fc (Var o) (Var i))
+              accum
+
+      doFold (Merge fc o a b) accum
+        = Seq (MergeV fc (Var o) (Var a) (Var b))
+              accum
 
   foldPorts : Location
            -> List1 (Location,Ref, Direction, DType)
@@ -346,7 +406,7 @@ namespace Terms
     = do keyword "module"
          n <- ref
          ps <- portList
-         b <- some expr
+         b <- many expr
          e <- Toolkit.location
          keyword "endmodule"
          symbol ";"

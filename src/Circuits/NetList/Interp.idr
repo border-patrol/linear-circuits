@@ -2,6 +2,7 @@ module Circuits.NetList.Interp
 
 import Decidable.Equality
 
+import Data.Nat
 import Data.List.Elem
 import Data.List.Quantifiers
 
@@ -9,6 +10,7 @@ import Utilities
 import EdgeBoundedGraph
 
 import Toolkit.Data.List.DeBruijn
+import Toolkit.Data.Whole
 
 import Circuits.NetList.Types
 import Circuits.NetList.Terms

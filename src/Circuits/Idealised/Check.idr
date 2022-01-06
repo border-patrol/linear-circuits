@@ -2,12 +2,15 @@ module Circuits.Idealised.Check
 
 import Decidable.Equality
 
+import Data.Nat
 import Data.String
 import Data.List.Elem
 import Data.List.Quantifiers
 
 import Toolkit.Decidable.Informative
+import Toolkit.Decidable.Equality.Views
 
+import Toolkit.Data.Whole
 import Toolkit.Data.Location
 import Toolkit.Data.List.DeBruijn
 
@@ -143,17 +146,20 @@ data FailingEdgeCase = InvalidSplit Nat Nat Nat Nat
 
 export
 Show FailingEdgeCase where
-  show (InvalidSplit p s l r) = "Pivot (" <+> show p <+> ") is wrong do not add up: " <+> unwords [show s, "= 1 + ", show l, "+", show r]
+  show (InvalidSplit p s l r) = "Pivot (" <+> show p <+> ") is wrong do not add up: " <+> unwords [show s, "!= 1 + ", show l, "+", show r]
   show (InvalidEdge  s l r) = "Indices do not add up: " <+> unwords [show s, "= 1 + ", show l, "+", show r]
 
 export
 data Error = Mismatch Ty Ty | ElemFail LookupFail | PortExpected Direction
+           | VectorExpected
+           | VectorTooShort
+           | VectorSizeMismatch Whole Whole Whole
            | LinearityError (Env es)
-           | Err FileContext Error
+           | Err FileContext Check.Error
            | NotEdgeCase FailingEdgeCase
            | MismatchGate DType DType
 export
-Show Error where
+Show Check.Error where
   show (Mismatch x y) = "Type Mismatch:\n\n" <+> unlines [unwords ["\tExpected:",show x], unwords ["\tGiven:", show y]]
   show (MismatchGate x y) = "Type Mismatch:\n\n" <+> unlines [unwords ["\tExpected:",show x], unwords ["\tGiven:", show y]]
   show (ElemFail (IsUsed x))   = unwords ["Port is used:", x]
@@ -162,16 +168,40 @@ Show Error where
   show (PortExpected INPUT) = "Expected an Input Port"
   show (PortExpected OUTPUT) = "Expected an Output Port"
   show (LinearityError env) = "Dangling Ports:\n\n" <+> showEnv env
+  show (VectorExpected) = "Vector Expected"
+  show (VectorTooShort) = "Output Vector must be a length greater or equal to two."
+  show (VectorSizeMismatch o a b)
+    = unlines [ "Output Vector and input are wrong sizes:"
+              , unwords ["\t" <+> show o, "!=", show a, "+", show b]]
   show (Err x y) = unwords [show x, show y]
 
 
 public export
 TyCheck : Type -> Type
-TyCheck = Either Error
+TyCheck = Either Check.Error
 
-lift : Dec a -> Error -> TyCheck a
+lift : Dec a -> Check.Error -> TyCheck a
 lift (Yes prf) _ = Right prf
 lift (No contra) e = Left e
+
+namespace Info
+  public export
+  lift : DecInfo e a -> Check.Error -> TyCheck a
+  lift (Yes prf)     _ = Right prf
+  lift (No m contra) e = Left e
+
+  public export
+  allEqual : FileContext
+          -> (a,b,c : DType)
+          -> TyCheck (AllEqual a b c)
+  allEqual fc a b c with (Views.allEqual a b c)
+    allEqual fc c c c | (Yes AE)
+      = pure AE
+    allEqual fc a b c | (No AB prfWhyNot)
+      = Left (Err fc (MismatchGate a b))
+    allEqual fc a b c | (No AC prfWhyNot)
+      = Left (Err fc (MismatchGate a c))
+
 
 typeCheck : {ctxt : List (String, (Ty,Usage))}
          -> (curr : Env ctxt)
@@ -284,11 +314,11 @@ typeCheck curr (Mux fc v x y z)
 
 typeCheck curr (IndexS fc o i)
   = do (TyPort (OUTPUT,dtypeO) ** co ** (eo,termO)) <- typeCheck curr o
-                  | ty => Left (Err fc (PortExpected INPUT))
+                  | ty => Left (Err fc (PortExpected OUTPUT))
 
-       (TyPort (INPUT,BVECT (S Z) dtypeI) ** ci ** (ei,termI)) <- typeCheck eo i
+       (TyPort (INPUT,BVECT (W (S Z) ItIsSucc) dtypeI) ** ci ** (ei,termI)) <- typeCheck eo i
                   | (TyPort (INPUT, BVECT s type) ** cx ** (ex,termX))
-                       => Left (Err fc (Mismatch (TyPort (INPUT,BVECT (S Z) type)) (TyPort (INPUT, BVECT s type))))
+                       => Left (Err fc (Mismatch (TyPort (INPUT,BVECT (W (S Z) ItIsSucc) type)) (TyPort (INPUT, BVECT s type))))
                   | ty => Left (Err fc (PortExpected INPUT))
 
        Refl <- lift (decEq dtypeO dtypeI)
@@ -313,13 +343,13 @@ typeCheck curr (IndexE fc k a b i)
        Refl <- lift (decEq dtypeB dtypeC)
                     (Err fc (MismatchGate dtypeB dtypeC))
 
-       let p = case k of { F => minus size 2; L => 0}
+       let p = case k of { F => minus (toNat size) 1; L => 0}
 
-       (s ** prf) <- lift (index size p)
-                          (Err fc (NotEdgeCase (InvalidEdge size (S Z) free)))
+       (s ** prf) <- Info.lift (EdgeCase.index size p)
+                               (Err fc (NotEdgeCase (InvalidEdge (toNat size) (S Z) (toNat free))))
 
        Refl <- lift (decEq free s)
-                    (Err fc (NotEdgeCase (InvalidEdge size (S Z) free)))
+                    (Err fc (NotEdgeCase (InvalidEdge (toNat size) (S Z) (toNat free))))
 
        pure (TyGate ** cC ** (eC,IndexEdge p prf termA termB termC))
 
@@ -327,38 +357,93 @@ typeCheck curr (IndexP fc p a b c i)
   = do (TyPort (OUTPUT,dtypeA) ** cA ** (eA,termA)) <- typeCheck curr a
                   | ty => Left (Err fc (PortExpected OUTPUT))
 
-       (TyPort (OUTPUT,BVECT freeA dtypeB) ** cB ** (eB,termB)) <- typeCheck eA b
+       (TyPort (OUTPUT,BVECT freeB dtypeB) ** cB ** (eB,termB)) <- typeCheck eA b
                   | ty => Left (Err fc (PortExpected OUTPUT))
 
-       (TyPort (OUTPUT,BVECT freeB dtypeC) ** cC ** (eC,termC)) <- typeCheck eB c
+       (TyPort (OUTPUT,BVECT freeC dtypeC) ** cC ** (eC,termC)) <- typeCheck eB c
                   | ty => Left (Err fc (PortExpected OUTPUT))
 
        (TyPort (INPUT,BVECT size dtypeD) ** cI ** (eI,termI)) <- typeCheck eC i
                   | ty => Left (Err fc (PortExpected INPUT))
 
        Refl <- lift (decEq dtypeA dtypeB)
-                    (Err fc (MismatchGate dtypeA (BVECT freeA dtypeB)))
+                    (Err fc (MismatchGate dtypeA (BVECT freeB dtypeB)))
 
        Refl <- lift (decEq dtypeB dtypeC)
-                    (Err fc (MismatchGate (BVECT freeA dtypeB) (BVECT freeB dtypeC)))
+                    (Err fc (MismatchGate (BVECT freeB dtypeB) (BVECT freeC dtypeC)))
 
        Refl <- lift (decEq dtypeC dtypeD)
-                    (Err fc (MismatchGate (BVECT freeB dtypeC) (BVECT size dtypeD)))
+                    (Err fc (MismatchGate (BVECT freeC dtypeC) (BVECT size dtypeD)))
 
-       (a ** b ** prf) <- lift (index Z p size)
-                               (Err fc (NotEdgeCase (InvalidSplit p size freeA freeB)))
+       (a ** b ** prf) <- Info.lift (Pivot.index p size)
+                                    (Err fc (NotEdgeCase (InvalidSplit p (toNat size) (toNat freeB) (toNat freeC))))
 
-       Refl <- lift (decEq freeA a)
-                    (Err fc (NotEdgeCase (InvalidSplit p size freeA freeB)))
+       Refl <- lift (decEq freeB a)
+                    (Err fc (MismatchGate (BVECT a     dtypeB)
+                                          (BVECT freeB dtypeB)))
 
-       Refl <- lift (decEq freeB b)
-                    (Err fc (NotEdgeCase (InvalidSplit p size freeA freeB)))
+       Refl <- lift (decEq freeC b)
+                    (Err fc (MismatchGate (BVECT b     dtypeB)
+                                          (BVECT freeC dtypeB)))
 
        pure (TyGate ** cI ** (eI,IndexSplit p prf termA termB termC termI))
+
+typeCheck curr (MergeS fc o i)
+  = do (TyPort (OUTPUT,BVECT (W (S Z) ItIsSucc) dtypeO) ** cO ** (eO,termO)) <- typeCheck curr o
+           | (TyPort (INPUT, BVECT s type) ** cx ** (ex,termX))
+                => Left (Err fc (Mismatch (TyPort (OUTPUT, BVECT (W (S Z) ItIsSucc) type))
+                                          (TyPort (INPUT,  BVECT s                  type))))
+           | ty => Left (Err fc (PortExpected OUTPUT))
+
+       (TyPort (INPUT, dtypeI) ** cI ** (eI, termI)) <- typeCheck eO i
+           | ty => Left (Err fc (PortExpected INPUT))
+
+       Refl <- lift (decEq dtypeO dtypeI)
+                    (Err fc (MismatchGate dtypeO dtypeI))
+
+       pure (TyGate ** cI ** (eI, MergeSingleton termO termI))
+
+typeCheck curr (MergeV fc o a b)
+  = do (TyPort (OUTPUT, dtypeO) ** cO ** (eO, termO)) <- typeCheck curr o
+           | ty => Left (Err fc (PortExpected OUTPUT))
+
+       (TyPort (INPUT, dtypeA) ** cA ** (eA, termA)) <- typeCheck eO a
+           | ty => Left (Err fc (PortExpected INPUT))
+
+       (TyPort (INPUT, dtypeB) ** cB ** (eB, termB)) <- typeCheck eA b
+           | ty => Left (Err fc (PortExpected INPUT))
+
+       case Views.allEqual LOGIC dtypeA dtypeB of
+            -- Case when merging two logic wires into a vector of size two
+            (Yes AE) =>
+              do Refl <- lift (decEq dtypeO (BVECT (W (S (S Z)) ItIsSucc) LOGIC))
+                              (Err fc (MismatchGate (BVECT (W (S (S Z)) ItIsSucc) LOGIC)
+                                                    dtypeO))
+
+                 pure (TyGate ** cB ** (eB, Merge2L2V termO termA termB))
+
+            -- Case when merging two vectors. coudl be cleaner.
+            (No msgWhyNot prfWhyNot) =>
+                case dtypeO of
+                  LOGIC => Left (Err fc VectorExpected)
+                  BVECT sizeO typeO =>
+                    case dtypeA of
+                      LOGIC => Left (Err fc VectorExpected)
+                      BVECT sizeA typeA =>
+                        case dtypeB of
+                          LOGIC => Left (Err fc VectorExpected)
+                          BVECT sizeB typeB =>
+                            do prfSize <- lift (isPlus sizeA sizeB sizeO)
+                                               (Err fc (VectorSizeMismatch sizeO sizeA sizeB))
+                               AE <- allEqual fc typeO typeA typeB
+
+                               pure (TyGate ** cB ** (eB, Merge2V2V prfSize termO termA termB))
 
 typeCheck curr (Stop fc) with (used curr)
   typeCheck curr (Stop fc) | (Yes prf) = Right (TyUnit ** _ ** (Nil, Stop prf))
   typeCheck curr (Stop fc) | (No contra) = Left (Err fc (LinearityError curr))
+
+
 
 namespace Design
   export

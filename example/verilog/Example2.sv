@@ -1,4 +1,4 @@
-module Example3( output logic out
+module Example2( output logic out
                , input  logic i0
                , input  logic i1
                , input  logic i2

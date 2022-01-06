@@ -2,8 +2,11 @@ module Circuits.Idealised.Interp
 
 import Decidable.Equality
 
+import Data.Nat
 import Data.List.Elem
 import Data.List.Quantifiers
+
+import Toolkit.Data.Whole
 
 import Utilities
 import EdgeBoundedGraph
@@ -168,6 +171,41 @@ interp env (IndexSplit p idx used freeA freeB i) counter graph
                  , (c'''''       , ident freeB)
                  ]
     in R c''''' env'''' (foldr insertEdge g' es)
+
+interp env (Merge2L2V output inputA inputB) counter graph
+  = let R c'   env'   o = interp env   output counter graph in
+    let R c''  env''  a = interp env'  inputA c'      graph in
+    let R c''' env''' b = interp env'' inputB c''     graph in
+    let n               = Node (S c''') 2 1                  in
+    let g'              = insertNode n graph                in
+    let es              = [ (S c''', ident o)
+                          , (ident a, S c''')
+                          , (ident b, S c''')
+                          ]
+    in R (S c''') env''' (foldr (insertEdge) g' es)
+
+interp env (Merge2V2V prf output inputA inputB) counter graph
+  = let R c'   env'   o = interp env   output counter graph in
+    let R c''  env''  a = interp env'  inputA c'      graph in
+    let R c''' env''' b = interp env'' inputB c''     graph in
+    let n               = Node (S c''') 2 1                  in
+    let g'              = insertNode n graph                in
+    let es              = [ (S c''', ident o)
+                          , (ident a, S c''')
+                          , (ident b, S c''')
+                          ]
+    in R (S c''') env''' (foldr (insertEdge) g' es)
+
+interp env (MergeSingleton o i) counter graph
+  = let R c'   env'   o = interp env   o counter graph in
+    let R c''  env''  i = interp env'  i c'      graph in
+    let c''' = S c'' in
+    let n    = Node c''' 1 1 in
+    let g'   = insertNode n graph in
+    let es   = [ (ident i, c''')
+               , (c'''   , ident o)
+               ]
+    in R c''' env'' (foldr insertEdge g' es)
 
 interp env (Stop x) counter graph
   = R counter Empty graph

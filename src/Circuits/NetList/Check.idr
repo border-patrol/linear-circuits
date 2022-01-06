@@ -2,6 +2,7 @@ module Circuits.NetList.Check
 
 import Decidable.Equality
 
+import Data.Nat
 import Data.String
 import Data.List.Elem
 import Data.List.Quantifiers
@@ -10,6 +11,7 @@ import Data.Fin
 import Toolkit.Decidable.Informative
 
 import Toolkit.Data.Location
+import Toolkit.Data.Whole
 import Toolkit.Data.List.DeBruijn
 
 import Ref
@@ -195,13 +197,13 @@ typeCheck curr (GateB fc k o l r)
 
        pure (_ ** GateB k o' l' r')
 
-typeCheck curr (Index fc idx t)
-  = do (TyPort (flow,BVECT n type) ** term) <- typeCheck curr t
+typeCheck curr (Index fc (W (S idx) prf) t)
+  = do (TyPort (flow,BVECT (W (S n) ItIsSucc) type) ** term) <- typeCheck curr t
          | (type ** term)
              => Left (Err fc VectorExpected)
 
-       case natToFin idx n of
-         Nothing => Left (OOB idx n)
+       case natToFin (S idx) (S n) of
+         Nothing => Left (OOB (S idx) (S n))
          Just idx' => pure (_ ** Index term idx')
 
 typeCheck curr (Stop x)

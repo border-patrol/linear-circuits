@@ -1,6 +1,7 @@
 module Circuits.NetList.AST
 
 import Toolkit.Data.Location
+import Toolkit.Data.Whole
 
 import Ref
 import Circuits.NetList.Types
@@ -18,13 +19,13 @@ data AST = Var Ref
          | GateU FileContext Unary.Kind AST AST
          | GateB FileContext Binary.Kind AST AST AST
 
-         | Index FileContext Nat AST
+         | Index FileContext Whole AST
          | Stop FileContext
 
 export
 setSource : String -> AST -> AST
 setSource new (Var x)
-  = Var (record {span $= setSource new} x)
+  = Var ({span $= setSource new} x)
 
 setSource new (Port x y z w v)
   = (Port (setSource new x)

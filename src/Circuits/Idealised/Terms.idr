@@ -2,8 +2,11 @@ module Circuits.Idealised.Terms
 
 import Decidable.Equality
 
+import Data.Nat
 import Data.List.Elem
 import Data.List.Quantifiers
+
+import Toolkit.Data.Whole
 
 import Circuits.Idealised.Types
 import Circuits.Split
@@ -61,8 +64,8 @@ namespace Circuits
           -> (inputB : Term c (TyPort (INPUT,  LOGIC)) d)
                     -> Term a TyGate d
 
-      IndexSingleton : (output : Term a (TyPort (OUTPUT,             datatype))  b)
-                    -> (input  : Term b (TyPort (INPUT, (BVECT (S Z) datatype))) c)
+      IndexSingleton : (output : Term a (TyPort (OUTPUT,                          datatype))  b)
+                    -> (input  : Term b (TyPort (INPUT, (BVECT (W (S Z) ItIsSucc) datatype))) c)
                               -> Term a TyGate c
 
       IndexEdge : (pivot : Nat)
@@ -79,6 +82,21 @@ namespace Circuits
                 -> (freeB : Term c (TyPort (OUTPUT, (BVECT sizeB datatype))) d)
                 -> (input : Term d (TyPort (INPUT,  (BVECT size  datatype))) e)
                          -> Term a TyGate e
+
+      Merge2L2V : (output : Term a (TyPort (OUTPUT, BVECT (W (S (S Z)) ItIsSucc) LOGIC)) b)
+               -> (inputA : Term b (TyPort (INPUT,  LOGIC))                              c)
+               -> (inputB : Term c (TyPort (INPUT,  LOGIC))                              d)
+                         -> Term a TyGate                                                d
+
+      Merge2V2V : (prf    : Plus sizeA sizeB sizeC)
+               -> (output : Term a (TyPort (OUTPUT, BVECT sizeC datatype)) b)
+               -> (inputA : Term b (TyPort (INPUT,  BVECT sizeA datatype)) c)
+               -> (inputB : Term c (TyPort (INPUT,  BVECT sizeB datatype)) d)
+                         -> Term a TyGate                                  d
+
+      MergeSingleton : (output : Term a (TyPort (OUTPUT, (BVECT (W (S Z) ItIsSucc) datatype))) b)
+                    -> (input  : Term b (TyPort (INPUT,                            datatype))  c)
+                              -> Term a TyGate c
 
       Stop : All Used old -> Term old TyUnit Nil
 

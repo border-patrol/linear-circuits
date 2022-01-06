@@ -23,11 +23,13 @@ data AST = Var Ref
          | IndexS FileContext AST AST
          | IndexE FileContext End AST AST AST
          | IndexP FileContext Nat AST AST AST AST
+         | MergeS FileContext AST AST
+         | MergeV FileContext AST AST AST
 
 export
 setSource : String -> AST -> AST
 setSource new (Var x)
-  = Var (record {span $= setSource new} x)
+  = Var ({span $= setSource new} x)
 
 setSource new (Input x y z w v)
   = (Input (setSource new x)
@@ -94,5 +96,16 @@ setSource new (IndexP x k y z w v)
             (setSource new z)
             (setSource new w)
             (setSource new v))
+
+setSource new (MergeS fc o i)
+  = MergeS (setSource new fc)
+           (setSource new o)
+           (setSource new i)
+
+setSource new (MergeV fc o a b)
+  = MergeV (setSource new fc)
+           (setSource new o)
+           (setSource new a)
+           (setSource new b)
 
 -- [ EOF ]

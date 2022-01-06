@@ -66,4 +66,43 @@ namespace Shape
   shape (x :: xs) [] = LH
   shape (x :: xs) (y :: ys) = Both
 
+namespace ReplaceAt
+
+  public export
+  data ReplaceAt : (idx       : Fin n)
+                -> (xs        : Vect n a)
+                -> (this,that : a)
+                -> (ys        : Vect n a)
+                             -> Type
+    where
+      H : ReplaceAt FZ (x::xs)
+                        x
+                        y
+                       (y::xs)
+
+      T : ReplaceAt     idx       xs  x y      ys
+       -> ReplaceAt (FS idx) (x'::xs) x y (x'::ys)
+
+  notSame : (x = this -> Void) -> DPair (Vect (S len) a) (ReplaceAt FZ (x :: xs) this that) -> Void
+  notSame _ (MkDPair _ (T y)) impossible
+
+  notLater : (DPair (Vect len a) (ReplaceAt x xs this that) -> Void) -> DPair (Vect (S len) a) (ReplaceAt (FS x) (y :: xs) this that) -> Void
+  notLater f (MkDPair (y :: ys) (T z)) = f (MkDPair ys z)
+
+  export
+  replaceAt : DecEq a
+           => (idx : Fin n)
+           -> (xs  : Vect n a)
+           -> (this, that : a)
+           -> Dec (DPair (Vect n a) (ReplaceAt idx xs this that))
+  replaceAt FZ (x :: xs) this that with (decEq x this)
+    replaceAt FZ (x :: xs) x    that | (Yes Refl) = Yes (MkDPair (that :: xs) H)
+    replaceAt FZ (x :: xs) this that | (No contra)
+      = No (notSame contra)
+  replaceAt (FS x) (y :: xs) this that with (replaceAt x xs this that)
+    replaceAt (FS x) (y :: xs) this that | (Yes (MkDPair fst snd))
+      = Yes (MkDPair (y :: fst) (T snd))
+    replaceAt (FS x) (y :: xs) this that | (No contra)
+      = No (notLater contra)
+
 -- [ EOF ]

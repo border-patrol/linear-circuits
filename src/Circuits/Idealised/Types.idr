@@ -10,7 +10,7 @@ import public Circuits.Common
 
 public export
 data GateKind = AND  | IOR  | XOR
-              | ANDN | IORN | XORN | MERGE
+              | ANDN | IORN | XORN | JOIN
 
 public export
 data Direction = INPUT | OUTPUT

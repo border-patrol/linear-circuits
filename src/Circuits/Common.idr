@@ -2,10 +2,12 @@ module Circuits.Common
 
 import Decidable.Equality
 
+import Toolkit.Data.Whole
+
 %default total
 
 public export
-data DType = LOGIC | BVECT Nat DType
+data DType = LOGIC | BVECT Whole DType
 
 Uninhabited (LOGIC = BVECT n k) where
   uninhabited Refl impossible
