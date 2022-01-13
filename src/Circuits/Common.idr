@@ -2,12 +2,20 @@ module Circuits.Common
 
 import Decidable.Equality
 
+import Data.Nat
 import Toolkit.Data.Whole
 
 %default total
 
 public export
 data DType = LOGIC | BVECT Whole DType
+
+public export
+size : DType -> Nat
+size LOGIC = (S Z)
+size (BVECT (W (S n) ItIsSucc) type)
+  = mult (S n) (size type)
+
 
 Uninhabited (LOGIC = BVECT n k) where
   uninhabited Refl impossible

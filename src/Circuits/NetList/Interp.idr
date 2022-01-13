@@ -74,9 +74,8 @@ interp e (Wire x body) c g
   = let c' = S c in
     let ch = both c' in
     let e' = extend e ch in
-    let g' = insertNode ch g in
-    let R c'' g'' = interp e' body c' g'
-    in  R c'' g''
+    let g' = insertNode ch g
+    in interp e' body c' g'
 
 interp e Stop c g
   = R c g
