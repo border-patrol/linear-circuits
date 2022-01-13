@@ -15,7 +15,7 @@ import Toolkit.Data.Location
 import Toolkit.Text.Lexer.Run
 import Toolkit.Text.Parser.Run
 
-import EdgeBoundedGraph
+import Toolkit.Data.Graph.EdgeBounded
 
 import Circuits.NetList.Types
 import Circuits.NetList.Terms

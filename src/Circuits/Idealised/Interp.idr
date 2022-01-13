@@ -6,10 +6,11 @@ import Data.Nat
 import Data.List.Elem
 import Data.List.Quantifiers
 
+import Toolkit.Data.Graph.EdgeBounded
 import Toolkit.Data.Whole
 
 import Utilities
-import EdgeBoundedGraph
+
 
 import Circuits.Idealised.Types
 import Circuits.Idealised.Terms

@@ -7,8 +7,8 @@ import Data.List.Elem
 import Data.List.Quantifiers
 
 import Utilities
-import EdgeBoundedGraph
 
+import Toolkit.Data.Graph.EdgeBounded
 import Toolkit.Data.List.DeBruijn
 import Toolkit.Data.Whole
 

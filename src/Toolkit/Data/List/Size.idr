@@ -1,4 +1,4 @@
-module Utilities
+module Toolkit.Data.List.Size
 
 public export
 data Size : List a -> Nat -> Type where

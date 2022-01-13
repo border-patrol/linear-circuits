@@ -1,5 +1,5 @@
 ||| A graph whose vertices have a restricted in/out degree.
-module EdgeBoundedGraph
+module Toolkit.Data.Graph.EdgeBounded
 
 import Decidable.Equality
 
@@ -7,7 +7,7 @@ import Data.String
 import Data.List.Elem
 import Data.List.Quantifiers
 
-import Utilities
+import Toolkit.Data.List.Size
 
 public export
 record Vertex where
@@ -51,7 +51,7 @@ decEq (Node x y z) (Node a b c) with (decEq x a)
 
 export
 DecEq Vertex where
- decEq = EdgeBoundedGraph.decEq
+ decEq = EdgeBounded.decEq
 
 
 public export
