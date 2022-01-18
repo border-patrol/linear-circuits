@@ -9,9 +9,6 @@ import Data.List.Quantifiers
 import Toolkit.Data.Graph.EdgeBounded
 import Toolkit.Data.Whole
 
-import Utilities
-
-
 import Circuits.Idealised.Types
 import Circuits.Idealised.Terms
 
@@ -65,14 +62,14 @@ interp env (Var prf x) counter graph
     in R counter newEnv res
 
 interp env (NewSignal flow datatype body) counter graph
-  = let n    = case flow of {INPUT => driver (S counter); OUTPUT => catcher (S counter)} in
+  = let n    = case flow of {INPUT => driver (S counter) 1; OUTPUT => catcher (S counter) 1} in
     let env' = Extend n env in
     let g'   = insertNode n graph
     in interp env' body (S counter) g'
 
 interp env (Wire datatype body) counter graph
-  = let o = Node (S counter) 1 1 in
-    let i = Node (S (S counter)) 1 1 in
+  = let o = node (S counter)     1 1 in
+    let i = node (S (S counter)) 1 1 in
     let env' = (Extend i (Extend o env)) in
     let g'   = foldr insertNode graph [o,i] in
     let g''  = insertEdge (S (S counter), S counter) g'
@@ -84,7 +81,7 @@ interp env (Mux output ctrl inA inB) counter graph
     let R c'''  env'''  a = interp env''  inA     c''     graph in
     let R c'''' env'''' b = interp env''' inB     c'''    graph in
 
-    let n   = Node (S c'''') 3 1 in
+    let n   = node (S c'''') 3 1 in
     let g' = insertNode n graph  in
 
     let es = [ (ident a, S c''''), (ident b, S c'''')
@@ -97,7 +94,7 @@ interp env (Dup outputA outputB input) counter graph
   = let R c'   env'   a = interp env   outputA counter graph in
     let R c''  env''  b = interp env'  outputB c'      graph in
     let R c''' env''' i = interp env'' input   c''     graph in
-    let n               = Node (S c''') 1 2                  in
+    let n               = node (S c''') 1 2                  in
     let g'              = insertNode n graph                 in
     let es              = [ (ident i, S c''')
                           , (S c''', ident a)
@@ -113,7 +110,7 @@ interp env (Not output input) counter graph
   = let R c'  env'  o = interp env  output counter graph in
     let R c'' env'' i = interp env' input  c'      graph in
 
-    let n  = Node (S c'') 1 1         in
+    let n  = node (S c'') 1 1         in
     let g' = insertNode n  graph in
     let es = [(S c'', ident o),(ident i, S c'')]
     in R (S c'') env'' (foldr insertEdge g' es)
@@ -123,7 +120,7 @@ interp env (Gate k output inputA inputB) counter graph
   = let R c'   env'   o = interp env   output counter graph in
     let R c''  env''  a = interp env'  inputA c'      graph in
     let R c''' env''' b = interp env'' inputB c''     graph in
-    let n               = Node (S c''') 2 1                  in
+    let n               = node (S c''') 2 1                  in
     let g'              = insertNode n graph                in
     let es              = [ (S c''', ident o)
                           , (ident a, S c''')
@@ -135,7 +132,7 @@ interp env (IndexSingleton o i) counter graph
   = let R c'   env'   o = interp env   o counter graph in
     let R c''  env''  i = interp env'  i c'      graph in
     let c''' = S c'' in
-    let n    = Node c''' 1 1 in
+    let n    = node c''' 1 1 in
     let g'   = insertNode n graph in
     let es   = [ (ident i, c''')
                , (c'''   , ident o)
@@ -148,7 +145,7 @@ interp env (IndexEdge p idx oused ofree i) counter graph
     let R c'''  env'''  input = interp env''  i     c''     graph in
 
     let c'''' = S c''' in
-    let n     = Node c'''' 1 2 in
+    let n     = node c'''' 1 2 in
     let g'    = insertNode n graph in
     let es    = [ (ident input, c'''')
                , (c''''       , ident oused)
@@ -164,7 +161,7 @@ interp env (IndexSplit p idx used freeA freeB i) counter graph
     let R c''''  env''''  input = interp env''' i     c'''    graph in
 
     let c''''' = S c'''' in
-    let n      = Node c''''' 1 3 in
+    let n      = node c''''' 1 3 in
     let g'     = insertNode n graph in
     let es     = [ (ident input  , c''''')
                  , (c'''''       , ident oused)
@@ -177,7 +174,7 @@ interp env (Merge2L2V output inputA inputB) counter graph
   = let R c'   env'   o = interp env   output counter graph in
     let R c''  env''  a = interp env'  inputA c'      graph in
     let R c''' env''' b = interp env'' inputB c''     graph in
-    let n               = Node (S c''') 2 1                  in
+    let n               = node (S c''') 2 1                  in
     let g'              = insertNode n graph                in
     let es              = [ (S c''', ident o)
                           , (ident a, S c''')
@@ -189,7 +186,7 @@ interp env (Merge2V2V prf output inputA inputB) counter graph
   = let R c'   env'   o = interp env   output counter graph in
     let R c''  env''  a = interp env'  inputA c'      graph in
     let R c''' env''' b = interp env'' inputB c''     graph in
-    let n               = Node (S c''') 2 1                  in
+    let n               = node (S c''') 2 1                  in
     let g'              = insertNode n graph                in
     let es              = [ (S c''', ident o)
                           , (ident a, S c''')
@@ -201,7 +198,7 @@ interp env (MergeSingleton o i) counter graph
   = let R c'   env'   o = interp env   o counter graph in
     let R c''  env''  i = interp env'  i c'      graph in
     let c''' = S c'' in
-    let n    = Node c''' 1 1 in
+    let n    = node c''' 1 1 in
     let g'   = insertNode n graph in
     let es   = [ (ident i, c''')
                , (c'''   , ident o)

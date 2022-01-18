@@ -7,261 +7,403 @@ import Data.String
 import Data.List.Elem
 import Data.List.Quantifiers
 
+import Toolkit.Decidable.Do
+
+import Toolkit.Data.Nat
+import Toolkit.Data.Pair
 import Toolkit.Data.List.Size
+import Toolkit.Data.List.Occurs
 
-public export
-record Vertex where
-  constructor Node
-  ident : Nat
-  degreeIn : Nat
-  degreeOut : Nat
+%default total
 
-public export
-AList : Type
-AList = List (Nat, List Nat)
+namespace Vertex
+  public export
+  data Flow = SRC | SNK | BI
 
+  Uninhabited (SRC = SNK) where
+    uninhabited Refl impossible
 
-export
-driver : Nat -> Vertex
-driver k = Node k 0 1
+  Uninhabited (SRC = BI) where
+    uninhabited Refl impossible
 
-export
-catcher : Nat -> Vertex
-catcher k = Node k 1 0
+  Uninhabited (SNK = BI) where
+    uninhabited Refl impossible
 
-export
-both : Nat -> Vertex
-both k = Node k 1 1
-
-public export
-decEq : (a,b : Vertex) -> Dec (a = b)
-decEq (Node x y z) (Node a b c) with (decEq x a)
-  decEq (Node x y z) (Node x b c) | (Yes Refl) with (decEq y b)
-    decEq (Node x y z) (Node x y c) | (Yes Refl) | (Yes Refl) with (decEq z c)
-      decEq (Node x y z) (Node x y z) | (Yes Refl) | (Yes Refl) | (Yes Refl)
-        = Yes Refl
-
-      decEq (Node x y z) (Node x y c) | (Yes Refl) | (Yes Refl) | (No contra)
-        = No (\Refl => contra Refl)
-    decEq (Node x y z) (Node x b c) | (Yes Refl) | (No contra)
-      = No (\Refl => contra Refl)
-
-  decEq (Node x y z) (Node a b c) | (No contra)
-    = No (\Refl => contra Refl)
-
-export
-DecEq Vertex where
- decEq = EdgeBounded.decEq
+  DecEq Flow where
+    decEq SRC SRC = Yes Refl
+    decEq SRC SNK = No absurd
+    decEq SRC BI = No absurd
+    decEq SNK SRC = No (negEqSym absurd)
+    decEq SNK SNK = Yes Refl
+    decEq SNK BI = No absurd
+    decEq BI SRC = No (negEqSym absurd)
+    decEq BI SNK = No (negEqSym absurd)
+    decEq BI BI = Yes Refl
 
 
-public export
-data DegreeOut : Nat -> (alist : AList) -> (d : Nat) -> Type where
-  NotOut    : DegreeOut v Nil Z
-  DOut      : Size es k -> DegreeOut v ((v,es) :: rest) k
-  NotHere   : DegreeOut v           rest  k
-           -> DegreeOut v (not_v :: rest) k
+  public export
+  data Vertex = Node Nat Nat Nat
+              | Leaf Flow Nat Nat
 
 
-degreeOutZ : (d = 0 -> Void) -> DegreeOut v [] d -> Void
-degreeOutZ f NotOut = f Refl
+  Uninhabited (Node k j i = Leaf s x y) where
+    uninhabited Refl impossible
 
-degreeOutWrongJust : (DegreeOut v xs d -> Void) -> (v = x -> Void) -> DegreeOut v ((x, y) :: xs) d -> Void
-degreeOutWrongJust f g (DOut z) = g Refl
-degreeOutWrongJust f g (NotHere z) = f z
+  decEq : (a,b : Vertex) -> Dec (a = b)
+  decEq (Node k j i) (Node a b c)
+    = decDo $ do Refl <- decEq k a `otherwise` (\Refl => Refl)
+                 Refl <- decEq j b `otherwise` (\Refl => Refl)
+                 Refl <- decEq i c `otherwise` (\Refl => Refl)
+                 pure Refl
 
-degreeOutnotFound : (DegreeOut v xs d -> Void) -> (Size y d -> Void) -> DegreeOut v ((v, y) :: xs) d -> Void
-degreeOutnotFound f g (DOut x) = g x
-degreeOutnotFound f g (NotHere x) = f x
+  decEq (Node _ _ _) (Leaf _ _ _) = No absurd
 
-export
-degreeOut : (v  : Nat)
-         -> (d  : Nat)
-         -> (es : AList)
-               -> Dec (DegreeOut v es d)
-degreeOut v d [] with (decEq d Z)
-  degreeOut v 0 [] | (Yes Refl)
-    = Yes NotOut
-  degreeOut v d [] | (No contra)
-    = No (degreeOutZ contra)
+  decEq (Leaf _ _ _) (Node _ _ _) = No (negEqSym absurd)
 
-degreeOut v d ((x,y) :: xs) with (decEq v x)
-  degreeOut v d ((v,y) :: xs) | (Yes Refl) with (hasSize y d)
-    degreeOut v d ((v,y) :: xs) | (Yes Refl) | (Yes prf)
-      = Yes (DOut prf)
+  decEq (Leaf k j i) (Leaf a b c)
+    = decDo $ do Refl <- decEq k a `otherwise` (\Refl => Refl)
+                 Refl <- decEq j b `otherwise` (\Refl => Refl)
+                 Refl <- decEq i c `otherwise` (\Refl => Refl)
+                 pure Refl
 
-    -- [ NOTE ] we need the recursive step as we are dealing with list's not sets.
-    degreeOut v d ((v,y) :: xs) | (Yes Refl) | (No contra) with (degreeOut v d xs)
-      degreeOut v d ((v,y) :: xs) | (Yes Refl) | (No contra) | (Yes prf)
-        = Yes (NotHere prf)
-      degreeOut v d ((v,y) :: xs) | (Yes Refl) | (No contra) | (No f)
-        = No (degreeOutnotFound f contra)
+  export
+  DecEq Vertex where
+    decEq = Vertex.decEq
 
-  degreeOut v d ((x,y) :: xs) | (No contra) with (degreeOut v d xs)
-    degreeOut v d ((x,y) :: xs) | (No contra) | (Yes prf)
-      = Yes (NotHere prf)
-    degreeOut v d ((x,y) :: xs) | (No contra) | (No f)
-      = No (degreeOutWrongJust f contra)
+  namespace API
+    public export
+    ident : Vertex -> Nat
+    ident (Node   k j i) = k
+    ident (Leaf f k j)   = k
 
+    public export
+    degreeOut : Vertex -> Nat
+    degreeOut (Node k j i)   = i
+    degreeOut (Leaf SRC k j) = j
+    degreeOut (Leaf SNK k j) = 0
+    degreeOut (Leaf BI k j)  = j
 
-public export
-data DegreeIn : (v : Nat) -> (alist : AList) -> (d : Nat) -> Type where
-  NotIn : DegreeIn v Nil Z
-  Found : Elem           v              es
-       -> DegreeIn v                rest     k
-       -> DegreeIn v ((not_v,es) :: rest) (S k)
-
-  Later : Not (Elem v es)
-       -> DegreeIn v rest k
-       -> DegreeIn v (((not_v), es) :: rest) k
-
-shouldBeZero : Elem v y -> DegreeIn v ((x, y) :: xs) 0 -> Void
-shouldBeZero z (Later f _) = f z
-
-shouldBeZeroCons : (DegreeIn v xs 0 -> Void) -> DegreeIn v ((x, y) :: xs) 0 -> Void
-shouldBeZeroCons f (Later _ z) = f z
-
-notInLaterFound : (DegreeIn v            xs     k  -> Void)
-               -> (Elem     v      y)
-               ->  DegreeIn v ((x, y) :: xs) (S k) -> Void
-notInLaterFound f _ (Found _ s) = f s
-notInLaterFound _ z (Later g _) = g z
+    public export
+    degreeIn : Vertex -> Nat
+    degreeIn (Node k j i)   = j
+    degreeIn (Leaf SRC k j) = 0
+    degreeIn (Leaf SNK k j) = j
+    degreeIn (Leaf BI k j)  = j
 
 
-notInLaterLater : (DegreeIn v xs             (S k) -> Void)
-               -> (Elem     v      y               -> Void)
-               -> DegreeIn  v ((x, y) :: xs) (S k) -> Void
-notInLaterLater _ g (Found z _) = g z
-notInLaterLater f _ (Later _ z) = f z
+    export
+    driver : Nat -> Nat -> Vertex
+    driver = Leaf SRC
 
-export
-degreeIn : (v  : Nat)
-        -> (i  : Nat)
-        -> (es : AList)
-              -> Dec (DegreeIn v es i)
-degreeIn v i [] with (decEq i Z)
-  degreeIn v Z [] | (Yes Refl)
-    = Yes NotIn
-  degreeIn v i [] | (No contra)
-    = No (\NotIn => contra Refl)
+    export
+    catcher : Nat -> Nat -> Vertex
+    catcher = Leaf SNK
 
-degreeIn v 0 ((x, y) :: xs) with (isElem v y)
-  degreeIn v 0 ((x, y) :: xs) | (Yes prf) = No (shouldBeZero prf)
+    export
+    gateway : Nat -> Nat -> Vertex
+    gateway = Leaf BI
 
-  degreeIn v 0 ((x, y) :: xs) | (No contra) with (degreeIn v 0 xs)
-    degreeIn v 0 ((x, y) :: xs) | (No contra) | (Yes prf)
-      = Yes (Later contra prf) -- [ NOTE ] Should be Zero all the way down.
-    degreeIn v 0 ((x, y) :: xs) | (No contra) | (No f)
-      = No (shouldBeZeroCons f)
+    export
+    node : Nat -> Nat -> Nat -> Vertex
+    node = Node
 
-degreeIn v (S k) ((x, y) :: xs) with (isElem v y)
-  degreeIn v (S k) ((x, y) :: xs) | (Yes prf) with (degreeIn v k xs)
-    degreeIn v (S k) ((x, y) :: xs) | (Yes prf) | (Yes z)
-      = Yes (Found prf z)
+namespace Graph
 
-    degreeIn v (S k) ((x, y) :: xs) | (Yes prf) | (No contra)
-      = No (notInLaterFound contra prf)
+  public export
+  Vertices : Type
+  Vertices = List Vertex
 
-  degreeIn v (S k) ((x, y) :: xs) | (No contra) with (degreeIn v (S k) xs)
-    degreeIn v (S k) ((x, y) :: xs) | (No contra) | (Yes prf)
-      = Yes (Later contra prf)
-    degreeIn v (S k) ((x, y) :: xs) | (No contra) | (No f)
-      = No (notInLaterLater f contra)
+  public export
+  Edge : Type
+  Edge = Pair Nat Nat
 
-public export
-data HasDegree : Vertex -> (es : AList) -> (i,o : Nat) -> Type where
-  HD : (din  : DegreeIn  v es i)
-    -> (dout : DegreeOut v es o)
-            -> HasDegree (Node v i o) es i o
+  public export
+  Edges : Type
+  Edges = List Edge
 
 
-vertexDegOutWrong : (DegreeOut       v      es   o -> Void)
-                  -> HasDegree (Node v i o) es i o -> Void
-vertexDegOutWrong f (HD _ dout) = f dout
-
-vertexDegInWrong : (DegreeIn        v      es i   -> Void)
-                 -> HasDegree (Node v i o) es i o -> Void
-vertexDegInWrong f (HD din _) = f din
-
-export
-hasDegree : (v  : Vertex)
-         -> (es : AList)
-               -> Dec (HasDegree v es (degreeIn v) (degreeOut v))
-hasDegree (Node v i o) es with (degreeOut v o es)
-  hasDegree (Node v i o) es | (Yes prf) with (degreeIn v i es)
-    hasDegree (Node v i o) es | (Yes prf) | (Yes x)
-      = Yes (HD x prf)
-    hasDegree (Node v i o) es | (Yes prf) | (No contra)
-      = No (vertexDegInWrong contra)
-  hasDegree (Node v i o) es | (No contra)
-    = No (vertexDegOutWrong contra)
-
-public export
-HasDegrees : List Vertex -> AList -> Type
-HasDegrees vs es = All (\v => HasDegree v es (degreeIn v) (degreeOut v)) vs
-
-hasDegrees : (vs : List Vertex) -> (es : AList) -> Dec (HasDegrees vs es)
-hasDegrees vs es = all (\vs => hasDegree vs es) vs
+  public export
+  record Graph where
+    constructor MkGraph
+    nodes : Vertices
+    edges : Edges
 
 
-public export
-data Graph : Type where
-  MkGraph : (nodes : List Vertex)
-         -> (edges : AList)
-                  -> Graph
+  public export
+  empty : Graph
+  empty = MkGraph Nil Nil
 
-public export
-data ValidGraph : Graph -> Type where
-  IsValid : HasDegrees vs es
-         -> ValidGraph (MkGraph vs es)
+  showGraph : Graph -> String
+  showGraph (MkGraph nodes edges)
+      = unlines $ ["digraph G {"]
+                  ++
+                    map (\(x,y) => unwords ["\t" <+> show x, "->", show y <+> ";"]) edges
+                  ++
+                  ["}"]
 
-export
-validGraph : (g : Graph) -> Dec (ValidGraph g)
-validGraph (MkGraph nodes edges) with (hasDegrees nodes edges)
-  validGraph (MkGraph nodes edges) | (Yes prf)
-    = Yes (IsValid prf)
-  validGraph (MkGraph nodes edges) | (No contra)
-    = No (\(IsValid prf) => contra prf)
+  export
+  Show Graph where
+    show = showGraph
 
-export
-insertNode : Vertex -> Graph -> Graph
-insertNode k (MkGraph nodes edges) with (isElem k nodes)
-  insertNode k (MkGraph nodes edges) | (Yes prf) = MkGraph nodes edges
-  insertNode k (MkGraph nodes edges) | (No contra) = MkGraph (k::nodes) edges
+  namespace API
+
+    export
+    insertNode : Vertex -> Graph -> Graph
+    insertNode k (MkGraph nodes edges) with (isElem k nodes)
+      insertNode k (MkGraph nodes edges) | (Yes prf)
+        = MkGraph nodes edges
+      insertNode k (MkGraph nodes edges) | (No contra)
+        = MkGraph (k::nodes) edges
 
 
-insertEdge' : Nat -> Nat -> AList -> AList
-insertEdge' k j [] = [(k,[j])]
-insertEdge' k j ((k',es) :: xs) with (decEq k k')
-  insertEdge' k j ((k,es) :: xs) | (Yes Refl) = (k,j::es) :: xs
-  insertEdge' k j ((k',es) :: xs) | (No contra) = (k',es) :: insertEdge' k j xs
+    export
+    insertEdge : (Nat, Nat) -> Graph -> Graph
+    insertEdge (a, b) (MkGraph nodes edges) with (isElem (a,b) edges)
+      insertEdge (a, b) (MkGraph nodes edges) | (Yes prf)
+        = MkGraph nodes edges
+      insertEdge (a, b) (MkGraph nodes edges) | (No contra)
+        = MkGraph nodes (MkPair a b :: edges)
 
-export
-insertEdge : (Nat, Nat) -> Graph -> Graph
-insertEdge (a, b) (MkGraph nodes edges) = MkGraph nodes (insertEdge' a b edges)
+    from : Graph -> List Vertex -> List (Nat,Nat) -> Graph
+    from g nodes
+      = foldr insertEdge (foldr insertNode g nodes)
 
-export
-flatten : AList -> List (Nat, Nat)
-flatten = concatMap makeFlat
-  where
-    makeFlat : (Nat, List Nat) -> List (Nat, Nat)
-    makeFlat (a,bs) = map (MkPair a) bs
+    export
+    fromLists : List Vertex -> List (Nat,Nat) -> Graph
+    fromLists = from empty
 
-export
-merge : (a,b : Graph) -> Graph
-merge (MkGraph nodes edges) g
-  = let g' = foldr insertNode g nodes
-    in foldr insertEdge g' (flatten edges)
 
-showGraph : Graph -> String
-showGraph (MkGraph nodes edges)
-    = unlines $ ["digraph G {"]
-                ++
-                  concatMap (\(x,ys) => map (\y => unwords ["\t" <+> show x, "->", show y <+> ";"]) ys) edges
-                ++
-                ["}"]
+    export
+    merge : (a,b : Graph) -> Graph
+    merge (MkGraph vs es) g
+      = from g vs es
 
-export
-Show Graph where
-  show = showGraph
+namespace DegreeOut
+
+  public export
+  HasDegreeOut : (v  : Nat)
+              -> (es : Edges)
+              -> (d  : Nat)
+                    -> Type
+  HasDegreeOut v
+    = DoesOccur (Pair Nat Nat) (IsFirst v)
+
+
+  export
+  hasDegreeOut : (v : Nat) -> (es : Edges) -> (d : Nat) -> Dec (HasDegreeOut v es d)
+  hasDegreeOut v = doesOccur (isFirst v)
+
+namespace DegreeIn
+
+  public export
+  HasDegreeIn : (v  : Nat)
+             -> (es : Edges)
+             -> (d  : Nat)
+                   -> Type
+  HasDegreeIn v = DoesOccur (Pair Nat Nat) (IsSecond v)
+
+  export
+  hasDegreeIn : (v : Nat) -> (es : Edges) -> (d : Nat) -> Dec (HasDegreeIn v es d)
+  hasDegreeIn v = doesOccur (isSecond v)
+
+namespace HasDegree
+
+  namespace Raw
+
+    public export
+    data ExpDegrees : (v : Vertex) -> (i,o : Nat) -> Type where
+      Node : ExpDegrees (Node     k j i) j i
+      Src  : ExpDegrees (Leaf SRC k j)   0 j
+      Bsrc : ExpDegrees (Leaf BI  k j)   0 j
+      Snk  : ExpDegrees (Leaf SNK k j)   j 0
+      Bsnk : ExpDegrees (Leaf BI  k j)   j 0
+
+    public export
+    data HasDegree : (v   : Vertex)
+                  -> (es  : Edges)
+                  -> (i,o : Nat)
+                  -> (exp : ExpDegrees v i o)
+                         -> Type
+      where
+        HDN : (din  : HasDegreeIn  v es i)
+           -> (dout : HasDegreeOut v es o)
+                   -> HasDegree (Node v i o) es i o Node
+
+        HDLS : (din  : HasDegreeIn  v es 0)
+            -> (dout : HasDegreeOut v es o)
+                    -> HasDegree (Leaf SRC v o) es 0 o Src
+
+        HDLT : (din  : HasDegreeIn  v es i)
+            -> (dout : HasDegreeOut v es 0)
+                    -> HasDegree (Leaf SNK v i) es i 0 Snk
+
+        HDLBS : (din  : HasDegreeIn  v es 0)
+             -> (dout : HasDegreeOut v es k)
+                     -> HasDegree (Leaf BI v k) es 0 k Bsrc
+
+        HDLBT : (din  : HasDegreeIn  v es k)
+             -> (dout : HasDegreeOut v es 0)
+                     -> HasDegree (Leaf BI v k) es k 0 Bsnk
+
+
+
+    leafBiAsSrcOutWrong : (HasDegreeOut       k    es   o      -> Void)
+                        -> HasDegree (Leaf BI k o) es 0 o Bsrc -> Void
+    leafBiAsSrcOutWrong f (HDLBS din dout) = f dout
+
+    leafBiAsSrcInWrong : (HasDegreeIn        k    es 0        -> Void)
+                      ->  HasDegree (Leaf BI k o) es 0 o Bsrc -> Void
+    leafBiAsSrcInWrong f (HDLBS din dout) = f din
+
+    leafBiAsSnkOutWrong : (HasDegreeOut       k    es   0      -> Void)
+                       ->  HasDegree (Leaf BI k o) es o 0 Bsnk -> Void
+    leafBiAsSnkOutWrong f (HDLBT din dout) = f dout
+
+    leafBiAsSnkInWrong : (HasDegreeIn        k    es o        -> Void)
+                      ->  HasDegree (Leaf BI k o) es o 0 Bsnk -> Void
+    leafBiAsSnkInWrong f (HDLBT din dout) = f din
+
+    export
+    hasDegree : (v   : Vertex)
+             -> (exp : ExpDegrees v i o)
+             -> (es  : Edges)
+                    -> Dec (HasDegree v es i o exp)
+
+    hasDegree (Node k i o) Node es with (hasDegreeIn k es i)
+      hasDegree (Node k i o) Node es | (Yes pI) with (hasDegreeOut k es o)
+        hasDegree (Node k i o) Node es | (Yes pI) | (Yes pO)
+          = Yes (HDN pI pO)
+        hasDegree (Node k i o) Node es | (Yes pI) | (No contra)
+          = No (\(HDN pI pO) => contra pO)
+
+      hasDegree (Node k i o) Node es | (No contra)
+        = No (\(HDN pI pO) => contra pI)
+
+    hasDegree (Leaf SRC k o) Src es with (hasDegreeIn k es 0)
+      hasDegree (Leaf SRC k o) Src es | (Yes pI) with (hasDegreeOut k es o)
+        hasDegree (Leaf SRC k o) Src es | (Yes pI) | (Yes pO)
+          = Yes (HDLS pI pO)
+        hasDegree (Leaf SRC k o) Src es | (Yes pI) | (No contra)
+          = No (\(HDLS pI pO) => contra pO)
+      hasDegree (Leaf SRC k o) Src es | (No contra)
+        = No (\(HDLS pI pO) => contra pI)
+
+    hasDegree (Leaf BI k o) Bsrc es with (hasDegreeIn k es 0)
+      hasDegree (Leaf BI k o) Bsrc es | (Yes pI) with (hasDegreeOut k es o)
+        hasDegree (Leaf BI k o) Bsrc es | (Yes pI) | (Yes pO)
+          = Yes (HDLBS pI pO)
+        hasDegree (Leaf BI k o) Bsrc es | (Yes pI) | (No contra)
+          = No (leafBiAsSrcOutWrong contra)
+
+      hasDegree (Leaf BI k o) Bsrc es | (No contra)
+        = No (leafBiAsSrcInWrong contra)
+
+    hasDegree (Leaf SNK k i) Snk es with (hasDegreeIn k es i)
+      hasDegree (Leaf SNK k i) Snk es | (Yes pI) with (hasDegreeOut k es 0)
+        hasDegree (Leaf SNK k i) Snk es | (Yes pI) | (Yes pO)
+          = Yes (HDLT pI pO)
+        hasDegree (Leaf SNK k i) Snk es | (Yes pI) | (No contra)
+          = No (\(HDLT pI pO) => contra pO)
+
+      hasDegree (Leaf SNK k i) Snk es | (No contra)
+        = No (\(HDLT pI pO) => contra pI)
+
+    hasDegree (Leaf BI k i) Bsnk es with (hasDegreeIn k es i)
+      hasDegree (Leaf BI k i) Bsnk es | (Yes pO) with (hasDegreeOut k es 0)
+        hasDegree (Leaf BI k i) Bsnk es | (Yes pO) | (Yes pI)
+          = Yes (HDLBT pO pI)
+        hasDegree (Leaf BI k i) Bsnk es | (Yes pO) | (No contra)
+          = No (leafBiAsSnkOutWrong contra)
+
+      hasDegree (Leaf BI k i) Bsnk es | (No contra)
+        = No (leafBiAsSnkInWrong contra)
+
+
+  public export
+  data HasDegree : (v : Vertex) -> (es : Edges) -> Type where
+    R : (exp : ExpDegrees v i o)
+     -> (prf : HasDegree v es i o exp)
+            -> HasDegree v es
+
+
+  biLeafWrong : (HasDegree (Leaf BI k j) es j 0 Bsnk -> Void)
+             -> (HasDegree (Leaf BI k j) es 0 j Bsrc -> Void)
+             ->  HasDegree (Leaf BI k j) es          -> Void
+  biLeafWrong f g (R Bsrc prf) = g prf
+  biLeafWrong f g (R Bsnk prf) = f prf
+
+  export
+  hasDegree : (v : Vertex) -> (es : Edges) -> Dec (HasDegree v es)
+
+  hasDegree (Node k j i) es with (hasDegree (Node k j i) Node es)
+    hasDegree (Node k j i) es | (Yes prf)
+      = Yes (R Node prf)
+    hasDegree (Node k j i) es | (No contra)
+      = No (\(R Node prf) => contra prf)
+
+  hasDegree (Leaf SRC k j) es with (hasDegree (Leaf SRC k j) Src es)
+    hasDegree (Leaf SRC k j) es | (Yes prf)
+      = Yes (R Src prf)
+    hasDegree (Leaf SRC k j) es | (No contra)
+      = No (\(R Src prf) => contra prf)
+
+  hasDegree (Leaf SNK k j) es with (hasDegree (Leaf SNK k j) Snk es)
+    hasDegree (Leaf SNK k j) es | (Yes prf)
+      = Yes (R Snk prf)
+    hasDegree (Leaf SNK k j) es | (No contra)
+      = No (\(R Snk prf) => contra prf)
+
+  hasDegree (Leaf BI k j) es with (hasDegree (Leaf BI k j) Bsrc es)
+    hasDegree (Leaf BI k j) es | (Yes prf)
+      = Yes (R Bsrc prf)
+
+    hasDegree (Leaf BI k j) es | (No contra) with (hasDegree (Leaf BI k j) Bsnk es)
+      hasDegree (Leaf BI k j) es | (No contra) | (Yes prf)
+        = Yes (R Bsnk prf)
+
+      hasDegree (Leaf BI k j) es | (No contra) | (No f)
+        = No (biLeafWrong f contra)
+
+
+  public export
+  HasDegrees : List Vertex -> Edges -> Type
+  HasDegrees vs es = All (\v => HasDegree v es) vs
+
+  export
+  hasDegrees : (vs : List Vertex) -> (es : Edges) -> Dec (HasDegrees vs es)
+  hasDegrees vs es = all (\v => hasDegree v es) vs
+
+
+namespace Properties
+  public export
+  data ValidGraph : Graph -> Type where
+    IsValid : HasDegrees vs es
+           -> ValidGraph (MkGraph vs es)
+
+  export
+  validGraph : (g : Graph) -> Dec (ValidGraph g)
+  validGraph (MkGraph nodes edges) with (hasDegrees nodes edges)
+    validGraph (MkGraph nodes edges) | (Yes prf)
+      = Yes (IsValid prf)
+    validGraph (MkGraph nodes edges) | (No contra)
+      = No (\(IsValid prf) => contra prf)
+
+test0 : Graph
+test0 = fromLists [ Leaf SRC 1 1 , Leaf SNK 2 1 ] [(2,1)]
+
+test1 : Graph
+test1 = fromLists [ Leaf SRC 1 1 , Leaf SNK 2 1 ] [(2,1)]
+
+test2 : Graph
+test2 = fromLists [ Leaf BI 1 1 , Leaf BI 2 1] [(2,1)]
+
+test3 : Graph
+test3 = fromLists [ Leaf BI 1 1 , Leaf BI 2 1] [(1,2)]
+
+test4 : Graph
+test4 = fromLists [ Leaf BI 1 1 , Leaf BI 2 1] [(1,2), (2,1)]
+
+
+
 
 -- [ EOF ]

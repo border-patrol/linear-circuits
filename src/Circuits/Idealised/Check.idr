@@ -10,13 +10,14 @@ import Data.List.Quantifiers
 import Toolkit.Decidable.Informative
 import Toolkit.Decidable.Equality.Views
 
+import Toolkit.Data.Graph.EdgeBounded
 import Toolkit.Data.Whole
 import Toolkit.Data.Location
 import Toolkit.Data.List.DeBruijn
 
 import Ref
-import Utilities
-import EdgeBoundedGraph
+
+
 
 
 import Circuits.Split
