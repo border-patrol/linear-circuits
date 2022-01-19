@@ -25,3 +25,4 @@ tests/**/output
 .idea
 
 docs/build/
+/temp.dot

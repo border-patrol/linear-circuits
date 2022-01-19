@@ -20,6 +20,12 @@ namespace Vertex
   public export
   data Flow = SRC | SNK | BI
 
+  export
+  Show Flow where
+    show SRC = "IN"
+    show SNK = "OUT"
+    show BI = "INOUT"
+
   Uninhabited (SRC = SNK) where
     uninhabited Refl impossible
 
@@ -45,6 +51,12 @@ namespace Vertex
   data Vertex = Node Nat Nat Nat
               | Leaf Flow Nat Nat
 
+  export
+  Show Vertex where
+    show (Node k j i) = show k <+> " [label=\"" <+> show (j,i) <+> "\"];"
+    show (Leaf x k j) = show k <+> " [label=\"" <+> withFlow x j <+> "\"];"
+      where withFlow : Flow -> Nat -> String
+            withFlow f k = show f <+> "(" <+> show k <+>")"
 
   Uninhabited (Node k j i = Leaf s x y) where
     uninhabited Refl impossible
@@ -107,6 +119,10 @@ namespace Vertex
     node : Nat -> Nat -> Nat -> Vertex
     node = Node
 
+    export
+    both : Nat -> Nat -> Vertex
+    both i n = Node i n n
+
 namespace Graph
 
   public export
@@ -136,6 +152,8 @@ namespace Graph
   showGraph : Graph -> String
   showGraph (MkGraph nodes edges)
       = unlines $ ["digraph G {"]
+                  ++
+                    map show nodes
                   ++
                     map (\(x,y) => unwords ["\t" <+> show x, "->", show y <+> ";"]) edges
                   ++

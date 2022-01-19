@@ -19,7 +19,7 @@ data AST = Var Ref
          | GateU FileContext Unary.Kind AST AST
          | GateB FileContext Binary.Kind AST AST AST
 
-         | Index FileContext Whole AST
+         | Index FileContext Nat AST
          | Stop FileContext
 
 export

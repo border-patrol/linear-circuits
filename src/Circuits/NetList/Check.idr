@@ -15,8 +15,7 @@ import Toolkit.Data.Whole
 import Toolkit.Data.List.DeBruijn
 
 import Ref
-import Utilities
-import EdgeBoundedGraph
+
 
 
 import Circuits.NetList.Types
@@ -197,13 +196,13 @@ typeCheck curr (GateB fc k o l r)
 
        pure (_ ** GateB k o' l' r')
 
-typeCheck curr (Index fc (W (S idx) prf) t)
+typeCheck curr (Index fc idx t)
   = do (TyPort (flow,BVECT (W (S n) ItIsSucc) type) ** term) <- typeCheck curr t
          | (type ** term)
              => Left (Err fc VectorExpected)
 
-       case natToFin (S idx) (S n) of
-         Nothing => Left (OOB (S idx) (S n))
+       case natToFin idx (S n) of
+         Nothing => Left (OOB idx (S n))
          Just idx' => pure (_ ** Index term idx')
 
 typeCheck curr (Stop x)

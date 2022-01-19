@@ -125,12 +125,18 @@ namespace Types
              ns <- indices
              pure (arraytype ty ns)
       where
+        mustBeZero : Nat -> Whole -> RuleEmpty Whole
+        mustBeZero Z (W w prf) = pure (W (S w) ItIsSucc)
+        mustBeZero (S n) w = fail "No ranges or big endian supported"
+
         index : Rule Whole
         index
           = do symbol "["
                n <- whole
+               symbol ":"
+               a <- nat
                symbol "]"
-               pure n
+               mustBeZero a n
 
         indices : Rule (List1 Whole)
         indices = some index
@@ -179,7 +185,7 @@ namespace Terms
 
   port : Rule AST
   port
-      = ref' <|> idx
+      = idx <|> ref'
     where
       ref' : Rule AST
       ref' = pure (Var !ref)
@@ -189,7 +195,7 @@ namespace Terms
         = do s <- Toolkit.location
              r <- ref'
              symbol "["
-             w <- whole
+             w <- nat
              symbol "]"
              e <- Toolkit.location
              pure (Index (newFC s e) w r)

@@ -1,8 +1,8 @@
-module Example4( output logic    out
+module Example5( output logic    out
                , input  logic    a
-               , input  logic[2] bc
+               , input  logic[2:0] bc
                );
 
-   nand n1(out, a, ab[1]);
+   nand n1(out, a, bc[1]);
 
 endmodule;
