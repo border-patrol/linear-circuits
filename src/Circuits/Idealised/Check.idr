@@ -17,9 +17,6 @@ import Toolkit.Data.List.DeBruijn
 
 import Ref
 
-
-
-
 import Circuits.Split
 import Circuits.Idealised.Types
 import Circuits.Idealised.Terms
