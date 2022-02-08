@@ -5,11 +5,15 @@ TARGETDIR = ${CURDIR}/build/exec
 
 bopts ?=
 
+.PHONY: all
+
+circuits:
+	$(IDRIS2) --build circuits.ipkg
 
 .PHONY: netlist netlist-test-bin netlist-test-run netlist-test-update
 
 netlist:
-	idris2 --build netlist.ipkg
+	$(IDRIS2) --build netlist.ipkg
 
 
 netlist-test-bin:
@@ -33,7 +37,7 @@ netlist-test-run: netlist-test-bin
 .PHONY: idealised idealised-test-bin idealised-test-update idealised-test-fast
 
 idealised:
-	idris2 --build idealised.ipkg
+	$(IDRIS2) --build idealised.ipkg
 
 
 idealised-test-bin:
@@ -57,9 +61,11 @@ idealised-test-run: idealised-test-bin
 .PHONY: clobber clean
 
 clean:
-	idris2 --clean circuits.ipkg
-	make -C tests clean
+	$(IDRIS2) --clean circuits.ipkg
+	${MAKE} -C tests clean
 
 clobber: clean
+	$(IDRIS2) --clean idealised.ipkg
+	$(IDRIS2) --clean netlist.ipkg
 	${MAKE} -C tests clobber
 	${RM} -rf build/
