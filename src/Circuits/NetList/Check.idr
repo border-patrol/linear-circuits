@@ -16,8 +16,6 @@ import Toolkit.Data.List.DeBruijn
 
 import Ref
 
-
-
 import Circuits.NetList.Types
 import Circuits.NetList.Terms
 import Circuits.NetList.AST
@@ -35,8 +33,10 @@ Env = Env (String,Ty) Entry
 
 export
 data Error = Mismatch Ty Ty
+           | MismatchD DType DType
            | NotBound String
            | VectorExpected
+           | PortChanExpected
            | PortExpected
            | OOB Nat Nat
            | ErrI String
@@ -48,11 +48,20 @@ Show Error where
       <+>
       unlines [unwords ["\tExpected:",show x], unwords ["\tGiven:", show y]]
 
+  show (MismatchD x y)
+    = "Type Mismatch:\n\n"
+      <+>
+      unlines [unwords ["\tExpected:",show x], unwords ["\tGiven:", show y]]
+
+
   show (NotBound x)
     = unwords ["Undeclared variable:", x]
 
   show (VectorExpected)
     = "Vector Expected"
+
+  show (PortChanExpected)
+    = "Port or Wire Expected"
 
   show (PortExpected)
     = "Port Expected"
@@ -77,136 +86,258 @@ lift : Dec a -> Error -> TyCheck a
 lift (Yes prf) _ = Right prf
 lift (No contra) e = Left e
 
-shouldCast : (flow,expected : Direction)
-          -> (term : Term ctxt (TyPort (flow,type)))
-                  -> Dec (Cast flow expected, Term ctxt (TyPort (expected,type)))
-shouldCast flow expected term with (Cast.cast flow expected)
-  shouldCast INOUT INPUT term | (Yes BI) = Yes (BI, Cast BI term)
-  shouldCast INOUT OUTPUT term | (Yes BO) = Yes (BO, Cast BO term)
-  shouldCast flow expected term | (No contra) = No (\(prf,t) => contra prf)
+namespace Elab
 
-portCast : {type : DType}
-      -> {flow : Direction}
-      -> FileContext
-      -> (expected : Direction)
-      -> (term : Term ctxt (TyPort (flow,type)))
-              -> TyCheck (Term ctxt (TyPort (expected,type)))
+  export
+  getDataType : FileContext
+             -> (term : (type ** Term ctxt type))
+                     -> TyCheck DType
+  getDataType fc (MkDPair (TyPort (d,x)) snd) = pure x
+  getDataType fc (MkDPair (TyChan x) snd) = pure x
+  getDataType fc (MkDPair type snd)
+    = Left (Err fc PortChanExpected)
 
-portCast {type} {flow = flow} fc exp term with (shouldCast flow exp term)
-  portCast {type} {flow = flow} fc exp term | Yes (p,e)
-    = Right e
-  portCast {type} {flow = flow} fc exp term | No contra with (decEq flow exp)
-    portCast {type} {flow = exp} fc exp term | No contra | (Yes Refl)
-      = Right term
-    portCast {type} {flow = flow} fc exp term | No contra | (No f)
-      = Left (Err fc (Mismatch (TyPort (exp,type)) (TyPort (flow,type))))
+  ||| Need to make sure that the indices are in the correct direction.
+  rewriteTerm : Cast flow expected
+             -> Index INOUT
+             -> Term ctxt (TyPort (flow,type))
+             -> Term ctxt (TyPort (flow,type))
+  rewriteTerm c d (Var prf) = Var prf
 
-checkPort : FileContext
-         -> (expected : Direction)
-         -> (term     : (ty ** Term ctxt ty))
-                     -> TyCheck (Term ctxt (TyPort (expected,LOGIC)))
+  rewriteTerm BI (UP UB) (Index idir what idx)
+    = Index (UP UB) (rewriteTerm BI (UP UB) what) idx
 
-checkPort fc expected (MkDPair (TyPort (given,LOGIC)) term)
-  = portCast fc expected term
+  rewriteTerm BI (DOWN DB) (Index idir what idx)
+    = Index (DOWN DB) (rewriteTerm BI (DOWN DB) what) idx
 
-checkPort fc expected (MkDPair (TyPort (given,ty)) term)
-  = Left (Err fc (Mismatch (TyPort (expected,LOGIC)) (TyPort (given,ty))))
+  rewriteTerm BO (UP UB) (Index idir what idx)
+    = Index (UP UB) (rewriteTerm BI (UP UB) what) idx
 
-checkPort fc INPUT (MkDPair (TyChan LOGIC) term)
-  = Right (Project READ term)
+  rewriteTerm BO (DOWN DB) (Index idir what idx)
+    = Index (DOWN DB) (rewriteTerm BI (DOWN DB) what) idx
 
-checkPort fc INPUT (MkDPair (TyChan y) term)
-  = Left (Err fc (Mismatch (TyPort (INPUT,LOGIC)) (TyChan y)))
+  rewriteTerm BI _ (Project WRITE _) impossible
+  rewriteTerm BO _ (Project WRITE _) impossible
+  rewriteTerm BI _ (Project READ _) impossible
+  rewriteTerm BO _ (Project READ _) impossible
 
-checkPort fc OUTPUT (MkDPair (TyChan LOGIC) term)
-  = Right (Project WRITE term)
+  rewriteTerm BI _ (Cast BI _) impossible
+  rewriteTerm BO _ (Cast BI _) impossible
+  rewriteTerm BI _ (Cast BO _) impossible
+  rewriteTerm BO _ (Cast BO _) impossible
 
-checkPort fc OUTPUT (MkDPair (TyChan y) term)
-  = Left (Err fc (Mismatch (TyPort (OUTPUT,LOGIC)) (TyChan y)))
-
-checkPort fc INOUT (MkDPair (TyChan y) term)
-  = Left (Err fc (ErrI "INOUT CHAN not expected"))
-
-checkPort fc expected (MkDPair type term)
-  = Left (Err fc (Mismatch (TyPort (expected,LOGIC)) type))
-
-typeCheck : {ctxt : List (String,Ty)}
-         -> (curr : Env ctxt)
-         -> (ast  : AST)
-                  -> TyCheck (DPair Ty (Term (map Builtin.snd ctxt)))
-
-typeCheck {ctxt} curr (Var x)
-  = do (ty ** prf) <- lift (isIndex (get x) ctxt)
-                           (Err (span x) (NotBound (get x)))
-
-       pure (ty ** Var (strip prf))
-
-typeCheck curr (Port fc flow ty n body)
-  = do (TyUnit ** term) <- typeCheck (MkEntry (get n) (TyPort (flow,ty))::curr) body
-         | (type ** _) => Left (Err fc (Mismatch TyUnit type))
-
-       pure (_ ** Port flow ty term)
-
-typeCheck curr (Wire fc ty n body)
-  = do (TyUnit ** term) <- typeCheck (MkEntry (get n) (TyChan ty)::curr) body
-         | (type ** _) => Left (Err fc (Mismatch TyUnit type))
-
-       pure (_ ** Wire ty term)
-
-typeCheck curr (GateDecl fc n g body)
-  = do (TyGate ** gate) <- typeCheck curr g
-         | (type ** _) => Left (Err fc (Mismatch TyGate type))
-
-       (TyUnit ** term) <- typeCheck (MkEntry (get n) (TyGate)::curr) body
-         | (type ** _) => Left (Err fc (Mismatch TyUnit type))
-
-       pure (_ ** GateDecl gate term)
-
-typeCheck curr (Mux fc o c l r)
-  = do termO <- typeCheck curr o
-       termC <- typeCheck curr c
-       termL <- typeCheck curr l
-       termR <- typeCheck curr r
+  ||| When casting we finally know which direction indexing should go, so lets fix that.
+  shouldCast : {type : DType}
+            -> (flow,expected : Direction)
+            -> (term : Term ctxt (TyPort (flow,type)))
+                    -> Dec ( Cast flow expected
+                           , Term ctxt (TyPort (expected,type))
+                           )
+  shouldCast flow expected term with (Cast.cast flow expected)
+    shouldCast INOUT INPUT term | (Yes BI) with (dirFromCast BI)
+      shouldCast INOUT INPUT term | (Yes BI) | idir
+        = Yes $ MkPair BI (Cast BI (rewriteTerm BI idir term))
 
 
-       o' <- checkPort fc OUTPUT termO
-       c' <- checkPort fc INPUT  termC
-       l' <- checkPort fc INPUT  termL
-       r' <- checkPort fc INPUT  termR
+    shouldCast INOUT OUTPUT term | (Yes BO) with (dirFromCast BO)
+      shouldCast INOUT OUTPUT term | (Yes BO) | idir
+        = Yes $ MkPair BO (Cast BO (rewriteTerm BO idir term))
 
-       pure (_ ** Mux o' c' l' r')
+    shouldCast flow expected term | (No contra)
+      = No (\(prf,t) => contra prf)
 
-typeCheck curr (GateU fc k o i)
-  = do termO <- typeCheck curr o
-       termI <- typeCheck curr i
+  portCast : {type : DType}
+        -> {flow : Direction}
+        -> FileContext
+        -> (expected : Direction)
+        -> (term : Term ctxt (TyPort (flow,type)))
+                -> TyCheck (Term ctxt (TyPort (expected,type)))
 
-       o' <- checkPort fc OUTPUT termO
-       i' <- checkPort fc INPUT  termI
+  portCast {type} {flow = flow} fc exp term with (shouldCast flow exp term)
+    portCast {type} {flow = flow} fc exp term | Yes (p,e)
+      = Right e
+    portCast {type} {flow = flow} fc exp term | No contra with (decEq flow exp)
+      portCast {type} {flow = exp} fc exp term | No contra | (Yes Refl)
+        = Right term
+      portCast {type} {flow = flow} fc exp term | No contra | (No f)
+        = Left (Err fc (Mismatch (TyPort (exp,type)) (TyPort (flow,type))))
 
-       pure (_ ** GateU k o' i')
+  export
+  checkPort : (fc    : FileContext)
+           -> (exdir : Direction)
+           -> (expty : DType)
+           -> (term  : (type ** Term ctxt type))
+                    -> TyCheck (Term ctxt (TyPort (exdir,expty)))
 
-typeCheck curr (GateB fc k o l r)
-  = do termO <- typeCheck curr o
-       termL <- typeCheck curr l
-       termR <- typeCheck curr r
+  -- [ NOTE ]
+  --
+  checkPort fc exdir exty (MkDPair (TyPort (given,x)) term)
+    = do Refl <- lift (decEq exty x)
+                      (Err fc (MismatchD exty x))
 
-       o' <- checkPort fc OUTPUT termO
-       l' <- checkPort fc INPUT  termL
-       r' <- checkPort fc INPUT  termR
+         portCast fc exdir term
 
-       pure (_ ** GateB k o' l' r')
+  -- [ NOTE ]
+  --
+  -- READ implies INPUT
+  checkPort fc INPUT exty (MkDPair (TyChan x) term)
+    = do Refl <- lift (decEq exty x)
+                      (Err fc (MismatchD exty x))
 
-typeCheck curr (Index fc idx t)
-  = do (TyPort (flow,BVECT (W (S n) ItIsSucc) type) ** term) <- typeCheck curr t
-         | (type ** term)
-             => Left (Err fc VectorExpected)
+         pure (Project READ term)
 
-       case natToFin idx (S n) of
-         Nothing => Left (OOB idx (S n))
-         Just idx' => pure (_ ** Index term idx')
+  -- [ NOTE ]
+  --
+  -- WRITE implies OUTPUT
+  checkPort fc OUTPUT exty (MkDPair (TyChan x) term)
+    = do Refl <- lift (decEq exty x)
+                      (Err fc (MismatchD exty x))
 
-typeCheck curr (Stop x)
-  = pure (_ ** Stop)
+         Right (Project WRITE term)
+
+  -- [ NOTE ]
+  --
+  -- INOUT Chan's impossible.
+  checkPort fc INOUT exty (MkDPair (TyChan x) term)
+     = Left (Err fc (ErrI "INOUT CHAN not expected"))
+
+
+  -- [ NOTE ]
+  --
+  -- Gates/TyUnit not expected
+  checkPort fc exdir exty (MkDPair type term)
+     = Left (Err fc (Mismatch (TyPort (exdir,exty)) type))
+
+  export
+  indexDir : {flow : Direction}
+          -> (fc   : FileContext)
+          -> (term : Term ctxt (TyPort (flow,BVECT (W (S n) ItIsSucc) type)))
+                  -> TyCheck (Index flow)
+  indexDir {flow} fc term with (flow)
+    indexDir {flow = flow} fc term | INPUT
+      = pure (DOWN DI)
+    indexDir {flow = flow} fc term | OUTPUT
+      = pure (UP UO)
+    indexDir {flow = flow} fc (Var prf) | INOUT
+      = pure (UP UB)
+    indexDir {flow = flow} fc (Index idir what idx) | INOUT
+      = pure idir
+    indexDir {flow = flow} fc (Project how what) | INOUT
+      = Left (Err fc (ErrI "Shouldn't happen impossible indexing a projection with inout"))
+    indexDir {flow = flow} fc (Cast x what) | INOUT
+      = Left (Err fc (ErrI "Shouldn't happen impossible indexing a cast with inout"))
+
+namespace TypeCheck
+  export
+  typeCheck : {ctxt : List (String,Ty)}
+           -> (curr : Env ctxt)
+           -> (ast  : AST)
+                    -> TyCheck (DPair Ty (Term (map Builtin.snd ctxt)))
+
+
+  typeCheck {ctxt} curr (Var x)
+    = do (ty ** prf) <- lift (isIndex (get x) ctxt)
+                             (Err (span x) (NotBound (get x)))
+
+         pure (ty ** Var (strip prf))
+
+  typeCheck curr (Port fc flow ty n body)
+    = do (TyUnit ** term) <- typeCheck (MkEntry (get n) (TyPort (flow,ty))::curr) body
+           | (type ** _) => Left (Err fc (Mismatch TyUnit type))
+
+         pure (_ ** Port flow ty term)
+
+  typeCheck curr (Wire fc ty n body)
+    = do (TyUnit ** term) <- typeCheck (MkEntry (get n) (TyChan ty)::curr) body
+           | (type ** _) => Left (Err fc (Mismatch TyUnit type))
+
+         pure (_ ** Wire ty term)
+
+  typeCheck curr (GateDecl fc n g body)
+    = do (TyGate ** gate) <- typeCheck curr g
+           | (type ** _) => Left (Err fc (Mismatch TyGate type))
+
+         (TyUnit ** term) <- typeCheck (MkEntry (get n) (TyGate)::curr) body
+           | (type ** _) => Left (Err fc (Mismatch TyUnit type))
+
+         pure (_ ** GateDecl gate term)
+
+  typeCheck curr (Assign fc i o rest)
+    =  do termI <- typeCheck curr i
+
+          ity <- getDataType fc termI
+
+          termO <- typeCheck curr o
+          oty <- getDataType fc termO
+
+          Refl <- lift (decEq ity oty)
+                       (Err fc (MismatchD ity oty))
+
+          i' <- checkPort fc INPUT  ity termI
+          o' <- checkPort fc OUTPUT ity termO
+
+
+          (TyUnit ** r') <- typeCheck curr rest
+           | (type ** _) => Left (Err fc (Mismatch TyUnit type))
+
+          pure (_ ** Assign i' o' r')
+
+
+  typeCheck curr (Mux fc o c l r)
+    = do termO <- typeCheck curr o
+         termC <- typeCheck curr c
+         termL <- typeCheck curr l
+         termR <- typeCheck curr r
+
+         o' <- checkPort fc OUTPUT LOGIC termO
+         c' <- checkPort fc INPUT  LOGIC termC
+         l' <- checkPort fc INPUT  LOGIC termL
+         r' <- checkPort fc INPUT  LOGIC termR
+
+         pure (_ ** Mux o' c' l' r')
+
+  typeCheck curr (GateU fc k o i)
+    = do termO <- typeCheck curr o
+         termI <- typeCheck curr i
+
+         o' <- checkPort fc OUTPUT LOGIC termO
+         i' <- checkPort fc INPUT  LOGIC termI
+
+         pure (_ ** GateU k o' i')
+
+  typeCheck curr (GateB fc k o l r)
+    = do termO <- typeCheck curr o
+         termL <- typeCheck curr l
+         termR <- typeCheck curr r
+
+         o' <- checkPort fc OUTPUT LOGIC termO
+         l' <- checkPort fc INPUT  LOGIC termL
+         r' <- checkPort fc INPUT  LOGIC termR
+
+         pure (_ ** GateB k o' l' r')
+
+  typeCheck curr (Index fc idx t)
+    = do (TyPort (flow,BVECT (W (S n) ItIsSucc) type) ** term) <- typeCheck curr t
+           | (type ** term)
+               => Left (Err fc VectorExpected)
+
+         case natToFin idx (S n) of
+           Nothing => Left (OOB idx (S n))
+           Just idx' => do idir <- indexDir fc term
+                           pure (_ ** Index idir term idx')
+
+  typeCheck curr (Shim fc dir thing)
+
+    = do t <- typeCheck curr thing
+
+         dtype <- getDataType fc t
+
+         term <- checkPort fc dir dtype t
+
+         pure (_ ** term)
+
+  typeCheck curr (Stop x)
+    = pure (_ ** Stop)
 
 namespace Design
   export

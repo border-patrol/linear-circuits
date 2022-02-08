@@ -26,22 +26,35 @@ data Term : (context : List Ty)
          -> (type    : Ty)
                     -> Type
   where
-    Var : Elem type ctxt
-       -> Term ctxt type
+    Var : {type : Ty}
+       -> (prf  : Elem type ctxt)
+               -> Term ctxt type
 
-    Port : (flow : Direction)
-        -> (type : DType)
-        -> (body : Term (TyPort (flow, type)::ctxt) TyUnit)
-                -> Term                       ctxt  TyUnit
+    Port : (flow  : Direction)
+        -> (dtype : DType)
+        -> (body : Term (TyPort (flow, dtype)::ctxt) TyUnit)
+                -> Term                        ctxt  TyUnit
 
     Wire : (type : DType)
         -> (body : Term (TyChan type :: ctxt) TyUnit)
                 -> Term                 ctxt  TyUnit
 
+
+    GateDecl : (g    : Term ctxt TyGate)
+            -> (body : Term (TyGate::ctxt) TyUnit)
+                    -> Term ctxt TyUnit
+
     Stop : Term ctxt TyUnit
 
-    Index : Term ctxt (TyPort (flow, BVECT (W (S n) ItIsSucc) type))
-         -> Fin (S n)
+    Assign : {type : DType}
+          -> (i : Term ctxt (TyPort (INPUT,type)))
+          -> (o : Term ctxt (TyPort (OUTPUT,type)))
+          -> (body : Term ctxt TyUnit)
+                  -> Term ctxt TyUnit
+
+    Index : (idir : Index flow)
+         -> (what : Term ctxt (TyPort (flow, BVECT (W (S n) ItIsSucc) type)))
+         -> (idx  : Fin (S n))
          -> Term ctxt (TyPort (flow, type))
 
     Mux : (o   : Term ctxt (TyPort (OUTPUT, LOGIC)))
@@ -60,16 +73,14 @@ data Term : (context : List Ty)
          -> (i : Term ctxt (TyPort (INPUT,  LOGIC)))
               -> Term ctxt TyGate
 
-    GateDecl : (g    : Term ctxt TyGate)
-            -> (body : Term (TyGate::ctxt) TyUnit)
-                    -> Term ctxt TyUnit
+    Project : {type : DType}
+           -> (how  : Project dir)
+           -> (what : Term ctxt (TyChan type))
+                   -> Term ctxt (TyPort (dir, type))
 
-    Project : Project dir
-           -> Term ctxt (TyChan type)
-           -> Term ctxt (TyPort (dir, type))
-
-    Cast : Cast INOUT flow
-        -> Term ctxt (TyPort (INOUT, type))
-        -> Term ctxt (TyPort (flow,  type))
+    Cast : {type : DType}
+        -> (dir  : Cast INOUT flow)
+        -> (what : Term ctxt (TyPort (INOUT, type)))
+                -> Term ctxt (TyPort (flow,  type))
 
 -- [ EOF ]

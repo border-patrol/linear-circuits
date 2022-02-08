@@ -1,0 +1,7 @@
+echo "Example NetList-Common Dump"
+
+for i in $(ls *.sv);
+do
+    echo $i
+    $1 $i
+done

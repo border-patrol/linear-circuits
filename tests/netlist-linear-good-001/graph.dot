@@ -1,0 +1,27 @@
+// LOG : Starting NetList 
+digraph G {
+8 [label="(1, 1) CHAN_IN : logic"];
+9 [label="(1, 1) CHAN_OUT : logic"];
+6 [label="(1, 1) CHAN_IN : logic"];
+7 [label="(1, 1) CHAN_OUT : logic"];
+5 [label="IN(1) INPUT : logic"];
+4 [label="IN(1) INPUT : logic"];
+3 [label="IN(1) INPUT : logic"];
+2 [label="IN(1) INPUT : logic"];
+1 [label="OUT(1) OUTPUT : logic"];
+10 [label="(2, 1) or"];
+11 [label="(2, 1) or"];
+12 [label="(2, 1) or"];
+	8 -> 9;
+	6 -> 7;
+	2 -> 10;
+	3 -> 10;
+	10 -> 6;
+	4 -> 11;
+	5 -> 11;
+	11 -> 8;
+	7 -> 12;
+	9 -> 12;
+	12 -> 1;
+}
+

@@ -1,0 +1,7 @@
+rm -rf graph.png graph.dot
+
+echo "Example Verilog with Linear wiring"
+$1 Example.sv | tee graph.dot
+
+echo "Generating PNG"
+dot -Tpng graph.dot > graph.png

@@ -12,6 +12,16 @@ public export
 data GateKind = AND  | IOR  | XOR
               | ANDN | IORN | XORN | JOIN
 
+export
+Show GateKind where
+  show AND  = "and"
+  show IOR  = "or"
+  show XOR  = "xor"
+  show ANDN = "nand"
+  show IORN = "nor"
+  show XORN = "xnor"
+  show JOIN = "join"
+
 public export
 data Direction = INPUT | OUTPUT
 

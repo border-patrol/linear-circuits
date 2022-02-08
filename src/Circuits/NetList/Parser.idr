@@ -111,7 +111,9 @@ namespace API
 namespace Direction
   export
   direction : Rule Direction
-  direction = gives "inout" INOUT <|> gives "input" INPUT <|> gives "output" OUTPUT
+  direction = gives "inout"  INOUT
+          <|> gives "input"  INPUT
+          <|> gives "output" OUTPUT
 
 namespace Types
 
@@ -126,8 +128,8 @@ namespace Types
              pure (arraytype ty ns)
       where
         mustBeZero : Nat -> Whole -> RuleEmpty Whole
-        mustBeZero Z (W w prf) = pure (W (S w) ItIsSucc)
-        mustBeZero (S n) w = fail "No ranges or big endian supported"
+        mustBeZero    Z  (W w prf) = pure (W (S w) ItIsSucc)
+        mustBeZero (S n)    w      = fail "No ranges or big endian supported"
 
         index : Rule Whole
         index
@@ -183,28 +185,64 @@ namespace Terms
          symbol ";"
          pure ps
 
-  port : Rule AST
-  port
-      = idx <|> ref'
+  shim : Direction -> Rule AST -> Rule AST
+  shim d port
+    = do s <- Toolkit.location
+         p <- port
+         e <- Toolkit.location
+         pure (Shim (newFC s e) d p)
+
+  port : Direction -> Rule AST
+  port d
+      = (shim d idx) <|> (shim d ref')
     where
+
       ref' : Rule AST
       ref' = pure (Var !ref)
+
+      value : Rule (Pair Nat Location)
+      value
+        = do symbol "["
+             n <- nat
+             symbol "]"
+             e <- Toolkit.location
+             pure (n,e)
+
+      indices : Rule (List1 (Nat, Location))
+      indices
+        = some value
+
+      build : Location
+            -> AST
+            -> List1 (Nat,Location)
+            -> AST
+      build s first (x:::xs)
+        = foldl (\i, (n,e) => Index (newFC s e) n i) first (x::xs)
 
       idx : Rule AST
       idx
         = do s <- Toolkit.location
              r <- ref'
-             symbol "["
-             w <- nat
-             symbol "]"
-             e <- Toolkit.location
-             pure (Index (newFC s e) w r)
+             is <- indices
+             pure (build s r is)
 
   data Body = WDecl  FileContext DType Ref
             | GInst  FileContext Binary.Kind Ref AST AST AST
             | NInst  FileContext Unary.Kind Ref AST AST
             | MInst  FileContext Ref AST AST AST AST
+            | AInst  FileContext AST AST
 
+
+  assign : Rule Body
+  assign
+    = do s <- Toolkit.location
+         keyword "assign"
+         o <- port OUTPUT
+         symbol "="
+         i <- port INPUT
+         symbol ";"
+         e <- Toolkit.location
+         pure (AInst (newFC s e) i o)
 
   gateNot : Rule Body
   gateNot
@@ -212,9 +250,9 @@ namespace Terms
          k <- gateUnaryKind
          n <- ref
          symbol "("
-         o <- port
+         o <- port OUTPUT
          symbol ","
-         i <- port
+         i <- port INPUT
          symbol ")"
          symbol ";"
          e <- Toolkit.location
@@ -226,11 +264,11 @@ namespace Terms
          k <- gateBinaryKind
          n <- ref
          symbol "("
-         o <- port
+         o <- port OUTPUT
          symbol ","
-         a <- port
+         a <- port INPUT
          symbol ","
-         b <- port
+         b <- port INPUT
          symbol ")"
          symbol ";"
          e <- Toolkit.location
@@ -242,13 +280,13 @@ namespace Terms
          keyword "mux"
          n <- ref
          symbol "("
-         o <- port
+         o <- port OUTPUT
          symbol ","
-         c <- port
+         c <- port INPUT
          symbol ","
-         a <- port
+         a <- port INPUT
          symbol ","
-         b <- port
+         b <- port INPUT
          symbol ")"
          symbol ";"
          e <- Toolkit.location
@@ -267,7 +305,7 @@ namespace Terms
            pure (WDecl (newFC s e) t a)
 
   expr : Rule Body
-  expr = wireDecl <|> gateNot <|> gateBin <|> gateMux
+  expr = assign <|> wireDecl <|> gateNot <|> gateBin <|> gateMux
 
   foldBody : Location
           -> List Body
@@ -277,17 +315,20 @@ namespace Terms
     where
       doFold : Body -> AST -> AST
 
-      doFold (WDecl x y z) accum
-        = Wire x y z accum
+      doFold (WDecl x y z)
+        = Wire x y z
 
-      doFold (MInst v n w x y z) accum
-        = GateDecl v n (Mux v w x y z) accum
+      doFold (MInst v n w x y z)
+        = GateDecl v n (Mux v w x y z)
 
-      doFold (GInst x k n y z w) accum
-        = GateDecl x n (GateB x k y z w) accum
+      doFold (GInst x k n y z w)
+        = GateDecl x n (GateB x k y z w)
 
-      doFold (NInst x k n y z) accum
-        = GateDecl x n (GateU x k y z) accum
+      doFold (NInst x k n y z)
+        = GateDecl x n (GateU x k y z)
+
+      doFold (AInst fc i o)
+        = Assign fc i o
 
   foldPorts : Location
            -> List1 (Location,Ref, Direction, DType)

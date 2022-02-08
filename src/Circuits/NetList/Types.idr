@@ -56,6 +56,11 @@ namespace Cast
     BI : Cast INOUT INPUT
     BO : Cast INOUT OUTPUT
 
+  export
+  Show (Types.Cast.Cast f t) where
+    show BI = "down"
+    show BO = "up"
+
   Uninhabited (Cast OUTPUT flow) where
     uninhabited BI impossible
     uninhabited BO impossible
@@ -75,6 +80,33 @@ namespace Cast
   cast INOUT INPUT = Yes BI
   cast INOUT OUTPUT = Yes BO
   cast INOUT INOUT = No absurd
+
+namespace Index
+
+  public export
+  data Up : (flow : Direction) -> Type where
+    UO : Up OUTPUT
+    UB : Up INOUT
+
+  public export
+  data Down : (flow : Direction) -> Type where
+    DI : Down INPUT
+    DB : Down INOUT
+
+  public export
+  data Index : (flow : Direction) -> Type where
+    UP   : Up f -> Index f
+    DOWN : Down f -> Index f
+
+  export
+  Show (Index f) where
+    show (UP _) = "UP"
+    show (DOWN _) = "DOWN"
+
+  export
+  dirFromCast : Cast INOUT flow -> Index INOUT
+  dirFromCast BI = DOWN DB
+  dirFromCast BO = UP UB
 
 namespace Gate
 

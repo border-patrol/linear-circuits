@@ -6,7 +6,10 @@ import Data.Nat
 import Data.List.Elem
 import Data.List.Quantifiers
 
+import Toolkit.Decidable.Informative
 import Toolkit.Data.Graph.EdgeBounded
+import Toolkit.Data.Graph.EdgeBounded.HasExactDegree.All
+
 import Toolkit.Data.Whole
 
 import Circuits.Idealised.Types
@@ -16,9 +19,14 @@ import Circuits.Idealised.Terms
 
 public export
 InterpTy : Ty -> Type
-InterpTy TyUnit = Graph
-InterpTy (TyPort x) = Vertex
-InterpTy TyGate = Graph
+InterpTy TyUnit
+  = Unit
+
+InterpTy (TyPort x)
+  = Vertex String
+
+InterpTy TyGate
+  = Graph String
 
 namespace Environments
   public export
@@ -46,208 +54,343 @@ namespace Result
     where
       R : (counter : Nat)
        -> (env     : Env new)
+       -> (graph   : Graph String)
        -> (result  : InterpTy type)
                   -> Result new type
   public export
   getResult : Result ctxt type -> InterpTy type
-  getResult (R _ _ res) = res
+  getResult (R _ _ _ res) = res
+
+  public export
+  data GetGraph : (res : Result ctxt type) -> Graph String -> Type
+    where
+      G : (g : Graph String) -> GetGraph (R c e g r) g
+
+  public export
+  getGraph : (r : Result ctxt type) -> DPair (Graph String) (GetGraph r)
+  getGraph (R counter env graph result) = MkDPair graph (G graph)
+
 
 interp : (env     : Env old)
-      -> (term    : Term old type new)
       -> (counter : Nat)
-      -> (graph   : Graph)
+      -> (graph   : Graph String)
+      -> (term    : Term old type new)
                  -> Result new type
-interp env (Var prf x) counter graph
+
+-- [ NOTE ]
+--
+-- As normal
+interp env counter graph (Var prf x)
   = let (newEnv, res) = lookup env prf x
-    in R counter newEnv res
+    in R counter newEnv graph res
 
-interp env (NewSignal flow datatype body) counter graph
-  = let n    = case flow of {INPUT => driver (S counter) 1; OUTPUT => catcher (S counter) 1} in
-    let env' = Extend n env in
-    let g'   = insertNode n graph
-    in interp env' body (S counter) g'
+-- [ NOTE ]
+--
+-- As normal
+interp env counter graph (Seq x y)
+  = let R c1 e1 g1 x' = interp env counter graph x
+    in interp e1 c1 ((merge g1 x')) y
 
-interp env (Wire datatype body) counter graph
-  = let o = node (S counter)     1 1 in
-    let i = node (S (S counter)) 1 1 in
-    let env' = (Extend i (Extend o env)) in
-    let g'   = foldr insertNode graph [o,i] in
-    let g''  = insertEdge (S (S counter), S counter) g'
-    in interp env' body (S (S counter)) g''
+-- [ NOTE ]
+--
+-- Ports are leaf nodes in the graph.
+interp env counter graph (NewSignal flow dtype body)
 
-interp env (Mux output ctrl inA inB) counter graph
-  = let R c'    env'    o = interp env    output  counter graph in
-    let R c''   env''   c = interp env'   ctrl    c'      graph in
-    let R c'''  env'''  a = interp env''  inA     c''     graph in
-    let R c'''' env'''' b = interp env''' inB     c'''    graph in
+  = let n = vertexFromFlow flow (S counter) 1
 
-    let n   = node (S c'''') 3 1 in
-    let g' = insertNode n graph  in
+    in let env' = Extend n env
 
-    let es = [ (ident a, S c''''), (ident b, S c'''')
-             , (ident c, S c'''')
-             , (S c'''', ident o)
-             ]
-    in R (S c'''') env'''' (foldr (insertEdge) g' es)
+    in let g'   = insertNode n graph
 
-interp env (Dup outputA outputB input) counter graph
-  = let R c'   env'   a = interp env   outputA counter graph in
-    let R c''  env''  b = interp env'  outputB c'      graph in
-    let R c''' env''' i = interp env'' input   c''     graph in
-    let n               = node (S c''') 1 2                  in
-    let g'              = insertNode n graph                 in
-    let es              = [ (ident i, S c''')
-                          , (S c''', ident a)
-                          , (S c''', ident b)
+    in interp env' (S counter) g' body
+
+  where
+    vertexFromFlow : Direction -> Nat -> Nat -> Vertex String
+    vertexFromFlow INPUT  = driver  ("INPUT : "  <+> show dtype )
+    vertexFromFlow OUTPUT = catcher ("OUTPUT : " <+> show dtype )
+
+-- [ NOTE ]
+--
+-- Wires are internal connected nodes in the graph
+interp env counter graph (Wire dtype body)
+
+  = let c1 = S counter
+    in let c2 = S c1
+
+    in let chanIN  = node ("CHAN_IN : "  <+> show dtype) c1 1 1
+    in let chanOUT = node ("CHAN_OUT : " <+> show dtype) c2 1 1
+
+    in interp (Extend chanIN (Extend chanOUT env))
+              c2
+              (updateWith graph
+                          [chanIN, chanOUT]
+                          [(MkPair (ident chanIN) (ident chanOUT))])
+              body
+
+
+-- [ NOTE ]
+--
+-- Multiplexers are internal nodes connected to other nodes.
+interp env counter graph (Mux o c l r)
+
+  = let c1 = S counter
+
+    in let mux = node "MUX" c1 3 1
+
+    in let R c2 e1 g1 vo = interp env c1 graph  o
+    in let R c3 e2 g2 vc = interp e1  c2 g1     c
+    in let R c4 e3 g3 vl = interp e2  c2 g2     l
+    in let R c5 e4 g4 vr = interp e3  c3 g3     r
+
+    in let mg = fromLists [mux]
+                          [ (ident vl,  ident mux)
+                          , (ident vr,  ident mux)
+                          , (ident vc,  ident mux)
+                          , (ident mux, ident vo)
                           ]
-    in R (S c''') env''' (foldr (insertEdge) g' es)
+    in R c5 e4 g4 mg
 
-interp env (Seq x y) counter graph
-  = let R c' env' x' = interp env x counter graph
-    in interp env' y c' x'
+-- [ NOTE ]
+--
+-- Multiplexers are internal nodes connected to other nodes.
+interp env counter graph (Dup a b i)
+  = let c1 = S counter
 
-interp env (Not output input) counter graph
-  = let R c'  env'  o = interp env  output counter graph in
-    let R c'' env'' i = interp env' input  c'      graph in
+    in let dup = node "DUP" c1 1 2
 
-    let n  = node (S c'') 1 1         in
-    let g' = insertNode n  graph in
-    let es = [(S c'', ident o),(ident i, S c'')]
-    in R (S c'') env'' (foldr insertEdge g' es)
+    in let R c2 e1 g1 va = interp env c1 graph a
+    in let R c3 e2 g2 vb = interp e1  c2 g1    b
+    in let R c4 e3 g3 vi = interp e2  c3 g2    i
 
-
-interp env (Gate k output inputA inputB) counter graph
-  = let R c'   env'   o = interp env   output counter graph in
-    let R c''  env''  a = interp env'  inputA c'      graph in
-    let R c''' env''' b = interp env'' inputB c''     graph in
-    let n               = node (S c''') 2 1                  in
-    let g'              = insertNode n graph                in
-    let es              = [ (S c''', ident o)
-                          , (ident a, S c''')
-                          , (ident b, S c''')
+    in let dg = fromLists [dup]
+                          [ MkPair (ident vi)   (ident dup)
+                          , MkPair (ident dup) (ident va)
+                          , MkPair (ident dup) (ident vb)
                           ]
-    in R (S c''') env''' (foldr (insertEdge) g' es)
 
-interp env (IndexSingleton o i) counter graph
-  = let R c'   env'   o = interp env   o counter graph in
-    let R c''  env''  i = interp env'  i c'      graph in
-    let c''' = S c'' in
-    let n    = node c''' 1 1 in
-    let g'   = insertNode n graph in
-    let es   = [ (ident i, c''')
-               , (c'''   , ident o)
-               ]
-    in R c''' env'' (foldr insertEdge g' es)
+    in R c4 e3 g3 dg
 
-interp env (IndexEdge p idx oused ofree i) counter graph
-  = let R c'    env'    oused = interp env    oused counter graph in
-    let R c''   env''   ofree = interp env'   ofree c'      graph in
-    let R c'''  env'''  input = interp env''  i     c''     graph in
+-- [ NOTE ]
+--
+-- internal nodes connected to other nodes.
+interp env counter graph (Not output input)
+  = let c1 = S counter
 
-    let c'''' = S c''' in
-    let n     = node c'''' 1 2 in
-    let g'    = insertNode n graph in
-    let es    = [ (ident input, c'''')
-               , (c''''       , ident oused)
-               , (c''''       , ident ofree)
-               ]
-    in R c'''' env''' (foldr insertEdge g' es)
+    in let vnot = node "NOT" c1 1 1
 
+    in let R c2 e1 g1 vo = interp env counter graph output
+    in let R c3 e2 g2 vi = interp e1  c2      g1    input
 
-interp env (IndexSplit p idx used freeA freeB i) counter graph
-  = let R c'     env'     oused = interp env    used  counter graph in
-    let R c''    env''    freeA = interp env'   freeA c'      graph in
-    let R c'''   env'''   freeB = interp env''  freeB c''     graph in
-    let R c''''  env''''  input = interp env''' i     c'''    graph in
-
-    let c''''' = S c'''' in
-    let n      = node c''''' 1 3 in
-    let g'     = insertNode n graph in
-    let es     = [ (ident input  , c''''')
-                 , (c'''''       , ident oused)
-                 , (c'''''       , ident freeA)
-                 , (c'''''       , ident freeB)
-                 ]
-    in R c''''' env'''' (foldr insertEdge g' es)
-
-interp env (Merge2L2V output inputA inputB) counter graph
-  = let R c'   env'   o = interp env   output counter graph in
-    let R c''  env''  a = interp env'  inputA c'      graph in
-    let R c''' env''' b = interp env'' inputB c''     graph in
-    let n               = node (S c''') 2 1                  in
-    let g'              = insertNode n graph                in
-    let es              = [ (S c''', ident o)
-                          , (ident a, S c''')
-                          , (ident b, S c''')
+    in let ng = fromLists [vnot]
+                          [ MkPair (ident vnot) (ident vo)
+                          , MkPair (ident vi)   (ident vnot)
                           ]
-    in R (S c''') env''' (foldr (insertEdge) g' es)
+    in R c3 e2 g2 ng
 
-interp env (Merge2V2V prf output inputA inputB) counter graph
-  = let R c'   env'   o = interp env   output counter graph in
-    let R c''  env''  a = interp env'  inputA c'      graph in
-    let R c''' env''' b = interp env'' inputB c''     graph in
-    let n               = node (S c''') 2 1                  in
-    let g'              = insertNode n graph                in
-    let es              = [ (S c''', ident o)
-                          , (ident a, S c''')
-                          , (ident b, S c''')
+-- [ NOTE ]
+--
+-- internal nodes connected to other nodes.
+interp env counter graph (Gate k output inputA inputB)
+   = let c1 = S counter
+
+    in let bgate = node (show k) c1 2 1
+
+    in let R c2 e1 g1 vo = interp env c1 graph output
+    in let R c3 e2 g2 vl = interp e1  c2 g1    inputA
+    in let R c4 e3 g3 vr = interp e2  c3 g2    inputB
+
+    in let bg = fromLists [bgate]
+                          [ MkPair (ident bgate) (ident vo)
+                          , MkPair (ident vl) (ident bgate)
+                          , MkPair (ident vr) (ident bgate)
                           ]
-    in R (S c''') env''' (foldr (insertEdge) g' es)
 
-interp env (MergeSingleton o i) counter graph
-  = let R c'   env'   o = interp env   o counter graph in
-    let R c''  env''  i = interp env'  i c'      graph in
-    let c''' = S c'' in
-    let n    = node c''' 1 1 in
-    let g'   = insertNode n graph in
-    let es   = [ (ident i, c''')
-               , (c'''   , ident o)
-               ]
-    in R c''' env'' (foldr insertEdge g' es)
+    in R c4 e3 g3 bg
 
-interp env (Stop x) counter graph
-  = R counter Empty graph
+-- [ NOTE ]
+--
+-- internal nodes connected to other nodes.
+interp env counter graph (IndexSingleton o i)
+  = let c1 = S counter
+
+    in let vnot = node "IDX_SINGLETON" c1 1 1
+
+    in let R c2 e1 g1 vo = interp env c1  graph o
+    in let R c3 e2 g2 vi = interp e1  c2  g1    i
+
+    in let ng = fromLists [vnot]
+                          [ MkPair (ident vnot) (ident vo)
+                          , MkPair (ident vi)   (ident vnot)
+                          ]
+    in R c3 e2 g2 ng
+
+
+-- [ NOTE ]
+--
+-- internal nodes connected to other nodes.
+interp env counter graph (IndexEdge p idx oused ofree i)
+
+  = let c1 = S counter
+
+    in let dup = node "IDX_EDGE" c1 1 2
+
+    in let R c2 e1 g1 va = interp env c1 graph oused
+    in let R c3 e2 g2 vb = interp e1  c2 g1    ofree
+    in let R c4 e3 g3 vi = interp e2  c3 g2    i
+
+    in let dg = fromLists [dup]
+                          [ MkPair (ident vi)  (ident dup)
+                          , MkPair (ident dup) (ident va)
+                          , MkPair (ident dup) (ident vb)
+                          ]
+
+    in R c4 e3 g3 dg
+
+
+-- [ NOTE ]
+--
+-- internal nodes connected to other nodes.
+interp env counter graph (IndexSplit p idx used freeA freeB i)
+
+  = let c1 = S counter
+
+    in let dup = node "IDX_SPLIT" c1 1 3
+
+    in let R c2 e1 g1 vu = interp env c1 graph used
+    in let R c3 e2 g2 va = interp e1  c2 g1    freeA
+    in let R c4 e3 g3 vb = interp e2  c3 g2    freeB
+    in let R c5 e4 g4 vi = interp e3  c4 g3    i
+
+    in let dg = fromLists [dup]
+                          [ MkPair (ident vi)  (ident dup)
+                          , MkPair (ident dup) (ident vu)
+                          , MkPair (ident dup) (ident va)
+                          , MkPair (ident dup) (ident vb)
+                          ]
+
+    in R c5 e4 g4 dg
+
+-- [ NOTE ]
+--
+-- internal nodes connected to other nodes.
+interp env counter graph (Merge2L2V output inputA inputB)
+
+  = let c1 = S counter
+
+    in let bgate = node "MERGE_2L2V" c1 2 1
+
+    in let R c2 e1 g1 vo = interp env c1 graph output
+    in let R c3 e2 g2 vl = interp e1  c2 g1    inputA
+    in let R c4 e3 g3 vr = interp e2  c3 g2    inputB
+
+    in let bg = fromLists [bgate]
+                          [ MkPair (ident bgate) (ident vo)
+                          , MkPair (ident vl) (ident bgate)
+                          , MkPair (ident vr) (ident bgate)
+                          ]
+
+    in R c4 e3 g3 bg
+
+-- [ NOTE ]
+--
+-- internal nodes connected to other nodes.
+interp env counter graph (Merge2V2V prf output inputA inputB)
+
+  = let c1 = S counter
+
+    in let bgate = node "MERGE_2V2V" c1 2 1
+
+    in let R c2 e1 g1 vo = interp env c1 graph output
+    in let R c3 e2 g2 vl = interp e1  c2 g1    inputA
+    in let R c4 e3 g3 vr = interp e2  c3 g2    inputB
+
+    in let bg = fromLists [bgate]
+                          [ MkPair (ident bgate) (ident vo)
+                          , MkPair (ident vl) (ident bgate)
+                          , MkPair (ident vr) (ident bgate)
+                          ]
+
+    in R c4 e3 g3 bg
+
+-- [ NOTE ]
+--
+-- internal nodes connected to other nodes.
+interp env counter graph (MergeSingleton output input)
+  = let c1 = S counter
+
+    in let vnot = node "MERGE_SINGLETON" c1 1 1
+
+    in let R c2 e1 g1 vo = interp env counter graph output
+    in let R c3 e2 g2 vi = interp e1  c2      g1    input
+
+    in let ng = fromLists [vnot]
+                          [ MkPair (ident vnot) (ident vo)
+                          , MkPair (ident vi)   (ident vnot)
+                          ]
+    in R c3 e2 g2 ng
+
+interp env counter graph (Stop x)
+  = R counter Empty graph MkUnit
+
 
 public export
-data Valid : (type : Ty) -> InterpTy type -> Type where
-  P : Valid (TyPort x) v
-  G : (g : Graph) -> ValidGraph g -> Valid TyGate g
-  D : (g : Graph) -> ValidGraph g -> Valid TyUnit g
+data ValidGraph : Graph type -> Type where
+  IsValid : HasExactDegrees vs es
+         -> ValidGraph (MkGraph vs es)
 
-isValid : {type : Ty}
-        -> (g   : InterpTy type)
-               -> Dec (Valid type g)
-isValid g {type = TyUnit} with (validGraph g)
-  isValid g {type = TyUnit} | (Yes prf)
-    = Yes (D g prf)
-  isValid g {type = TyUnit} | (No contra)
-    = No (\(D g prf) => contra prf)
-isValid g {type = (TyPort x)} = Yes P
-isValid g {type = TyGate} with (validGraph g)
-  isValid g {type = TyGate} | (Yes prf)
-    = Yes (G g prf)
-  isValid g {type = TyGate} | (No contra)
-    = No (\(G g prf) => contra prf)
+export
+validGraph : {type : Type}
+          -> (g    : Graph type)
+                  -> DecInfo (HasExactDegree.Error type)
+                             (ValidGraph g)
+validGraph (MkGraph nodes edges) with (hasExactDegrees nodes edges)
+  validGraph (MkGraph nodes edges) | (Yes prf)
+    = Yes (IsValid prf)
+  validGraph (MkGraph nodes edges) | (No msg contra)
+    = No msg (\(IsValid prf) => contra prf)
 
+
+public export
+data Valid : (res  : Result ctxt TyUnit)
+                  -> Type
+  where
+    D : {res : Result ctxt TyUnit}
+     -> (g   : Graph String)
+            -> GetGraph res g
+            -> ValidGraph g
+            -> Valid res
+
+isValid : (r : Result ctxt TyUnit)
+            -> DecInfo (Graph String, HasExactDegree.Error String)
+                       (Valid r)
+isValid r with (getGraph r)
+  isValid (R c e g r) | (MkDPair g (G g)) with (validGraph g)
+    isValid (R c e g r) | (MkDPair g (G g)) | (Yes prf)
+      = Yes (D g (G g) prf)
+    isValid (R c e g r) | (MkDPair g (G g)) | (No msg contra)
+      = No (g,msg) (\(D graph (G graph) prf) => contra prf)
+
+
+public export
+data Run : (term : Term Nil TyUnit Nil) -> Type where
+  R : (prf  : Valid (interp Empty Z (MkGraph Nil Nil) term))
+           -> Run term
+
+public export
+getGraph : Run term -> DPair (Graph String) ValidGraph
+getGraph (R (D g x y)) = MkDPair g y
 
 export
 run : (term : Term Nil TyUnit Nil)
-           -> Dec (Valid TyUnit (getResult (interp Empty term Z (MkGraph Nil Nil))))
-run term with (interp Empty term Z (MkGraph Nil Nil))
-  run term | R cout eout gout with (validGraph gout)
-    run term | R cout eout gout | (Yes prf)
-      = Yes (D gout prf)
-    run term | R cout eout gout | (No contra)
-      = No (\(D g prf) => contra prf)
+           -> DecInfo (Graph String, HasExactDegree.Error String) (Run term)
+run term with (isValid (interp Empty Z empty term))
+  run term | (Yes prf) = Yes (R prf)
+  run term | (No msg contra) = No msg (\(R prf) => contra prf)
 
 export
 runIO : (term : Term Nil TyUnit Nil)
-             -> IO (Maybe (g ** Valid TyUnit g))
-runIO term with (interp Empty term Z (MkGraph Nil Nil))
-  runIO term | (R counter env result) with (validGraph result)
-    runIO term | (R counter Empty (MkGraph vs es)) | (Yes (IsValid x))
-      = pure (Just ((MkGraph vs es) ** D (MkGraph vs es) (IsValid x)))
-    runIO term | (R counter env result) | (No contra)
-      = pure Nothing
+             -> IO (Either (Graph String, HasExactDegree.Error String)
+                           (Run term))
+runIO term = pure $ (asEither (run term))
 
 -- [ EOF ]

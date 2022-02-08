@@ -14,12 +14,16 @@ data AST = Var Ref
          | Wire FileContext DType Ref AST
          | GateDecl FileContext Ref AST AST
 
+         | Shim FileContext Direction AST
+         | Assign FileContext AST AST AST
+
          | Mux FileContext AST AST AST AST
 
          | GateU FileContext Unary.Kind AST AST
          | GateB FileContext Binary.Kind AST AST AST
 
          | Index FileContext Nat AST
+
          | Stop FileContext
 
 export
@@ -45,6 +49,17 @@ setSource new (GateDecl x v y z)
               (setSource new v)
           (setSource new y)
           (setSource new z))
+
+setSource new (Assign fc i o rest)
+  = Assign (setSource new fc)
+           (setSource new i)
+           (setSource new o)
+           (setSource new rest)
+
+setSource new (Shim fc d i)
+  = Shim (setSource new fc)
+         d
+         (setSource new i)
 
 setSource new (Mux x y z w v)
   = (Mux (setSource new x)

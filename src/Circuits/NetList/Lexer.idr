@@ -17,6 +17,7 @@ keywords = [ "input", "output", "inout"
            , "logic"
            , "and", "or", "xor", "nand", "nor", "xnor", "not"
            , "mux"
+           , "assign"
            ]
 
 public export

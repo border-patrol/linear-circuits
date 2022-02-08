@@ -1,0 +1,20 @@
+// LOG : Starting NetList 
+// LOG : Failure Interpreting
+digraph G {
+5 [label="(1, 1) IDX [1](DOWN)"];
+4 [label="(1, 1) IDX [0](DOWN)"];
+2 [label="IN(3) INPUT : logic[3]"];
+1 [label="OUT(1) OUTPUT : logic"];
+3 [label="(2, 1) nand"];
+	2 -> 5;
+	2 -> 4;
+	4 -> 3;
+	5 -> 3;
+	3 -> 1;
+}
+
+//because:
+// Vertex 2
+//  has expected degree OUT 3
+//  but we found degree OUT 2
+

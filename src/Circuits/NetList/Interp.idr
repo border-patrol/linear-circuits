@@ -3,10 +3,15 @@ module Circuits.NetList.Interp
 import Decidable.Equality
 
 import Data.Nat
+import Data.Fin
 import Data.List.Elem
 import Data.List.Quantifiers
 
+import Toolkit.Decidable.Informative
+
 import Toolkit.Data.Graph.EdgeBounded
+import Toolkit.Data.Graph.EdgeBounded.HasExactDegree.All
+
 import Toolkit.Data.List.DeBruijn
 import Toolkit.Data.Whole
 
@@ -18,16 +23,16 @@ import Circuits.NetList.Terms
 public export
 InterpTy : Ty -> Type
 InterpTy TyUnit
-  = Graph
+  = Unit
 
 InterpTy (TyPort x)
-  = Pair Vertex Graph
+  = Vertex String
 
 InterpTy (TyChan x)
-  = Vertex
+  = (Vertex String, Vertex String)
 
 InterpTy TyGate
-  = Graph
+  = Graph String
 
 namespace Environments
 
@@ -42,166 +47,261 @@ namespace Result
                      -> Type
     where
       R : (counter : Nat)
+       -> (graph   : Graph String)
        -> (result  : InterpTy type)
                   -> Result type
   public export
   getResult : Result type -> InterpTy type
-  getResult (R _ res) = res
+  getResult (R _ _ res) = res
+
+  public export
+  data GetGraph : (res : Result type) -> Graph String -> Type
+    where
+      G : (g : Graph String) -> GetGraph (R c g r) g
+
+  public export
+  getGraph : (r : Result type) -> DPair (Graph String) (GetGraph r)
+  getGraph (R counter graph result) = MkDPair graph (G graph)
 
 interp : (env     : Env ctxt)
-      -> (term    : Term ctxt type)
       -> (counter : Nat)
-      -> (graph   : Graph)
+      -> (graph   : Graph String)
+      -> (term    : Term ctxt type)
                  -> Result type
-interp e (Var x) c g
-  = R c (read x e)
+interp env c g (Var x)
+  = R c g (read x env)
 
-interp e (Port flow dtype body) c g
-  = let c' = S c in
-    let s  = size dtype in
-    let n = case flow of
-              INPUT  => driver  c' s
-              OUTPUT => catcher c' s
-              INOUT  => gateway c' s
-    in
-    let e' = extend e (n,g) in
-    let g' = insertNode n g
-    in  interp e' body c' g'
 
-interp e (Wire dtype body) c g
-  = let c' = S c in
-    let ch = both c' (size dtype) in
-    let e' = extend e ch in
-    let g' = insertNode ch g
-    in interp e' body c' g'
+-- [ NOTE ]
+--
+-- Ports are leaf nodes in the graph
+interp env c g (Port flow dtype body)
+    = let    c1 = S c
+      in let v  = vertexFromFlow flow c1 (size dtype)
 
-interp e Stop c g
-  = R c g
+      in let R c2 g1 MkUnit = interp (extend env v)
+                                     c1
+                                     (insertNode v g)
+                                     body
+      in R c2 g1 MkUnit
+  where
+    vertexFromFlow : Direction -> Nat -> Nat -> Vertex String
+    vertexFromFlow INPUT  = driver  ("INPUT : "  <+> show dtype )
+    vertexFromFlow OUTPUT = catcher ("OUTPUT : " <+> show dtype )
+    vertexFromFlow INOUT  = gateway ("INOUT : "  <+> show dtype )
 
-interp e (Index what idx) c g
-  = let R c' (v,g') = interp e what c g in
-    let c'' = S c' in
-    let i = both c'' 1 in
-    let g'' = merge g' g
-    in R c'' (i,(insertEdge (ident v, ident i) (insertNode i g'')))
+-- [ NOTE ]
+--
+-- Wires are internal connected nodes in the graph
+interp env c g (Wire dtype body)
+    = let    c1      = S c
+      in let c2      = S c1
 
-interp e (Mux o s l r) c g
-  = let R c'    (o,g1) = interp e o  c    g in
-    let R c''   (c,g2) = interp e s  c'   g in
-    let R c'''  (a,g3) = interp e l  c''  g in
-    let R c'''' (b,g4) = interp e r  c''' g in
+      in let s = size dtype
 
-    let n = node (S c'''') 3 1 in
-    let g = insertNode n (foldr merge g [g1,g2,g3,g4]) in
+      in let chanIN  = node ("CHAN_IN : "  <+> show dtype) c1 s 1
+      in let chanOUT = node ("CHAN_OUT : " <+> show dtype) c2 1 s
 
-    let es = [ (ident a, S c''''), (ident b, S c'''')
-             , (ident c, S c'''')
-             , (S c'''', ident o)
-             ]
-    in R (S c'''') (foldr (insertEdge) g es)
+      in let R c3 g2 MkUnit = interp (extend env (chanIN, chanOUT))
+                                     c2
+                                     (updateWith g [chanIN, chanOUT]
+                                                   [MkPair (ident chanIN) (ident chanOUT)])
+                                     body
+      in R c3 g2 MkUnit
 
-interp e (GateB k o l r) c g
-  = let R c'   (o,g')   = interp e o c   g in
-    let R c''  (a,g'')  = interp e l c'  g in
-    let R c''' (b,g''') = interp e r c'' g in
+-- [ NOTES ]
+--
+--
+interp env c g (GateDecl gate body)
+  = let    R c1 g1 g2     = interp env c g gate
+    in let R c2 g3 MkUnit = interp (extend env g2) c1 (merge g1 g2) body
+    in     R c2 g3 MkUnit
 
-    let n = node (S c''') 2 1 in
+-- [ NOTE ]
+--
+--
+interp env c g Stop
+  = R c g MkUnit
 
-    let g = insertNode n (foldr merge g [g',g'',g''']) in
+-- [ NOTE ]
+--
+-- 'Just' an edge
+interp env c g (Assign {type} i o rest)
+  = let    R c1 g1 vi = interp env c  g  i
+    in let R c2 g2 vo = interp env c1 g1 o
 
-    let es = [ (S c''', ident o)
-             , (ident a, S c''')
-             , (ident b, S c''')
-             ]
+    in let es = replicate (size type) (MkPair (ident vi) (ident vo))
 
-    in R (S c''') (foldr (insertEdge) g es)
+    in interp env c2 (updateWith g2 Nil es)
+                     rest
 
-interp e (GateU k o i) c g
-  = let R c'  (o,g1)  = interp e o c g in
-    let R c'' (i,g2) = interp e i c' g in
+-- [ NOTE ]
+--
+-- Multiplexers are internal nodes connected to other nodes.
+interp env c g (Mux o x l r)
+    = let c1 = S c
 
-    let n  = both (S c'') 1    in
-    let g3 = insertNode n (foldr merge g [g1,g2]) in
+      in let mux = node "MUX" c1 3 1
 
-    let es = [(S c'', ident o), (ident i, S c'')]
+      in let R c2 g1 vo = interp env c1 g  o
+      in let R c3 g2 vl = interp env c2 g1 l
+      in let R c4 g3 vr = interp env c3 g2 r
+      in let R c5 g4 vc = interp env c4 g3 x
 
-    in R (S c'') (foldr insertEdge (merge g3 g) es)
+      in R c5 g4
+              (fromLists [mux] [ MkPair (ident vl)  (ident mux)
+                               , MkPair (ident vr)  (ident mux)
+                               , MkPair (ident vc)  (ident mux)
+                               , MkPair (ident mux) (ident vo)
+                               ])
 
-interp e (GateDecl x body) c g
-  = let R c' g' = interp e x c g
-    in interp (extend e g') body c' g'
+-- [ NOTE ]
+--
+-- internal nodes connected to other nodes.
+interp env c g (GateB x o l r)
+    = let c1 = S c
 
-interp e (Project how chan) c g
-  = let c' = S c in
-    let epoint = both c' 1 in
+      in let bgate = node (show x) c1 2 1
 
-    let R c'' chan' = interp e chan c' g in
-    let ed = case how of
-               WRITE => (c',     ident chan')
-               READ  => (ident chan', c')
-    in
-    let g' = insertEdge ed (insertNode epoint g)
-    in R c'' (epoint,g')
+      in let R c2 g1 vo = interp env c1 g  o
+      in let R c3 g2 vl = interp env c2 g1 l
+      in let R c4 g3 vr = interp env c3 g2 r
 
-interp e (Cast how what) c g
-  = let c' = S c in
-    let ca = both c' 1 in
-    let R c'' (w',g') = interp e what c' g in
-    let ed = case how of
-               BO => (c'      , ident w')
-               BI => (ident w', c')
-    in
-    let g'' = insertEdge ed (insertNode ca g)
-    in R c'' (ca, merge g'' g')
+      in R c4 g3
+              (fromLists [bgate] [ MkPair (ident vl)    (ident bgate)
+                                 , MkPair (ident vr)    (ident bgate)
+                                 , MkPair (ident bgate) (ident vo)
+                                 ])
+
+-- [ NOTE ]
+--
+-- Multiplexers are internal nodes connected to other nodes.
+interp env c g (GateU x o i)
+    = let c1 = S c
+
+      in let ugate = node (show x) c1 1 1
+
+      in let R c2 g1 vo = interp env c1 g  o
+      in let R c3 g2 vi = interp env c2 g1 i
+
+      in R c3 g2
+              (fromLists [ugate] [ MkPair (ident vi)    (ident ugate)
+                                 , MkPair (ident ugate) (ident vo)
+                                 ])
+
+-- [ NOTE ]
+--
+-- Indexing ports creates a new edge in the graph to a node representing the index.
+--
+interp env c g (Index dir what idx)
+    = let c1 = S c
+
+      in let idxVertex = both ("IDX [" <+> show (finToNat idx) <+> "](" <+>  show dir <+>")" ) c1 1
+
+      in let R c2 gsub whatVertex = interp env c1 g what
+
+      in R c2 (updateWith gsub [idxVertex]
+                               (buildEdge dir whatVertex idxVertex))
+              idxVertex
+  where buildEdge : Index direc -> (a,b : Vertex String) -> Edges
+        buildEdge (UP x)   a b = [MkPair (ident b) (ident a)]
+        buildEdge (DOWN x) a b = [MkPair (ident a) (ident b)]
+
+-- [ NOTE ]
+--
+-- Projection of channels returns the channel's appropriate endpoint.
+interp env c g (Project how chan)
+
+    = let R c1 g2 (i,o) = interp env c g chan
+
+
+      in R c1 g2
+              (selectNode how i o)
+
+  where selectNode : Project dir -> Vertex String -> Vertex String -> Vertex String
+        selectNode WRITE i _ = i
+        selectNode READ  _ o = o
+
+-- [ NOTE ]
+--
+-- Casting inserts a new edge
+interp env c g (Cast {type} how what)
+    = let c1 = S c
+
+      in let s = size type
+
+      in let cVertex = both "CAST" c1 s
+
+      in let R c2 g1 what = interp env c1 g what
+
+      in let es = replicate s (buildEdge how cVertex what)
+
+      in R c2 (updateWith g1 [cVertex] es)
+              cVertex
+
+  where buildEdge : Cast INOUT r -> (a,b : Vertex String) -> Edge
+        buildEdge BI a b = MkPair (ident b) (ident a)
+        buildEdge BO a b = MkPair (ident a) (ident b)
+
 
 
 public export
-data Valid : (type : Ty) -> InterpTy type -> Type where
-  P : Valid (TyPort x) v
-  G : (g : Graph) -> ValidGraph g -> Valid TyGate g
-  D : (g : Graph) -> ValidGraph g -> Valid TyUnit g
-  C : Valid (TyChan x) v
+data ValidGraph : Graph type -> Type where
+  IsValid : HasExactDegrees vs es
+         -> ValidGraph (MkGraph vs es)
 
-isValid : {type : Ty}
-       -> (g    : InterpTy type)
-               -> Dec (Valid type g)
+export
+validGraph : {type : Type}
+          -> (g    : Graph type)
+                  -> DecInfo (HasExactDegree.Error type)
+                             (ValidGraph g)
+validGraph (MkGraph nodes edges) with (hasExactDegrees nodes edges)
+  validGraph (MkGraph nodes edges) | (Yes prf)
+    = Yes (IsValid prf)
+  validGraph (MkGraph nodes edges) | (No msg contra)
+    = No msg (\(IsValid prf) => contra prf)
 
-isValid {type = TyUnit} g with (validGraph g)
-  isValid {type = TyUnit} g | (Yes prf)
-    = Yes (D g prf)
-  isValid {type = TyUnit} g | (No contra)
-    = No (\(D g prf) => contra prf)
 
-isValid {type = (TyPort x)} g
-  = Yes P
+public export
+data Valid : (res  : Result TyUnit)
+                  -> Type
+  where
+    D : {res : Result TyUnit}
+     -> (g   : Graph String)
+            -> GetGraph res g
+            -> ValidGraph g
+            -> Valid res
 
-isValid {type = (TyChan x)} g
-  = Yes C
+isValid : (r : Result TyUnit)
+            -> DecInfo (Graph String, HasExactDegree.Error String)
+                       (Valid r)
+isValid r with (getGraph r)
+  isValid (R c g r) | (MkDPair g (G g)) with (validGraph g)
+    isValid (R c g r) | (MkDPair g (G g)) | (Yes prf)
+      = Yes (D g (G g) prf)
+    isValid (R c g r) | (MkDPair g (G g)) | (No msg contra)
+      = No (g,msg) (\(D graph (G graph) prf) => contra prf)
 
-isValid {type = TyGate} g with (validGraph g)
-  isValid {type = TyGate} g | (Yes prf)
-    = Yes (G g prf)
-  isValid {type = TyGate} g | (No contra)
-    = No (\(G g prf) => contra prf)
+public export
+data Run : (term : Term Nil TyUnit) -> Type where
+  R : (prf  : Valid (interp Nil Z (MkGraph Nil Nil) term))
+           -> Run term
+
+public export
+getGraph : Run term -> DPair (Graph String) ValidGraph
+getGraph (R (D g x y)) = MkDPair g y
 
 export
 run : (term : Term Nil TyUnit)
-           -> Dec (Valid TyUnit (getResult (interp Nil term Z (MkGraph Nil Nil))))
-run term with (interp Nil term Z (MkGraph Nil Nil))
-  run term | R cout gout with (validGraph gout)
-    run term | R cout gout | (Yes prf)
-      = Yes (D gout prf)
-    run term | R cout gout | (No contra)
-      = No (\(D g prf) => contra prf)
+           -> DecInfo (Graph String, HasExactDegree.Error String) (Run term)
+run term with (isValid (interp Nil Z empty term))
+  run term | (Yes prf) = Yes (R prf)
+  run term | (No msg contra) = No msg (\(R prf) => contra prf)
 
 export
 runIO : (term : Term Nil TyUnit)
-             -> IO (Maybe (g ** Valid TyUnit g))
-runIO term with (interp Nil term Z (MkGraph Nil Nil))
-  runIO term | (R counter result) with (validGraph result)
-    runIO term | (R counter (MkGraph vs es)) | (Yes (IsValid x))
-      = pure (Just ((MkGraph vs es) ** D (MkGraph vs es) (IsValid x)))
-    runIO term | (R counter result) | (No contra)
-      = pure Nothing
+             -> IO (Either (Graph String, HasExactDegree.Error String)
+                           (Run term))
+runIO term = pure $ (asEither (run term))
 
 -- [ EOF ]
