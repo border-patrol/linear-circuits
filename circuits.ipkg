@@ -38,4 +38,23 @@ modules =
 
         , Circuits.NetList.Main
 
+   -- [ Unrestricted ]
+
+        , Circuits.NetList.Linear.Usage.DataType
+        , Circuits.NetList.Linear.Usage.DataType.Use.Full
+        , Circuits.NetList.Linear.Usage.DataType.Use.Partial
+
+        , Circuits.NetList.Linear.Usage.TermType
+        , Circuits.NetList.Linear.Usage.TermType.Use.Port
+        , Circuits.NetList.Linear.Usage.TermType.Use.Channel
+
+        , Circuits.NetList.Linear.Usage.Item
+        , Circuits.NetList.Linear.Usage.Context
+
+        , Circuits.NetList.Linear.Usage
+        , Circuits.NetList.Linear.Terms
+
+        , Circuits.NetList.Linear.Interp
+
+
 -- [ EOF ]
