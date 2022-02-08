@@ -90,6 +90,12 @@ Show (Term ctxt t) where
   show (Cast x y)
     = unwords ["(cast", show y <+> ")"]
 
+  show (Collect o a b)
+    = unwords ["(collect", show o, show a, show b <+> ")"]
+
+  show (Split a b i)
+    = unwords ["(split", show a, show b, show i <+> ")"]
+
 export
 Show (Vertex String) where
   show (Node d k j i) = show k <+> " [label=\"" <+> show (j,i) <+> " " <+> d <+> "\"];"

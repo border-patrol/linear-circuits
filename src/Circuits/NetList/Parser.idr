@@ -231,6 +231,8 @@ namespace Terms
             | NInst  FileContext Unary.Kind Ref AST AST
             | MInst  FileContext Ref AST AST AST AST
             | AInst  FileContext AST AST
+            | CInst  FileContext Ref AST AST AST
+            | SInst  FileContext Ref AST AST AST
 
 
   assign : Rule Body
@@ -293,6 +295,37 @@ namespace Terms
          pure (MInst (newFC s e) n o c a b)
 
 
+  collect : Rule Body
+  collect
+    = do s <- Toolkit.location
+         keyword "collect"
+         n <- ref
+         symbol "("
+         o <- port OUTPUT
+         symbol ","
+         a <- port INPUT
+         symbol ","
+         b <- port INPUT
+         symbol ")"
+         symbol ";"
+         e <- Toolkit.location
+         pure (CInst (newFC s e) n o a b)
+
+  split : Rule Body
+  split
+    = do s <- Toolkit.location
+         keyword "split"
+         n <- ref
+         symbol "("
+         o <- port OUTPUT
+         symbol ","
+         a <- port OUTPUT
+         symbol ","
+         b <- port INPUT
+         symbol ")"
+         symbol ";"
+         e <- Toolkit.location
+         pure (SInst (newFC s e) n o a b)
 
   wireDecl : Rule Body
   wireDecl
@@ -329,6 +362,12 @@ namespace Terms
 
       doFold (AInst fc i o)
         = Assign fc i o
+
+      doFold (CInst fc n o a b)
+        = GateDecl fc n (Collect fc o a b)
+
+      doFold (SInst fc n o a b)
+        = GateDecl fc n (Split fc o a b)
 
   foldPorts : Location
            -> List1 (Location,Ref, Direction, DType)

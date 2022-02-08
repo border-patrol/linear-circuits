@@ -306,6 +306,7 @@ namespace TypeCheck
          pure (_ ** GateU k o' i')
 
   typeCheck curr (GateB fc k o l r)
+
     = do termO <- typeCheck curr o
          termL <- typeCheck curr l
          termR <- typeCheck curr r
@@ -317,6 +318,7 @@ namespace TypeCheck
          pure (_ ** GateB k o' l' r')
 
   typeCheck curr (Index fc idx t)
+
     = do (TyPort (flow,BVECT (W (S n) ItIsSucc) type) ** term) <- typeCheck curr t
            | (type ** term)
                => Left (Err fc VectorExpected)
@@ -325,6 +327,35 @@ namespace TypeCheck
            Nothing => Left (OOB idx (S n))
            Just idx' => do idir <- indexDir fc term
                            pure (_ ** Index idir term idx')
+
+  typeCheck curr (Split fc a b i)
+
+    = do termA <- typeCheck curr a
+         termB <- typeCheck curr b
+         termI <- typeCheck curr i
+
+         a' <- checkPort fc OUTPUT LOGIC termA
+         b' <- checkPort fc OUTPUT LOGIC termB
+         i' <- checkPort fc INPUT  LOGIC termI
+
+         pure (_ ** Split a' b' i')
+
+  typeCheck curr (Collect fc o l r)
+    = do (TyPort (OUTPUT,BVECT (W (S (S Z)) ItIsSucc) type) ** o') <- typeCheck curr o
+           | (TyPort (flow,BVECT (W (S (S n)) ItIsSucc) type) ** term)
+               => Left (Err fc (Mismatch (TyPort (OUTPUT, BVECT (W (S (S Z)) ItIsSucc) type))
+                                         (TyPort (flow,   BVECT (W (S (S n)) ItIsSucc) type))
+                                         ))
+           | (type ** term)
+               => Left (Err fc VectorExpected)
+
+         termL <- typeCheck curr l
+         termR <- typeCheck curr r
+
+         l' <- checkPort fc INPUT  type termL
+         r' <- checkPort fc INPUT  type termR
+
+         pure (_ ** Collect o' l' r')
 
   typeCheck curr (Shim fc dir thing)
 

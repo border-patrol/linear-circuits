@@ -222,6 +222,48 @@ interp env c g (Project how chan)
         selectNode WRITE i _ = i
         selectNode READ  _ o = o
 
+-- [ NOTE]
+--
+-- Splitting inserts a node.
+interp env c g (Split a b i)
+
+  = let c1 = S c
+    in let s = size LOGIC
+
+    in let sVertex = both "SPLIT" c1 s
+
+    in let R c2 g1 av = interp env c1 g  a
+    in let R c3 g2 bv = interp env c2 g1 b
+    in let R c4 g3 iv = interp env c3 g2 i
+
+    in let esIS = replicate s (MkPair (ident iv)      (ident sVertex))
+    in let esSA = replicate s (MkPair (ident sVertex) (ident av))
+    in let esSB = replicate s (MkPair (ident sVertex) (ident bv))
+
+    in R c4 g3
+            (fromLists [av,bv,iv,sVertex]
+                       (esIS ++ esSA ++ esSB))
+
+interp env c g (Collect {type} o a b)
+
+  = let c1 = S c
+    in let s = size type
+
+    in let sVertex = both "COLLECT" c1 s
+
+    in let R c2 g1 ov = interp env c1 g  o
+    in let R c3 g2 av = interp env c2 g1 a
+    in let R c4 g3 bv = interp env c3 g2 b
+
+    in let esAC = replicate s (MkPair (ident av) (ident sVertex))
+    in let esBC = replicate s (MkPair (ident bv) (ident sVertex))
+    in let esSO = replicate s (MkPair (ident sVertex) (ident ov))
+
+    in R c4 g3
+            (fromLists [ov,av,bv,sVertex]
+                       (esAC ++ esBC ++ esSO))
+
+
 -- [ NOTE ]
 --
 -- Casting inserts a new edge

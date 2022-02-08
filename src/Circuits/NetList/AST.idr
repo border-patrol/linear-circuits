@@ -24,6 +24,9 @@ data AST = Var Ref
 
          | Index FileContext Nat AST
 
+         | Split   FileContext AST AST AST
+         | Collect FileContext AST AST AST
+
          | Stop FileContext
 
 export
@@ -88,5 +91,19 @@ setSource new (Index x y z)
   = (Index (setSource new x)
             y
             (setSource new z))
+
+setSource new (Split fc a b i)
+  = Split (setSource new fc)
+          (setSource new a)
+          (setSource new b)
+          (setSource new i)
+
+setSource new (Collect fc a b i)
+  = Collect (setSource new fc)
+            (setSource new a)
+            (setSource new b)
+            (setSource new i)
+
+
 
 -- [ EOF ]
