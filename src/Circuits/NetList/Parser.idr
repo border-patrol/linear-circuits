@@ -394,7 +394,8 @@ namespace Idealised
   fromFile : (fname : String)
                    -> IO (Either (ParseError Token) AST)
   fromFile fname
-    = case !(parseFile Idealised.Lexer design fname) of
+    = case !(parseFile NetList.Lexer design fname) of
         Left err  => pure (Left err)
-        Right ast => pure (Right (setSource fname ast)) -- @TODO add name
+        Right ast => pure (Right (setSource fname ast))
+
 -- [ EOF ]

@@ -10,6 +10,7 @@ modules =
 
         , Circuits.Split
         , Circuits.Common
+        , Circuits.Common.Lexer
 
    -- [ Idealised ]
 
@@ -55,6 +56,5 @@ modules =
         , Circuits.NetList.Linear.Terms
 
         , Circuits.NetList.Linear.Interp
-
 
 -- [ EOF ]
