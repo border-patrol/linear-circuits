@@ -36,12 +36,6 @@ namespace Direction
     decEq INOUT OUTPUT  = No (negEqSym absurd)
     decEq INOUT INOUT   = Yes Refl
 
-  export
-  Show Direction where
-    show INPUT  = "input"
-    show OUTPUT = "output"
-    show INOUT  = "inout"
-
 namespace Proj
 
   public export
@@ -55,11 +49,6 @@ namespace Cast
   data Cast : (from,to : Direction) -> Type where
     BI : Cast INOUT INPUT
     BO : Cast INOUT OUTPUT
-
-  export
-  Show (Types.Cast.Cast f t) where
-    show BI = "down"
-    show BO = "up"
 
   Uninhabited (Cast OUTPUT flow) where
     uninhabited BI impossible
@@ -99,11 +88,6 @@ namespace Index
     DOWN : Down f -> Index f
 
   export
-  Show (Index f) where
-    show (UP _) = "UP"
-    show (DOWN _) = "DOWN"
-
-  export
   dirFromCast : Cast INOUT flow -> Index INOUT
   dirFromCast BI = DOWN DB
   dirFromCast BO = UP UB
@@ -114,15 +98,6 @@ namespace Gate
     public export
     data Kind = AND  | IOR  | XOR
               | ANDN | IORN | XORN
-
-    export
-    Show Kind where
-      show AND  = "and"
-      show IOR  = "or"
-      show XOR  = "xor"
-      show ANDN = "nand"
-      show IORN = "nor"
-      show XORN = "xnor"
 
   namespace Unary
     public export
@@ -140,13 +115,6 @@ namespace Types
     TyPort : (Direction, DType) -> Ty
     TyChan : DType -> Ty
     TyGate : Ty
-
-  export
-  Show Ty where
-    show TyUnit         = "()"
-    show (TyPort (d,t)) = "TyPort(" <+> show d <+> "," <+> show t <+> ")"
-    show TyGate         = "TyGate"
-    show (TyChan t)     = "TyChan(" <+> show t <+> ")"
 
   Uninhabited (TyUnit = TyPort x) where
     uninhabited Refl impossible

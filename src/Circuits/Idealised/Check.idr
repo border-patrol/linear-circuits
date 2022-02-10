@@ -24,21 +24,16 @@ import Circuits.Idealised.AST
 
 %default total
 
+public export
 data Entry : (String, (Ty, Usage)) -> Type where
   MkEntry : (name : String)
          -> (type : Ty)
          -> (u    : Usage)
                  -> Entry (name, (type,u))
 
+public export
 Env : List (String, (Ty, Usage)) -> Type
 Env = Env (String, (Ty, Usage)) Entry
-
-showEnv : Env es -> String
-showEnv [] = ""
-showEnv ((MkEntry name type FREE) :: rest)
-  = name <+> " : " <+> show type <+> "\n" <+> (showEnv rest)
-showEnv ((MkEntry name type USED) :: rest) = showEnv rest
-
 
 isEmpty : (s : String) -> DPair Ty (\t => Elem (s, (t, FREE)) []) -> Void
 isEmpty _ (MkDPair _ _) impossible
@@ -54,6 +49,7 @@ lookupLaterFailAlt : (DPair Ty (\t => Elem (s, (t, FREE)) xs) -> Void)
                    -> DPair Ty (\t => Elem (s, (t, FREE)) ((s, (type, USED)) :: xs)) -> Void
 lookupLaterFailAlt f (MkDPair fst (There z)) = f (MkDPair fst z)
 
+public export
 data LookupFail = NotFound String | IsUsed String
 
 lookup : (s : String)
@@ -138,16 +134,11 @@ used ((MkEntry name type USED) :: rest) with (used rest)
 
 used ((MkEntry name type FREE) :: rest) = No (isUsed rest)
 
-export
+public export
 data FailingEdgeCase = InvalidSplit Nat Nat Nat Nat
                      | InvalidEdge  Nat Nat Nat
 
-export
-Show FailingEdgeCase where
-  show (InvalidSplit p s l r) = "Pivot (" <+> show p <+> ") is wrong do not add up: " <+> unwords [show s, "!= 1 + ", show l, "+", show r]
-  show (InvalidEdge  s l r) = "Indices do not add up: " <+> unwords [show s, "= 1 + ", show l, "+", show r]
-
-export
+public export
 data Error = Mismatch Ty Ty | ElemFail LookupFail | PortExpected Direction
            | VectorExpected
            | VectorTooShort
@@ -156,23 +147,6 @@ data Error = Mismatch Ty Ty | ElemFail LookupFail | PortExpected Direction
            | Err FileContext Check.Error
            | NotEdgeCase FailingEdgeCase
            | MismatchGate DType DType
-export
-Show Check.Error where
-  show (Mismatch x y) = "Type Mismatch:\n\n" <+> unlines [unwords ["\tExpected:",show x], unwords ["\tGiven:", show y]]
-  show (MismatchGate x y) = "Type Mismatch:\n\n" <+> unlines [unwords ["\tExpected:",show x], unwords ["\tGiven:", show y]]
-  show (ElemFail (IsUsed x))   = unwords ["Port is used:", x]
-  show (ElemFail (NotFound x)) = unwords ["Undeclared variable::", x]
-  show (NotEdgeCase r)  = "Not an edge case:\n\n" <+> show r
-  show (PortExpected INPUT) = "Expected an Input Port"
-  show (PortExpected OUTPUT) = "Expected an Output Port"
-  show (LinearityError env) = "Dangling Ports:\n\n" <+> showEnv env
-  show (VectorExpected) = "Vector Expected"
-  show (VectorTooShort) = "Output Vector must be a length greater or equal to two."
-  show (VectorSizeMismatch o a b)
-    = unlines [ "Output Vector and input are wrong sizes:"
-              , unwords ["\t" <+> show o, "!=", show a, "+", show b]]
-  show (Err x y) = unwords [show x, show y]
-
 
 public export
 TyCheck : Type -> Type

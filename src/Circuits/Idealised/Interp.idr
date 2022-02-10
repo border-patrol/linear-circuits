@@ -6,11 +6,13 @@ import Data.Nat
 import Data.List.Elem
 import Data.List.Quantifiers
 
-import Toolkit.Decidable.Informative
-import Toolkit.Data.Graph.EdgeBounded
-import Toolkit.Data.Graph.EdgeBounded.HasExactDegree.All
+import public Toolkit.Decidable.Informative
+import public Toolkit.Data.Graph.EdgeBounded
+import public Toolkit.Data.Graph.EdgeBounded.HasExactDegree.All
 
 import Toolkit.Data.Whole
+
+import Circuits.Idealised.Pretty
 
 import Circuits.Idealised.Types
 import Circuits.Idealised.Terms

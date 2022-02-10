@@ -23,6 +23,10 @@ modules =
         , Circuits.Idealised.Parser
 
         , Circuits.Idealised.Check
+
+        , Circuits.Idealised
+        , Circuits.Idealised.Pretty
+
         , Circuits.Idealised.Main
 
    -- [ Unrestricted ]
@@ -36,6 +40,9 @@ modules =
 
         , Circuits.NetList.Check
         , Circuits.NetList.Interp
+
+        , Circuits.NetList
+        , Circuits.NetList.Pretty
 
         , Circuits.NetList.Main
 

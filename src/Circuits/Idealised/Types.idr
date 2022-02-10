@@ -12,16 +12,6 @@ public export
 data GateKind = AND  | IOR  | XOR
               | ANDN | IORN | XORN | JOIN
 
-export
-Show GateKind where
-  show AND  = "and"
-  show IOR  = "or"
-  show XOR  = "xor"
-  show ANDN = "nand"
-  show IORN = "nor"
-  show XORN = "xnor"
-  show JOIN = "join"
-
 public export
 data Direction = INPUT | OUTPUT
 
@@ -34,11 +24,6 @@ DecEq Direction where
   decEq OUTPUT INPUT  = No (negEqSym absurd)
   decEq OUTPUT OUTPUT = Yes Refl
 
-export
-Show Direction where
-  show INPUT  = "input"
-  show OUTPUT = "output"
-
 public export
 data PortHasProperties : Direction -> DType -> (Direction, DType) -> Type
   where
@@ -50,13 +35,6 @@ data Ty : Type where
   TyPort : (Direction, DType) -> Ty
 
   TyGate : Ty
-
-export
-Show Ty where
-  show TyUnit = "()"
-  show (TyPort (d,t)) = concat ["TyPort(", show d, ",", show t, ")"]
-  show TyGate = "TyGate"
-
 
 Uninhabited (TyUnit = (TyPort x)) where
   uninhabited Refl impossible

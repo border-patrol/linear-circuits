@@ -31,7 +31,7 @@ Env : List (String,Ty) -> Type
 Env = Env (String,Ty) Entry
 
 
-export
+public export
 data Error = Mismatch Ty Ty
            | MismatchD DType DType
            | NotBound String
@@ -41,37 +41,6 @@ data Error = Mismatch Ty Ty
            | OOB Nat Nat
            | ErrI String
            | Err FileContext Error
-export
-Show Error where
-  show (Mismatch x y)
-    = "Type Mismatch:\n\n"
-      <+>
-      unlines [unwords ["\tExpected:",show x], unwords ["\tGiven:", show y]]
-
-  show (MismatchD x y)
-    = "Type Mismatch:\n\n"
-      <+>
-      unlines [unwords ["\tExpected:",show x], unwords ["\tGiven:", show y]]
-
-
-  show (NotBound x)
-    = unwords ["Undeclared variable:", x]
-
-  show (VectorExpected)
-    = "Vector Expected"
-
-  show (PortChanExpected)
-    = "Port or Wire Expected"
-
-  show (PortExpected)
-    = "Port Expected"
-
-  show (ErrI msg)
-    = "Internal Err: " <+> msg
-  show (OOB x y)
-    = unwords ["Out of Bounds:" , show x, "is not within", show y]
-
-  show (Err x y) = unwords [show x, show y]
 
 strip : {ctxt : List (String, Ty)}
      -> Elem (s,type) ctxt -> Elem type (map Builtin.snd ctxt)

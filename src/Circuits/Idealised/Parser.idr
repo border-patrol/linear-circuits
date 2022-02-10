@@ -3,13 +3,13 @@ module Circuits.Idealised.Parser
 import Data.Nat
 import Data.List1
 
-import Circuits.Common.Lexer
-import Circuits.Common.Parser
+import public Circuits.Common.Lexer
+import public Circuits.Common.Parser
 
 
-import Circuits.Idealised.Types
-import Circuits.Idealised.AST
-import Circuits.Idealised.Lexer
+import        Circuits.Idealised.Types
+import public Circuits.Idealised.AST
+import public Circuits.Idealised.Lexer
 
 %hide logic
 %hide array

@@ -7,14 +7,14 @@ import Data.Fin
 import Data.List.Elem
 import Data.List.Quantifiers
 
-import Toolkit.Decidable.Informative
-
-import Toolkit.Data.Graph.EdgeBounded
-import Toolkit.Data.Graph.EdgeBounded.HasExactDegree.All
+import public Toolkit.Decidable.Informative
+import public Toolkit.Data.Graph.EdgeBounded
+import public Toolkit.Data.Graph.EdgeBounded.HasExactDegree.All
 
 import Toolkit.Data.List.DeBruijn
 import Toolkit.Data.Whole
 
+import Circuits.NetList.Pretty
 import Circuits.NetList.Types
 import Circuits.NetList.Terms
 

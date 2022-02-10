@@ -21,11 +21,6 @@ Uninhabited (LOGIC = BVECT n k) where
   uninhabited Refl impossible
 
 export
-Show DType where
-  show LOGIC = "logic"
-  show (BVECT n type) = show type <+> concat ["[", show n, "]"]
-
-export
 DecEq DType where
   decEq LOGIC LOGIC = Yes Refl
   decEq LOGIC (BVECT k x) = No absurd
@@ -47,11 +42,6 @@ data Usage = USED | FREE
 
 Uninhabited (USED = FREE) where
   uninhabited Refl impossible
-
-export
-Show Usage where
-  show USED = "Used"
-  show FREE = "Free"
 
 export
 DecEq Usage where
