@@ -24,115 +24,123 @@ import Circuits.Idealised.AST
 
 %default total
 
-public export
-data Entry : (String, (Ty, Usage)) -> Type where
-  MkEntry : (name : String)
-         -> (type : Ty)
-         -> (u    : Usage)
-                 -> Entry (name, (type,u))
+namespace Env
+  public export
+  data Entry : (String, (Ty, Usage)) -> Type where
+    MkEntry : (name : String)
+           -> (type : Ty)
+           -> (u    : Usage)
+                   -> Entry (name, (type,u))
 
-public export
-Env : List (String, (Ty, Usage)) -> Type
-Env = Env (String, (Ty, Usage)) Entry
+  public export
+  Env : List (String, (Ty, Usage)) -> Type
+  Env = Env (String, (Ty, Usage)) Entry
 
-isEmpty : (s : String) -> DPair Ty (\t => Elem (s, (t, FREE)) []) -> Void
-isEmpty _ (MkDPair _ _) impossible
+  isEmpty : (s : String) -> DPair Ty (\t => Elem (s, (t, FREE)) []) -> Void
+  isEmpty _ (MkDPair _ _) impossible
 
-lookupLaterFail : (DPair Ty (\t => Elem (s, (t, FREE)) xs) -> Void)
-               -> (s = name -> Void)
-               -> DPair Ty (\t => Elem (s, (t, FREE)) ((name, (type, u)) :: xs))
-               -> Void
-lookupLaterFail f g (MkDPair type Here) = g Refl
-lookupLaterFail f g (MkDPair fst (There x)) = f (MkDPair fst x)
+  lookupLaterFail : (DPair Ty (\t => Elem (s, (t, FREE)) xs) -> Void)
+                 -> (s = name -> Void)
+                 -> DPair Ty (\t => Elem (s, (t, FREE)) ((name, (type, u)) :: xs))
+                 -> Void
+  lookupLaterFail f g (MkDPair type Here) = g Refl
+  lookupLaterFail f g (MkDPair fst (There x)) = f (MkDPair fst x)
 
-lookupLaterFailAlt : (DPair Ty (\t => Elem (s, (t, FREE)) xs) -> Void)
-                   -> DPair Ty (\t => Elem (s, (t, FREE)) ((s, (type, USED)) :: xs)) -> Void
-lookupLaterFailAlt f (MkDPair fst (There z)) = f (MkDPair fst z)
+  lookupLaterFailAlt : (DPair Ty (\t => Elem (s, (t, FREE)) xs) -> Void)
+                     -> DPair Ty (\t => Elem (s, (t, FREE)) ((s, (type, USED)) :: xs)) -> Void
+  lookupLaterFailAlt f (MkDPair fst (There z)) = f (MkDPair fst z)
 
-public export
-data LookupFail = NotFound String | IsUsed String
+  public export
+  data LookupFail = NotFound String | IsUsed String
 
-lookup : (s : String)
-      -> Env ctxt
-      -> DecInfo LookupFail (t ** Elem (s,(t,FREE)) ctxt)
-lookup s [] = No (NotFound s) (isEmpty s)
-lookup s ((MkEntry name type u) :: rest) with (decEq s name)
-  lookup s ((MkEntry s type u) :: rest) | (Yes Refl) with (u)
-    lookup s ((MkEntry s type u) :: rest) | (Yes Refl) | USED with (lookup s rest)
-      lookup s ((MkEntry s type u) :: rest) | (Yes Refl) | USED | (Yes (MkDPair fst snd))
+  export
+  lookup : (s : String)
+        -> Env ctxt
+        -> DecInfo LookupFail (t ** Elem (s,(t,FREE)) ctxt)
+  lookup s [] = No (NotFound s) (isEmpty s)
+  lookup s ((MkEntry name type u) :: rest) with (decEq s name)
+    lookup s ((MkEntry s type u) :: rest) | (Yes Refl) with (u)
+      lookup s ((MkEntry s type u) :: rest) | (Yes Refl) | USED with (lookup s rest)
+        lookup s ((MkEntry s type u) :: rest) | (Yes Refl) | USED | (Yes (MkDPair fst snd))
+          = Yes (MkDPair fst (There snd))
+        lookup s ((MkEntry s type u) :: rest) | (Yes Refl) | USED | (No reason contra)
+          = No (IsUsed s) (lookupLaterFailAlt contra)
+      lookup s ((MkEntry s type u) :: rest) | (Yes Refl) | FREE
+        = Yes (MkDPair type Here)
+
+    lookup s ((MkEntry name type u) :: rest) | (No contra) with (lookup s rest)
+      lookup s ((MkEntry name type u) :: rest) | (No contra) | (Yes (MkDPair fst snd))
         = Yes (MkDPair fst (There snd))
-      lookup s ((MkEntry s type u) :: rest) | (Yes Refl) | USED | (No reason contra)
-        = No (IsUsed s) (lookupLaterFailAlt contra)
-    lookup s ((MkEntry s type u) :: rest) | (Yes Refl) | FREE
-      = Yes (MkDPair type Here)
+      lookup s ((MkEntry name type u) :: rest) | (No contra) | (No reason f)
+        = No reason (lookupLaterFail f contra)
 
-  lookup s ((MkEntry name type u) :: rest) | (No contra) with (lookup s rest)
-    lookup s ((MkEntry name type u) :: rest) | (No contra) | (Yes (MkDPair fst snd))
-      = Yes (MkDPair fst (There snd))
-    lookup s ((MkEntry name type u) :: rest) | (No contra) | (No reason f)
-      = No reason (lookupLaterFail f contra)
+  export
+  strip : {ctxt : List (String, (Ty, Usage))}
+       -> Elem (s,(type,usage)) ctxt -> Elem (type,usage) (map Builtin.snd ctxt)
+  strip Here = Here
+  strip (There x) = There (strip x)
 
-strip : {ctxt : List (String, (Ty, Usage))}
-     -> Elem (s,(type,usage)) ctxt -> Elem (type,usage) (map Builtin.snd ctxt)
-strip Here = Here
-strip (There x) = There (strip x)
+namespace Usage
+  public export
+  data Use : (curr : List (String, (Ty, Usage)))
+          -> (prf  : Elem (s,(type,FREE)) curr)
+          -> (next : List (String, (Ty, Usage)))
+          -> Type
+    where
+      H : Use ((s,(type,FREE)) :: rest)
+              Here
+              ((s,(type,USED)) :: rest)
+      T :  Use rest later restAlt
+        -> Use ((s,(t,u)) :: rest)
+               (There later)
+               ((s,(t,u)) :: restAlt)
 
-data Use : (curr : List (String, (Ty, Usage)))
-        -> (prf  : Elem (s,(type,FREE)) curr)
-        -> (next : List (String, (Ty, Usage)))
-        -> Type
-  where
-    H : Use ((s,(type,FREE)) :: rest)
-            Here
-            ((s,(type,USED)) :: rest)
-    T :  Use rest later restAlt
-      -> Use ((s,(t,u)) :: rest)
-             (There later)
-             ((s,(t,u)) :: restAlt)
+  export
+  use : {curr : List (String, (Ty,Usage))}
+     -> (prf : Elem (s,(t,FREE)) curr)
+     -> (env : Env curr)
+            -> DPair (List (String, (Ty,Usage)))
+                     (Use curr prf)
+  use _ [] impossible
 
-use : {curr : List (String, (Ty,Usage))}
-   -> (prf : Elem (s,(t,FREE)) curr)
-   -> (env : Env curr)
-          -> DPair (List (String, (Ty,Usage)))
-                   (Use curr prf)
-use _ [] impossible
+  use {curr = ((s, (t, FREE)) :: xs)} Here (elem :: rest) = MkDPair ((s, (t, USED)) :: xs) H
+  use {curr = ((x, (z, w)) :: xs)} (There y) (elem :: rest) with (use y rest)
+    use {curr = ((x, (z, w)) :: xs)} (There y) (elem :: rest) | (MkDPair fst snd) = MkDPair ((x, (z, w)) :: fst) (T snd)
 
-use {curr = ((s, (t, FREE)) :: xs)} Here (elem :: rest) = MkDPair ((s, (t, USED)) :: xs) H
-use {curr = ((x, (z, w)) :: xs)} (There y) (elem :: rest) with (use y rest)
-  use {curr = ((x, (z, w)) :: xs)} (There y) (elem :: rest) | (MkDPair fst snd) = MkDPair ((x, (z, w)) :: fst) (T snd)
+  export
+  strip' : {curr,next : List (String, (Ty,Usage))}
+        -> {prf       : Elem (s,(t,FREE)) curr}
+        -> Use curr prf next
+        -> Use (map Builtin.snd curr)
+               (strip prf)
+               (map Builtin.snd next)
+  strip' H = H
+  strip' (T x) = T (strip' x)
 
+  export
+  newEnv : (env : Env curr)
+        -> (use : Use curr prf next)
+               -> Env next
+  newEnv (MkEntry s type FREE :: rest) H = MkEntry s type USED :: rest
+  newEnv (elem :: rest) (T x) = elem :: newEnv rest x
 
-strip' : {curr,next : List (String, (Ty,Usage))}
-      -> {prf       : Elem (s,(t,FREE)) curr}
-      -> Use curr prf next
-      -> Use (map Builtin.snd curr)
-             (strip prf)
-             (map Builtin.snd next)
-strip' H = H
-strip' (T x) = T (strip' x)
+  laterUsed : (All Used (map Builtin.snd xs) -> Void) -> All Used ((type, USED) :: map Builtin.snd xs) -> Void
+  laterUsed f (x :: y) = f y
 
-newEnv : (env : Env curr)
-      -> (use : Use curr prf next)
-             -> Env next
-newEnv (MkEntry s type FREE :: rest) H = MkEntry s type USED :: rest
-newEnv (elem :: rest) (T x) = elem :: newEnv rest x
+  isUsed : DList (String, (Ty, Usage)) Entry xs -> All Used ((type, FREE) :: map Builtin.snd xs) -> Void
+  isUsed [] (Types.IsUsed :: _) impossible
+  isUsed (_ :: _) (Types.IsUsed :: _) impossible
 
-laterUsed : (All Used (map Builtin.snd xs) -> Void) -> All Used ((type, USED) :: map Builtin.snd xs) -> Void
-laterUsed f (x :: y) = f y
+  export
+  used : Env ctxt
+      -> Dec (All Used (map Builtin.snd ctxt))
+  used [] = Yes []
+  used ((MkEntry name type USED) :: rest) with (used rest)
+    used ((MkEntry name type USED) :: rest) | (Yes prf) = Yes (IsUsed :: prf)
 
-isUsed : DList (String, (Ty, Usage)) Entry xs -> All Used ((type, FREE) :: map Builtin.snd xs) -> Void
-isUsed [] (Types.IsUsed :: _) impossible
-isUsed (_ :: _) (Types.IsUsed :: _) impossible
+    used ((MkEntry name type USED) :: rest) | (No contra) = No (laterUsed contra)
 
-used : Env ctxt
-    -> Dec (All Used (map Builtin.snd ctxt))
-used [] = Yes []
-used ((MkEntry name type USED) :: rest) with (used rest)
-  used ((MkEntry name type USED) :: rest) | (Yes prf) = Yes (IsUsed :: prf)
-
-  used ((MkEntry name type USED) :: rest) | (No contra) = No (laterUsed contra)
-
-used ((MkEntry name type FREE) :: rest) = No (isUsed rest)
+  used ((MkEntry name type FREE) :: rest) = No (isUsed rest)
 
 public export
 data FailingEdgeCase = InvalidSplit Nat Nat Nat Nat
