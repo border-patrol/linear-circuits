@@ -3,7 +3,6 @@ module Circuits.NetList.AST
 import Toolkit.Data.Location
 import Toolkit.Data.Whole
 
-import Ref
 import Circuits.NetList.Types
 
 %default total

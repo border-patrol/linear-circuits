@@ -6,9 +6,8 @@ sourcedir = "src"
 
 modules =
    -- [ Common ]
-          Ref
 
-        , Circuits.Split
+          Circuits.Split
         , Circuits.Common
         , Circuits.Common.Lexer
 
@@ -63,6 +62,5 @@ modules =
         , Circuits.NetList.Linear.Terms
 
         , Circuits.NetList.Linear.Interp
-
 
 -- [ EOF ]

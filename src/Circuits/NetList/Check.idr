@@ -14,8 +14,6 @@ import Toolkit.Data.Location
 import Toolkit.Data.Whole
 import Toolkit.Data.List.DeBruijn
 
-import Ref
-
 import Circuits.NetList.Types
 import Circuits.NetList.Terms
 import Circuits.NetList.AST

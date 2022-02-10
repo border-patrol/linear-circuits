@@ -2,7 +2,6 @@ module Circuits.Idealised.AST
 
 import Toolkit.Data.Location
 
-import Ref
 import Circuits.Idealised.Types
 
 %default total
