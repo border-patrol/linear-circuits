@@ -13,11 +13,11 @@ import Toolkit.Data.Location
 import Toolkit.Text.Lexer.Run
 import Toolkit.Text.Parser.Run
 
-import Toolkit.Data.List.DeBruijn
+import Toolkit.DeBruijn.Context
 
 import public Circuits.Common.Pretty
-import Circuits.Idealised.Types
-import Circuits.Idealised.Check
+import        Circuits.Idealised.Types
+import        Circuits.Idealised.Check
 
 %default total
 
@@ -42,11 +42,11 @@ Show GateKind where
   show XORN = "xnor"
   show JOIN = "join"
 
-showEnv : Env es -> String
+showEnv : Context type -> String
 showEnv [] = ""
-showEnv ((MkEntry name type FREE) :: rest)
+showEnv ((I name (type, FREE)) :: rest)
   = name <+> " : " <+> show type <+> "\n" <+> (showEnv rest)
-showEnv ((MkEntry name type USED) :: rest) = showEnv rest
+showEnv ((I name (type, USED)) :: rest) = showEnv rest
 
 export
 Show FailingEdgeCase where
@@ -55,10 +55,23 @@ Show FailingEdgeCase where
 
 export
 Show Check.Error where
-  show (Mismatch x y) = "Type Mismatch:\n\n" <+> unlines [unwords ["\tExpected:",show x], unwords ["\tGiven:", show y]]
-  show (MismatchGate x y) = "Type Mismatch:\n\n" <+> unlines [unwords ["\tExpected:",show x], unwords ["\tGiven:", show y]]
-  show (ElemFail (IsUsed x))   = unwords ["Port is used:", x]
-  show (ElemFail (NotFound x)) = unwords ["Undeclared variable::", x]
+  show (Mismatch x y)
+    = "Type Mismatch:\n\n"
+      <+> unlines [unwords ["\tExpected:",show x], unwords ["\tGiven:", show y]]
+
+  show (MismatchGate x y)
+    = "Type Mismatch:\n\n"
+     <+> unlines [unwords ["\tExpected:",show x], unwords ["\tGiven:", show y]]
+
+  show (ElemFail (NotSatisfied (NotFound x)))
+    = unwords ["Undeclared variable::", x]
+
+  show (ElemFail (NotSatisfied (IsUsed x)))
+    = unwords ["Port is used:", x]
+
+  show (ElemFail NotFound)
+    = "Port not found."
+
   show (NotEdgeCase r)  = "Not an edge case:\n\n" <+> show r
   show (PortExpected INPUT) = "Expected an Input Port"
   show (PortExpected OUTPUT) = "Expected an Output Port"

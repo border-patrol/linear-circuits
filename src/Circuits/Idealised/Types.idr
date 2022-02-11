@@ -68,6 +68,7 @@ public export
 data Used : (Ty, Usage) -> Type where
   IsUsed : Used (type, USED)
 
+export
 Uninhabited (Used (type,FREE)) where
   uninhabited IsUsed impossible
 
@@ -89,24 +90,24 @@ data Use : (old : List (Ty, Usage))
      -> Use ((type',usage')::old) (There later) ((type',usage')::new)
 
 export
-use : (ctxt : List (Ty, Usage))
+use : {ctxt : List (Ty, Usage)}
    -> (prf : Elem (type, FREE) ctxt)
           -> (DPair (List (Ty, Usage))
                     (Use ctxt prf))
-use ((type, FREE) :: xs) Here
+use {ctxt = (type, FREE) :: xs} Here
   = (MkDPair ((type, USED) :: xs) H)
-use ((y, z) :: xs) (There x) with (use xs x)
-  use ((y, z) :: xs) (There x) | ((MkDPair fst snd))
+use {ctxt = (y, z) :: xs} (There x) with (use x)
+  use {ctxt = (y, z) :: xs} (There x) | ((MkDPair fst snd))
     = (MkDPair ((y, z) :: fst) (T snd))
 
-export
-useAlt : {ctxt : List (Ty, Usage)}
-      -> (prf : Elem (type, FREE) ctxt)
-             -> (DPair (List (Ty, Usage))
-                       (Use ctxt prf))
-useAlt {ctxt = ((type, FREE) :: xs)} Here
-  = MkDPair ((type, USED) :: xs) H
-useAlt {ctxt = (y :: xs)} (There x) with (useAlt x)
-  useAlt {ctxt = ((y, z) :: xs)} (There x) | (MkDPair fst snd) = MkDPair ((y, z) :: fst) (T snd)
+-- export                                                                                           --
+-- useAlt : {ctxt : List (Ty, Usage)}                                                               --
+--       -> (prf : Elem (type, FREE) ctxt)                                                          --
+--              -> (DPair (List (Ty, Usage))                                                        --
+--                        (Use ctxt prf))                                                           --
+-- useAlt {ctxt = ((type, FREE) :: xs)} Here                                                        --
+--   = MkDPair ((type, USED) :: xs) H                                                               --
+-- useAlt {ctxt = (y :: xs)} (There x) with (useAlt x)                                              --
+--   useAlt {ctxt = ((y, z) :: xs)} (There x) | (MkDPair fst snd) = MkDPair ((y, z) :: fst) (T snd) --
 
 -- [ EOF ]
