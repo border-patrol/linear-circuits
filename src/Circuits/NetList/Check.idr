@@ -12,7 +12,8 @@ import Toolkit.Decidable.Informative
 
 import Toolkit.Data.Location
 import Toolkit.Data.Whole
-import Toolkit.Data.List.DeBruijn
+
+import Toolkit.DeBruijn.Context
 
 import Circuits.NetList.Types
 import Circuits.NetList.Terms
@@ -20,14 +21,9 @@ import Circuits.NetList.AST
 
 %default total
 
-data Entry : (String,Ty) -> Type where
-  MkEntry : (name : String)
-         -> (type : Ty)
-                 -> Entry (MkPair name type)
-
-Env : List (String,Ty) -> Type
-Env = Env (String,Ty) Entry
-
+public export
+Context : List Ty -> Type
+Context = Context Ty
 
 public export
 data Error = Mismatch Ty Ty
@@ -40,11 +36,6 @@ data Error = Mismatch Ty Ty
            | ErrI String
            | Err FileContext Error
 
-strip : {ctxt : List (String, Ty)}
-     -> Elem (s,type) ctxt -> Elem type (map Builtin.snd ctxt)
-strip Here = Here
-strip (There x) = There (strip x)
-
 public export
 TyCheck : Type -> Type
 TyCheck = Either Error
@@ -52,6 +43,15 @@ TyCheck = Either Error
 lift : Dec a -> Error -> TyCheck a
 lift (Yes prf) _ = Right prf
 lift (No contra) e = Left e
+
+throw : FileContext -> Check.Error -> TyCheck a
+throw fc e = Left $ Err fc e
+
+namespace Info
+  public export
+  lift : DecInfo e a -> Check.Error -> TyCheck a
+  lift (Yes prf)     _ = Right prf
+  lift (No m contra) e = Left e
 
 namespace Elab
 
@@ -196,26 +196,27 @@ namespace Elab
 
 namespace TypeCheck
   export
-  typeCheck : {ctxt : List (String,Ty)}
-           -> (curr : Env ctxt)
+  typeCheck : {types : List Ty}
+           -> (curr : Context types)
            -> (ast  : AST)
-                    -> TyCheck (DPair Ty (Term (map Builtin.snd ctxt)))
+                   -> TyCheck (DPair Ty (Term types))
 
+  typeCheck curr (Var x)
+    = do prf <- lift (isBound (get x) curr)
+                     (Err (span x) (NotBound (get x)))
 
-  typeCheck {ctxt} curr (Var x)
-    = do (ty ** prf) <- lift (isIndex (get x) ctxt)
-                             (Err (span x) (NotBound (get x)))
+         let (N (I _ ty) prf idx) = mkNameless prf
 
-         pure (ty ** Var (strip prf))
+         pure (MkDPair ty (Var idx))
 
   typeCheck curr (Port fc flow ty n body)
-    = do (TyUnit ** term) <- typeCheck (MkEntry (get n) (TyPort (flow,ty))::curr) body
+    = do (TyUnit ** term) <- typeCheck (I (get n) (TyPort (flow,ty))::curr) body
            | (type ** _) => Left (Err fc (Mismatch TyUnit type))
 
          pure (_ ** Port flow ty term)
 
   typeCheck curr (Wire fc ty n body)
-    = do (TyUnit ** term) <- typeCheck (MkEntry (get n) (TyChan ty)::curr) body
+    = do (TyUnit ** term) <- typeCheck (I (get n) (TyChan ty)::curr) body
            | (type ** _) => Left (Err fc (Mismatch TyUnit type))
 
          pure (_ ** Wire ty term)
@@ -224,7 +225,7 @@ namespace TypeCheck
     = do (TyGate ** gate) <- typeCheck curr g
            | (type ** _) => Left (Err fc (Mismatch TyGate type))
 
-         (TyUnit ** term) <- typeCheck (MkEntry (get n) (TyGate)::curr) body
+         (TyUnit ** term) <- typeCheck (I (get n) (TyGate)::curr) body
            | (type ** _) => Left (Err fc (Mismatch TyUnit type))
 
          pure (_ ** GateDecl gate term)
