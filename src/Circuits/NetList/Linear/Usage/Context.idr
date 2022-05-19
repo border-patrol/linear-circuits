@@ -50,7 +50,6 @@ data IsFreePort : (item : Item)
     FreePortThere : (later : IsFreePort (I (TyPort (flow,dtype)) u)              rest)
                           -> IsFreePort (I (TyPort (flow,dtype)) u) (not_item :: rest)
 
-
 public export
 data UsePort : (old : List Item)
             -> (prf : IsFreePort (I (TyPort (flow,dtype)) u) old)

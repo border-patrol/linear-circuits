@@ -33,28 +33,65 @@ import Circuits.NetList.Linear.Usage.TermType.Use.Channel
 
 %default total
 
-public export
-record Item where
-  constructor I
-  getType : Ty
-  getUsage : Usage getType
+namespace Usage
+  public export
+  record Item where
+    constructor I
+    getType : Ty
+    getUsage : Usage getType
 
 
-public export
-data FreePort : (flow : Direction)
-             -> (type : DType)
-             -> (item : Item)
-                      -> Type
-  where
-    FP : (u : Usage type) -> (prf : IsFree type u) -> FreePort flow type (I (TyPort (flow, type)) (TyPort u))
+namespace Port
+  public export
+  data FreePort : (flow : Direction)
+               -> (type : DType)
+               -> (item : Item)
+                        -> Type
+    where
+      FP : (u : Usage type) -> (prf : IsFree type u) -> FreePort flow type (I (TyPort (flow, type)) (TyPort u))
 
-public export
-freePort : (flow : Direction)
-        -> (type : DType)
-                -> DPair Item (FreePort flow type)
-freePort flow type with (init type)
-  freePort flow type | (MkDPair u prf)
-    = MkDPair (I (TyPort (flow, type)) (TyPort u)) (FP u prf)
+  public export
+  freePort : (flow : Direction)
+          -> (type : DType)
+                  -> DPair Item (FreePort flow type)
+  freePort flow type with (init type)
+    freePort flow type | (MkDPair u prf)
+      = MkDPair (I (TyPort (flow, type)) (TyPort u)) (FP u prf)
+
+  public export
+  data IsFreePort : (item : Item)
+                         -> Type
+    where
+      IFP : (usage : Usage (TyPort (flow, type)))
+         -> (prf   : IsFree        (TyPort (flow, type)) usage)
+                  -> IsFreePort (I (TyPort (flow, type)) usage)
+
+  Uninhabited (IsFreePort (I TyGate ug)) where
+    uninhabited (IFP usage prf) impossible
+
+  Uninhabited (IsFreePort (I (TyChan type) uc)) where
+    uninhabited (IFP usage prf) impossible
+
+  Uninhabited (IsFreePort (I TyUnit uu)) where
+    uninhabited (IFP usage prf) impossible
+
+  export
+  isFreePort : (item : Item) -> Dec (IsFreePort item)
+  isFreePort (I (TyPort x) getUsage) with (isFree getUsage)
+    isFreePort (I (TyPort (x, y)) getUsage) | (Yes prf)
+      = Yes (IFP getUsage prf)
+    isFreePort (I (TyPort (x,y)) getUsage) | (No contra)
+      = No (\(IFP getUsage pu) => contra pu)
+
+  isFreePort (I TyUnit getUsage)
+    = No absurd
+
+  isFreePort (I (TyChan x) getUsage)
+    = No absurd
+
+  isFreePort (I TyGate getUsage)
+    = No absurd
+
 
 public export
 data FreeChan : (type : DType) -> (item : Item) -> Type where

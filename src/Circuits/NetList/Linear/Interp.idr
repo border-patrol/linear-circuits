@@ -20,6 +20,8 @@ import Circuits.NetList.Types
 import Circuits.NetList.Linear.Usage
 import Circuits.NetList.Linear.Terms
 
+import Circuits.NetList.Pretty
+
 %default total
 
 public export

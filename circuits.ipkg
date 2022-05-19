@@ -16,6 +16,10 @@ modules =
 
    -- [ Idealised ]
 
+        , Circuits.Idealised.Pretty
+        , Circuits.Idealised.Error
+        , Circuits.Idealised.Core
+
         , Circuits.Idealised.Types
         , Circuits.Idealised.Terms
         , Circuits.Idealised.Interp
@@ -27,7 +31,6 @@ modules =
         , Circuits.Idealised.Check
 
         , Circuits.Idealised
-        , Circuits.Idealised.Pretty
 
         , Circuits.Idealised.Main
 
