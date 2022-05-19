@@ -17,33 +17,33 @@ import Toolkit.Options.ArgParse.Model
 
 -- ----------------------------------------------------------------- [ Parsers ]
 
-flagLong : Rule Token Arg
+flagLong : Rule Arg
 flagLong = do
   l <- longFlag
   pure $ Flag l
 
-flagShort : Rule Token Arg
+flagShort : Rule Arg
 flagShort = do
    s <- shortFlag
    pure $ Flag s
 
-kvLong : Rule Token Arg
+kvLong : Rule Arg
 kvLong = do
     key <- longFlag
     equals
     value <- (arg <|> quoted)
     pure $ KeyValue key value
 
-kvShort : Rule Token Arg
+kvShort : Rule Arg
 kvShort = do
     k <- shortFlag
     v <- (arg <|> quoted)
     pure $ KeyValue k v
 
-options : Rule Token Arg
+options : Rule Arg
 options = kvShort <|> kvLong <|> flagShort <|> flagLong <|> (do fs <- arg; pure $ File fs)
 
-args : RuleEmpty Token $ List Arg
+args : RuleEmpty (List Arg)
 args = do
     os <- many options
     pure $ os

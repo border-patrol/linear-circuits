@@ -30,17 +30,17 @@ Show DType where
 
 
 export
-Show a => Show (ParseFailure a) where
+[circuitspf] Show a => Show (ParseFailure a) where
   show err
     = trim $ unlines [show (location err), (error err)]
 
 export
-Show a => Show (ParseError a) where
+[circuitspe] Show a => Show (ParseError a) where
   show (FError err)
     = trim $ unlines ["File Error: "
                      , show err]
   show (PError err)
-    = trim $ unlines (forget (map show err))
+    = trim $ unlines (forget (map (show @{circuitspf}) err))
 
   show (LError (MkLexFail l i))
     = trim $ unlines [show l, show i]

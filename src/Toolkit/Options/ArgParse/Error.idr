@@ -25,11 +25,10 @@ data ArgParseError : Type where
 
 export
 (Show Arg) => Show ArgParseError where
-  show (InvalidOption o) = "Invalid Option " ++ show o
-  show (MalformedOption (PError (MkParseFail error location rest))) =
-    unlines [show location, error]
-  show (MalformedOption (LError (MkLexFail l i)))  = unwords [show l, ":\n" <+> i]
-  show (MalformedOption (FError x))  = unlines ["File Error:", show x]
+  show (InvalidOption o)
+    = "Invalid Option " ++ show o
+  show (MalformedOption err)
+    = "Malformed Option " ++ show err
 
 
 -- --------------------------------------------------------------------- [ EOF ]

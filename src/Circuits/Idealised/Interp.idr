@@ -12,7 +12,14 @@ import public Toolkit.Data.Graph.EdgeBounded.HasExactDegree.All
 
 import Toolkit.Data.Whole
 
+import Toolkit.Data.List.AtIndex
+import Toolkit.DeBruijn.Context.Item
+import Toolkit.DeBruijn.Context
+import Toolkit.DeBruijn.Renaming
+
 import Circuits.Idealised.Pretty
+
+import Circuits.Idealised.Core
 
 import Circuits.Idealised.Types
 import Circuits.Idealised.Terms
@@ -38,14 +45,16 @@ namespace Environments
 
   export
   lookup : (envO  : Env old )
-        -> (prf   : Elem (type,FREE) old)
+        -> (prf   : IsVar old (type,FREE))
         -> (which : Use old prf new)
-        -> (Env new, InterpTy type)
-  lookup (Extend x y) Here H = (Extend x y, x)
-  lookup (Extend y z) (There later) (T x)
-    = let (newEnv, res) = lookup z later x
-      in (Extend y newEnv, res)
+                  -> (Env new, InterpTy type)
+  lookup {old = Nil} (Extend _ _) (V _ Here) H impossible
 
+  lookup {old = ((type, FREE) :: rest)} (Extend x y) (V 0 Here) H
+    = (Extend x y, x)
+  lookup {old = ((type', usage') :: old)} (Extend a b) (V (S n) (There later)) (T x)
+    = let (new, res) = lookup b (V n later) x
+      in (Extend a new, res)
 
 namespace Result
 
@@ -374,25 +383,27 @@ isValid r with (getGraph r)
 
 
 public export
-data Run : (term : Term Nil TyUnit Nil) -> Type where
+data IsSound : (term : Term Nil TyUnit Nil) -> Type where
   R : (prf  : Valid (interp Empty Z (MkGraph Nil Nil) term))
-           -> Run term
+           -> IsSound term
 
 public export
-getGraph : Run term -> DPair (Graph String) ValidGraph
+getGraph : IsSound term -> DPair (Graph String) ValidGraph
 getGraph (R (D g x y)) = MkDPair g y
 
-export
 run : (term : Term Nil TyUnit Nil)
-           -> DecInfo (Graph String, HasExactDegree.Error String) (Run term)
+           -> DecInfo (Graph String, HasExactDegree.Error String) (IsSound term)
 run term with (isValid (interp Empty Z empty term))
   run term | (Yes prf) = Yes (R prf)
   run term | (No msg contra) = No msg (\(R prf) => contra prf)
 
+
 export
-runIO : (term : Term Nil TyUnit Nil)
-             -> IO (Either (Graph String, HasExactDegree.Error String)
-                           (Run term))
-runIO term = pure $ (asEither (run term))
+isSound : (term : Term Nil TyUnit Nil)
+               -> Idealised (IsSound term)
+isSound term
+  = do prf <- embed (\(a,b) => Sound a b)
+                    (run term)
+       pure prf
 
 -- [ EOF ]

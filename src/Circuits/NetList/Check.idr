@@ -230,7 +230,7 @@ namespace TypeCheck
 
          pure (_ ** GateDecl gate term)
 
-  typeCheck curr (Assign fc i o rest)
+  typeCheck curr (Assign fc o i rest)
     =  do termI <- typeCheck curr i
 
           ity <- getDataType fc termI
@@ -241,14 +241,14 @@ namespace TypeCheck
           Refl <- lift (decEq ity oty)
                        (Err fc (MismatchD ity oty))
 
-          i' <- checkPort fc INPUT  ity termI
           o' <- checkPort fc OUTPUT ity termO
+          i' <- checkPort fc INPUT  ity termI
 
 
           (TyUnit ** r') <- typeCheck curr rest
            | (type ** _) => Left (Err fc (Mismatch TyUnit type))
 
-          pure (_ ** Assign i' o' r')
+          pure (_ ** Assign o' i' r')
 
 
   typeCheck curr (Mux fc o c l r)

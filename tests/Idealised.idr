@@ -13,7 +13,7 @@ tests
         []
         Nothing
         [
-          "idealised-all"
+          "idealised"
         ]
 
 

@@ -47,8 +47,8 @@ data Term : (context : List Ty)
     Stop : Term ctxt TyUnit
 
     Assign : {type : DType}
-          -> (i : Term ctxt (TyPort (INPUT,type)))
           -> (o : Term ctxt (TyPort (OUTPUT,type)))
+          -> (i : Term ctxt (TyPort (INPUT,type)))
           -> (body : Term ctxt TyUnit)
                   -> Term ctxt TyUnit
 

@@ -8,12 +8,17 @@ import Data.List.Quantifiers
 
 import Toolkit.Data.Whole
 
+import Toolkit.Data.List.AtIndex
+import Toolkit.DeBruijn.Context.Item
+import Toolkit.DeBruijn.Context
+import Toolkit.DeBruijn.Renaming
+
 import Circuits.Idealised.Types
 import Circuits.Split
 
 %default total
 
-namespace Circuits
+namespace Idealised
 
   public export
   data Term : (old  : List (Ty, Usage))
@@ -21,9 +26,9 @@ namespace Circuits
            -> (new  : List (Ty, Usage))
                    -> Type
     where
-      Var : (prf : Elem (type, FREE) old)
-         -> Use old prf new
-         -> Term old type new
+      Var : (prf : IsVar old (type, FREE))
+         -> (use : Use old prf new)
+                -> Term old type new
 
       NewSignal : (flow     : Direction)
                -> (datatype : DType)

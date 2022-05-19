@@ -1,0 +1,15 @@
+// LOG : Starting Idealised Linear
+// LOG : Parsing Successful
+// LOG : Type Checking Complete
+// LOG : Soundness Check Complete
+digraph G {
+3 [label="OUT(1) OUTPUT : logic[2]"];
+2 [label="IN(1) INPUT : logic"];
+1 [label="IN(1) INPUT : logic"];
+4 [label="(2, 1) MERGE_2L2V"];
+	4 -> 3;
+	1 -> 4;
+	2 -> 4;
+}
+
+// LOG : BYE

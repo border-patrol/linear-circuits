@@ -1,3 +1,14 @@
+# -- [ Makefile ]
+#
+# Makefile for testing
+#
+# Copyright : (c) Jan de Muijnck-Hughes
+# License   : see ../LICENSE
+#
+# -- [ EOH ]
+
+# [ Options ]
+
 IDRIS2=idris2
 HYPERFINE=hyperfine
 
@@ -9,6 +20,7 @@ THREADS ?= --threads $(shell (nproc || sysctl -n hw.ncpu) 2>/dev/null || echo 1)
 OPTS ?=
 
 
+# [ Typical Netlist language ]
 
 .PHONY: netlist-testbin netlist
 
@@ -23,6 +35,8 @@ test-netlist: netlist-testbin
 	$(THREADS) \
 	--only $(ONLY)
 
+# [ Idealised Netlist language ]
+
 .PHONY: idealised-testbin idealised
 
 testbin-idealised:
@@ -36,11 +50,16 @@ test-idealised: idealised-testbin
 	$(THREADS) \
 	--only $(ONLY)
 
+# [ Housekeeping ]
 
 .PHONY: test clean clobber
 
 clean:
 	find . -name 'output' | xargs rm -f
+	find . -name '*.dot' -or -name '*.png' | xargs rm -f
 
 clobber: clean
 	${RM} -rf build
+
+
+# -- [ EOF ]

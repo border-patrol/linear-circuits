@@ -1,7 +1,0 @@
-echo "Example Idealised"
-
-for i in $(ls *.sv);
-do
-    echo $i
-    $1 $i
-done

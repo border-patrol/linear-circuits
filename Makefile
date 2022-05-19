@@ -1,3 +1,14 @@
+# -- [ Makefile ]
+#
+# Makefile for the project.
+#
+# Copyright : (c) Jan de Muijnck-Hughes
+# License   : see ../LICENSE
+#
+# -- [ EOH ]
+
+# [ Options ]
+
 IDRIS2=idris2
 HYPERFINE=hyperfine
 
@@ -5,10 +16,15 @@ TARGETDIR = ${CURDIR}/build/exec
 
 bopts ?=
 
-.PHONY: all
+# [ Build the Core Gubbins ]
+
+.PHONY: circuits
 
 circuits:
 	$(IDRIS2) --build circuits.ipkg
+
+
+# [ Typical Netlist language ]
 
 .PHONY: netlist netlist-test-bin netlist-test-run netlist-test-update
 
@@ -36,6 +52,8 @@ netlist-test-run: netlist-test-bin
 
 .PHONY: idealised idealised-test-bin idealised-test-update idealised-test-fast
 
+# [ Idealised Netlist language ]
+
 idealised:
 	$(IDRIS2) --build idealised.ipkg
 
@@ -58,6 +76,8 @@ idealised-test-run: idealised-test-bin
 			 UPDATE='' \
 			 ONLY=$(ONLY) \
 
+# [ Housekeeping ]
+
 .PHONY: clobber clean
 
 clean:
@@ -69,3 +89,5 @@ clobber: clean
 	$(IDRIS2) --clean netlist.ipkg
 	${MAKE} -C tests clobber
 	${RM} -rf build/
+
+# -- [ EOF ]

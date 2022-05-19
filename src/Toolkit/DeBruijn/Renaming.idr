@@ -1,63 +1,81 @@
+||| How to rename things
+|||
+||| Module    : Renaming.idr
+||| Copyright : (c) Jan de Muijnck-Hughes
+||| License   : see LICENSE
+|||
 module Toolkit.DeBruijn.Renaming
 
-import public Decidable.Equality
+import Decidable.Equality
+import Data.DPair
 
-import public Data.List.Elem
+import Toolkit.Decidable.Informative
 
-import public Toolkit.Data.DList
+import Toolkit.Data.List.AtIndex
+import Toolkit.Data.DList
+import Toolkit.Data.DList.AtIndex
+
+import Toolkit.DeBruijn.Context.Item
+import Toolkit.DeBruijn.Context
 
 %default total
 
--- A reverse cons operator.
-infixr 6 +=
-
-namespace List
-
-  ||| A De Bruijn Index.
-  |||
-  ||| Future work will be to make this an efficient nameless representation using `AtIndex`.
-  |||
-  public export
-  Contains : List kind -> kind -> Type
-  Contains types type = Elem type types
-
-  ||| Append `x` to the head of `xs`.
-  public export
-  (+=) : List a -> a -> List a
-  (+=) xs x = x :: xs
-
+public export
+data IsVar : (ctxt : List kind)
+          -> (type :      kind)
+                  -> Type
+  where
+    V : (  pos : Nat)
+     -> (0 prf : AtIndex type ctxt pos)
+              -> IsVar   ctxt type
 
 public export
-weaken : (func : Contains old type
-              -> Contains new type)
-      -> (Contains (old += type') type
-       -> Contains (new += type') type)
+%inline
+shift : IsVar ctxt type -> IsVar (ctxt += a) type
+shift (V pos prf) = V (S pos) (There prf)
 
-weaken func Here = Here
-weaken func (There rest) = There (func rest)
+public export
+%inline
+weaken : (func : IsVar old type
+              -> IsVar new type)
+      -> (IsVar (old += type') type
+       -> IsVar (new += type') type)
+weaken f (V Z Here)
+  = V Z Here
+weaken f (V (S idx) (There later)) with (f (V idx later))
+  weaken f (V (S idx) (There later)) | (V pos prf)
+    = V (S pos) (There prf)
 
 public export
 interface Rename (type : Type) (term : List type -> type -> Type) | term where
   rename : {old, new : List type}
-        -> (f : {ty : type} -> Contains old ty
-                            -> Contains new ty)
+        -> (f : {ty : type} -> IsVar old ty
+                            -> IsVar new ty)
         -> ({ty : type} -> term old ty
                         -> term new ty)
 
-  var : {ty   : type}
-     -> {ctxt : List type}
-             -> Elem ty ctxt
-             -> term ctxt ty
+  %inline
+  embed : {ty   : type}
+       -> {ctxt : List type}
+               -> IsVar ctxt ty
+               -> term  ctxt ty
 
+public export
+%inline
+weakens : {type : Type}
+       -> {term : List type -> type -> Type}
+       -> Rename type term
+       => {old, new : List type}
+       -> (f : {ty  : type}
+                   -> IsVar old ty
+                   -> term  new ty)
+       -> ({ty,type' : type}
+              -> IsVar (old += type') ty
+              -> term  (new += type') ty)
 
-  weakens : {old, new : List type}
-         -> (f : {ty  : type}
-                     -> Contains old ty
-                     -> term     new ty)
-         -> ({ty,type' : type}
-                -> Contains (old += type') ty
-                -> term     (new += type') ty)
-  weakens f Here = var Here
-  weakens f (There rest) = rename There (f rest)
+weakens f (V 0 Here)
+  = embed (V Z Here)
+weakens f (V (S idx) (There later))
+  = rename shift (f (V idx later))
 
 -- [ EOF ]

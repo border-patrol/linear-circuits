@@ -58,21 +58,21 @@ rawTokens =
   , (symbol, Unknown)
   ]
 
-keep : TokenData Token -> Bool
-keep t with (tok t)
-  keep t | (WS x) = False
-  keep t | _      = True
+keep : WithBounds Token -> Bool
+keep (MkBounded t _ _) with (t)
+  keep (MkBounded t _ _) | (WS x) = False
+  keep (MkBounded t _ _) | _      = True
 
 export
 ArgParseLexer : Lexer Token
 ArgParseLexer = MkLexer rawTokens keep EndInput
 
 export
-lexArgParseStr : String -> Either LexError (List (TokenData Token))
+lexArgParseStr : String -> Either LexError (List (WithBounds Token))
 lexArgParseStr = lexString ArgParseLexer
 
 export
-lexArgParseFile : String -> IO $ Either LexFail (List (TokenData Token))
+lexArgParseFile : String -> IO $ Either LexFail (List (WithBounds Token))
 lexArgParseFile = lexFile ArgParseLexer
 
 -- --------------------------------------------------------------------- [ EOF ]

@@ -126,7 +126,7 @@ interp env c g Stop
 -- [ NOTE ]
 --
 -- 'Just' an edge
-interp env c g (Assign {type} i o rest)
+interp env c g (Assign {type} o i rest)
   = let    R c1 g1 vi = interp env c  g  i
     in let R c2 g2 vo = interp env c1 g1 o
 

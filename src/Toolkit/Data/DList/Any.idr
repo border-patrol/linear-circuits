@@ -24,6 +24,8 @@ data Any : (idx    : Type)
     where
       ||| Proof that the element is at the front of the list.
       H : {p : {i : idx} -> (x : type i) -> Type}
+       -> {i   : idx}
+       -> {y   : type i}
        -> (prf : p y)
               -> Any idx type p (y :: xs)
 

@@ -1,0 +1,124 @@
+Example Non-Linearly Wired Circuits
+Example1.sv
+// LOG : Starting NetList 
+// (Port output logic "out" (Port input logic "a" (Port input logic "b" (Port input logic "c" (Port input logic "d" (Wire logic "x" (Wire logic "y" (Gate "or1" (GateB or (Shim output (Var x)) (Shim input (Var a)) (Shim input (Var b))) (Gate "or2" (GateB or (Shim output (Var y)) (Shim input (Var c)) (Shim input (Var d))) (Gate "orfinal" (GateB or (Shim output (Var out)) (Shim input (Var x)) (Shim input (Var y))) (Stop)))))))))))
+// (Port output logic (Port input logic (Port input logic (Port input logic (Port input logic (Wire logic (Wire logic (Gate (GateB or (Project Write (Var 1)) (Var 5) (Var 4)) (Gate (GateB or (Project Write (Var 1)) (Var 4) (Var 3)) (Gate (GateB or (Var 8) (Project Read (Var 3)) (Project Read (Var 2))) Stop))))))))))
+digraph G {
+8 [label="(1, 1) CHAN_IN : logic"];
+9 [label="(1, 1) CHAN_OUT : logic"];
+6 [label="(1, 1) CHAN_IN : logic"];
+7 [label="(1, 1) CHAN_OUT : logic"];
+5 [label="IN(1) INPUT : logic"];
+4 [label="IN(1) INPUT : logic"];
+3 [label="IN(1) INPUT : logic"];
+2 [label="IN(1) INPUT : logic"];
+1 [label="OUT(1) OUTPUT : logic"];
+10 [label="(2, 1) or"];
+11 [label="(2, 1) or"];
+12 [label="(2, 1) or"];
+	8 -> 9;
+	6 -> 7;
+	2 -> 10;
+	3 -> 10;
+	10 -> 6;
+	4 -> 11;
+	5 -> 11;
+	11 -> 8;
+	7 -> 12;
+	9 -> 12;
+	12 -> 1;
+}
+
+Example2.sv
+// LOG : Starting NetList 
+// (Port output logic "out" (Port inout logic[2] "bc" (Gate "n1" (GateB nand (Shim output (Var out)) (Shim input (Index 0 (Var bc))) (Shim input (Index 1 (Var bc)))) (Stop))))
+// (Port output logic (Port inout logic[2] (Gate (GateB nand (Var 1) (Cast down (Index DOWN (Var 0) 0)) (Cast down (Index DOWN (Var 0) 1))) Stop)))
+digraph G {
+6 [label="(1, 1) CAST"];
+7 [label="(1, 1) IDX [1](DOWN)"];
+4 [label="(1, 1) CAST"];
+5 [label="(1, 1) IDX [0](DOWN)"];
+2 [label="INOUT(2) INOUT : logic[2]"];
+1 [label="OUT(1) OUTPUT : logic"];
+3 [label="(2, 1) nand"];
+	7 -> 6;
+	2 -> 7;
+	5 -> 4;
+	2 -> 5;
+	4 -> 3;
+	6 -> 3;
+	3 -> 1;
+}
+
+Example3.sv
+// LOG : Starting NetList 
+// (Port output logic "out" (Port input logic "a" (Port input logic "b" (Port input logic "c" (Port input logic "d" (Wire logic "x" (Wire logic "y" (Gate "gate_1" (GateB and (Shim output (Var x)) (Shim input (Var a)) (Shim input (Var b))) (Gate "gate_2" (GateB or (Shim output (Var y)) (Shim input (Var c)) (Shim input (Var d))) (Gate "gate_3" (GateB xor (Shim output (Var out)) (Shim input (Var x)) (Shim input (Var y))) (Stop)))))))))))
+// (Port output logic (Port input logic (Port input logic (Port input logic (Port input logic (Wire logic (Wire logic (Gate (GateB and (Project Write (Var 1)) (Var 5) (Var 4)) (Gate (GateB or (Project Write (Var 1)) (Var 4) (Var 3)) (Gate (GateB xor (Var 8) (Project Read (Var 3)) (Project Read (Var 2))) Stop))))))))))
+digraph G {
+8 [label="(1, 1) CHAN_IN : logic"];
+9 [label="(1, 1) CHAN_OUT : logic"];
+6 [label="(1, 1) CHAN_IN : logic"];
+7 [label="(1, 1) CHAN_OUT : logic"];
+5 [label="IN(1) INPUT : logic"];
+4 [label="IN(1) INPUT : logic"];
+3 [label="IN(1) INPUT : logic"];
+2 [label="IN(1) INPUT : logic"];
+1 [label="OUT(1) OUTPUT : logic"];
+10 [label="(2, 1) and"];
+11 [label="(2, 1) or"];
+12 [label="(2, 1) xor"];
+	8 -> 9;
+	6 -> 7;
+	2 -> 10;
+	3 -> 10;
+	10 -> 6;
+	4 -> 11;
+	5 -> 11;
+	11 -> 8;
+	7 -> 12;
+	9 -> 12;
+	12 -> 1;
+}
+
+Example4.sv
+// LOG : Starting NetList 
+// (Port output logic "out" (Port input logic "left" (Port input logic "right" (Gate "n1" (GateB nand (Shim output (Var out)) (Shim input (Var left)) (Shim input (Var right))) (Stop)))))
+// (Port output logic (Port input logic (Port input logic (Gate (GateB nand (Var 2) (Var 1) (Var 0)) Stop))))
+digraph G {
+3 [label="IN(1) INPUT : logic"];
+2 [label="IN(1) INPUT : logic"];
+1 [label="OUT(1) OUTPUT : logic"];
+4 [label="(2, 1) nand"];
+	2 -> 4;
+	3 -> 4;
+	4 -> 1;
+}
+
+Example5.sv
+// LOG : Starting NetList 
+// (Port output logic "o" (Port input logic "i" (Assign (Shim output (Var o)) (Shim input (Var i)) (Stop))))
+// (Port output logic (Port input logic (Assign (Var 1) <- (Var 0) Stop)))
+digraph G {
+2 [label="IN(1) INPUT : logic"];
+1 [label="OUT(1) OUTPUT : logic"];
+	2 -> 1;
+}
+
+Example6.sv
+// LOG : Starting NetList 
+// (Port output logic "o" (Port input logic "i" (Wire logic "temp" (Wire logic "temp2" (Assign (Shim output (Var temp)) (Shim input (Var i)) (Assign (Shim output (Var temp2)) (Shim input (Var temp)) (Assign (Shim output (Var o)) (Shim input (Var temp2)) (Stop))))))))
+// (Port output logic (Port input logic (Wire logic (Wire logic (Assign (Project Write (Var 1)) <- (Var 2) (Assign (Project Write (Var 0)) <- (Project Read (Var 1)) (Assign (Var 3) <- (Project Read (Var 0)) Stop)))))))
+digraph G {
+5 [label="(1, 1) CHAN_IN : logic"];
+6 [label="(1, 1) CHAN_OUT : logic"];
+3 [label="(1, 1) CHAN_IN : logic"];
+4 [label="(1, 1) CHAN_OUT : logic"];
+2 [label="IN(1) INPUT : logic"];
+1 [label="OUT(1) OUTPUT : logic"];
+	6 -> 1;
+	4 -> 5;
+	2 -> 3;
+	5 -> 6;
+	3 -> 4;
+}
+

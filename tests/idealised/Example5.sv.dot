@@ -1,0 +1,9 @@
+// LOG : Starting Idealised Linear
+// LOG : Parsing Successful
+Example5.sv:6:0-0: Dangling Ports:
+
+de : TyPort(output,logic[2])
+c : TyPort(output,logic)
+ab : TyPort(output,logic[2])
+abcde : TyPort(input,logic[5])
+

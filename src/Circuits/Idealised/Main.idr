@@ -3,12 +3,14 @@ module Circuits.Idealised.Main
 import System
 import System.File
 
+import Circuits.Idealised.Core
 import Circuits.Idealised
 import Circuits.Idealised.Pretty
 
+{-
 main : IO Unit
 main
-  = do putStrLn "// LOG : Starting Idealised Linear "
+  = do
        args <- getArgs
 
        case args of
@@ -29,5 +31,39 @@ main
          _ => do putStrLn "need at least a file name"
                  exitFailure
 
+-}
+
+processArgs : List String -> IO String
+processArgs [exe,fname] = pure fname
+processArgs _
+  = do putStrLn "Exactly one file at a time."
+       exitFailure
+
+idealised : (fname : String)
+                  -> Idealised ()
+
+idealised fname
+  = do putStrLn "// LOG : Starting Idealised Linear"
+
+       ast <- fromFile fname
+
+       log "// LOG : Parsing Successful"
+
+       term <- Design.check ast
+
+       log "// LOG : Type Checking Complete"
+
+       prf <- isSound term
+
+       log "// LOG : Soundness Check Complete"
+
+       putStrLn ((showGraph . fst . getGraph) prf)
+
+       log "// LOG : BYE"
+
+main : IO ()
+main
+  = do fname <- processArgs !getArgs
+       run (idealised fname)
 
 -- [ EOF ]

@@ -1,0 +1,11 @@
+echo "Example Idealised"
+
+for i in $(ls *.sv);
+do
+    echo $i
+    $1 $i # | tee $i.dot
+#    dot -Tpng $i.dot > $i.png
+done
+
+
+# -- EOF

@@ -115,7 +115,7 @@ namespace Terms
          i <- port INPUT
          symbol ";"
          e <- Toolkit.location
-         pure (AInst (newFC s e) i o)
+         pure (AInst (newFC s e) o i)
 
   gateNot : Rule Body
   gateNot
@@ -231,8 +231,8 @@ namespace Terms
       doFold (NInst x k n y z)
         = GateDecl x n (GateU x k y z)
 
-      doFold (AInst fc i o)
-        = Assign fc i o
+      doFold (AInst fc o i)
+        = Assign fc o i
 
       doFold (CInst fc n o a b)
         = GateDecl fc n (Collect fc o a b)

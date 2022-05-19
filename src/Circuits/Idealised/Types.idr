@@ -2,7 +2,8 @@ module Circuits.Idealised.Types
 
 import Decidable.Equality
 
-import Data.List.Elem
+import Toolkit.Data.List.AtIndex
+import Toolkit.DeBruijn.Renaming
 
 import public Circuits.Common
 
@@ -79,35 +80,39 @@ used (ty,FREE) = No absurd
 
 public export
 data Use : (old : List (Ty, Usage))
-        -> (prf : Elem (type,FREE) old)
+        -> (prf : IsVar old (type,FREE))
         -> (new : List (Ty, Usage))
         -> Type
   where
     H : Use ((type,FREE) :: rest)
-            Here
+            (V Z Here)
             ((type,USED) :: rest)
-    T : Use old later new
-     -> Use ((type',usage')::old) (There later) ((type',usage')::new)
+
+    T : Use old (V n later) new
+     -> Use ((type',usage')::old)
+            (V (S n) (There later))
+            ((type',usage')::new)
+
+Uninhabited (IsVar Nil type) where
+  uninhabited (V _ Here) impossible
+  uninhabited (V _ (There later)) impossible
+
+Uninhabited (AtIndex type Nil pos) where
+  uninhabited Here impossible
+  uninhabited (There later) impossible
+
 
 export
 use : {ctxt : List (Ty, Usage)}
-   -> (prf : Elem (type, FREE) ctxt)
-          -> (DPair (List (Ty, Usage))
-                    (Use ctxt prf))
-use {ctxt = (type, FREE) :: xs} Here
-  = (MkDPair ((type, USED) :: xs) H)
-use {ctxt = (y, z) :: xs} (There x) with (use x)
-  use {ctxt = (y, z) :: xs} (There x) | ((MkDPair fst snd))
-    = (MkDPair ((y, z) :: fst) (T snd))
+   -> (prf  : IsVar ctxt (type, FREE))
+           -> (DPair (List (Ty, Usage))
+                     (Use ctxt prf))
+use {ctxt = Nil} (V _ Here) impossible
+use {ctxt = ((type, FREE) :: xs)} (V 0 Here)
+  = MkDPair ((type, USED) :: xs) H
 
--- export                                                                                           --
--- useAlt : {ctxt : List (Ty, Usage)}                                                               --
---       -> (prf : Elem (type, FREE) ctxt)                                                          --
---              -> (DPair (List (Ty, Usage))                                                        --
---                        (Use ctxt prf))                                                           --
--- useAlt {ctxt = ((type, FREE) :: xs)} Here                                                        --
---   = MkDPair ((type, USED) :: xs) H                                                               --
--- useAlt {ctxt = (y :: xs)} (There x) with (useAlt x)                                              --
---   useAlt {ctxt = ((y, z) :: xs)} (There x) | (MkDPair fst snd) = MkDPair ((y, z) :: fst) (T snd) --
+use {ctxt = (y :: rest)} (V (S idx) (There later)) with (use (V idx later))
+  use {ctxt = ((t,u) :: rest)} (V (S idx) (There later)) | (MkDPair fst snd)
+    = MkDPair ((t,u) :: fst) (T snd)
 
 -- [ EOF ]

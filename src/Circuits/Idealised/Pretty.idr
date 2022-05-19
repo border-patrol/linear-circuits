@@ -8,16 +8,24 @@ import Data.String
 import Text.Lexer
 import Text.Parser
 
+import Toolkit.Data.DList
 import Toolkit.Data.Whole
 import Toolkit.Data.Location
 import Toolkit.Text.Lexer.Run
 import Toolkit.Text.Parser.Run
 
+import Toolkit.Data.List.Occurs
+import Toolkit.Data.Graph.EdgeBounded
+import Toolkit.Data.Graph.EdgeBounded.HasExactDegree.All
+
+import Toolkit.DeBruijn.Context.Item
 import Toolkit.DeBruijn.Context
 
 import public Circuits.Common.Pretty
+import        Circuits.Idealised.Error
+import        Circuits.Idealised.Lexer
 import        Circuits.Idealised.Types
-import        Circuits.Idealised.Check
+
 
 %default total
 
@@ -42,7 +50,7 @@ Show GateKind where
   show XORN = "xnor"
   show JOIN = "join"
 
-showEnv : Context type -> String
+showEnv : Context (Ty,Usage) type -> String
 showEnv [] = ""
 showEnv ((I name (type, FREE)) :: rest)
   = name <+> " : " <+> show type <+> "\n" <+> (showEnv rest)
@@ -63,14 +71,11 @@ Show Check.Error where
     = "Type Mismatch:\n\n"
      <+> unlines [unwords ["\tExpected:",show x], unwords ["\tGiven:", show y]]
 
-  show (ElemFail (NotSatisfied (NotFound x)))
-    = unwords ["Undeclared variable::", x]
-
-  show (ElemFail (NotSatisfied (IsUsed x)))
+  show (ElemFail x (NotSatisfied ()))
     = unwords ["Port is used:", x]
 
-  show (ElemFail NotFound)
-    = "Port not found."
+  show (ElemFail x NotFound)
+    = "\{x} not found."
 
   show (NotEdgeCase r)  = "Not an edge case:\n\n" <+> show r
   show (PortExpected INPUT) = "Expected an Input Port"
@@ -83,5 +88,11 @@ Show Check.Error where
               , unwords ["\t" <+> show o, "!=", show a, "+", show b]]
   show (Err x y) = unwords [show x, show y]
 
+export
+Show (Idealised.Error) where
+  show (TyCheck x) = show x
+  show (Parse f n) = show @{circuitspe} n
+  show (Sound g e)
+    = showErr (g, e)
 
 -- [ EOF ]

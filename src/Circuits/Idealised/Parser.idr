@@ -6,10 +6,12 @@ import Data.List1
 import public Circuits.Common.Lexer
 import public Circuits.Common.Parser
 
+import        Circuits.Idealised.Core
 
 import        Circuits.Idealised.Types
 import public Circuits.Idealised.AST
 import public Circuits.Idealised.Lexer
+
 
 %hide logic
 %hide array
@@ -318,9 +320,12 @@ namespace Idealised
 
   export
   fromFile : (fname : String)
-                   -> IO (Either (ParseError Token) AST)
+                   -> Idealised AST
   fromFile fname
-    = case !(parseFile Idealised.Lexer design fname) of
-        Left err  => pure (Left err)
-        Right ast => pure (Right (setSource fname ast))
+    = do ast <- parseFile (Parse fname)
+                Idealised.Lexer
+                design
+                fname
+         pure (setSource fname ast)
+
 -- [ EOF ]

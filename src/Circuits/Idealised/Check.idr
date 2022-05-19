@@ -6,6 +6,7 @@ import Data.Nat
 import Data.String
 import Data.List.Elem
 import Data.List.Quantifiers
+import Data.DPair
 
 import Toolkit.Decidable.Informative
 import Toolkit.Decidable.Equality.Views
@@ -13,13 +14,20 @@ import Toolkit.Decidable.Equality.Views
 import Toolkit.Data.Graph.EdgeBounded
 import Toolkit.Data.Whole
 import Toolkit.Data.Location
+import Toolkit.Data.DList
 
+import Toolkit.Data.List.AtIndex
+import Toolkit.DeBruijn.Context.Item
 import Toolkit.DeBruijn.Context
+import Toolkit.DeBruijn.Renaming
+
 
 import Circuits.Split
+import Circuits.Idealised.Core
 import Circuits.Idealised.Types
 import Circuits.Idealised.Terms
 import Circuits.Idealised.AST
+
 
 %default total
 
@@ -27,120 +35,91 @@ public export
 Context : List (Ty, Usage) -> Type
 Context = Context (Ty,Usage)
 
-public export
-data LookupFail = NotFound String | IsUsed String
+namespace FreeVar
 
-data IsFree : (str  : String)
-           -> (item : Item (Ty,Usage) tu)
-                   -> Type
-  where
-    IF : (prf : x = y)
-      -> (prfU : u = FREE)
-              -> IsFree x (I y (type, u))
-
-isFree : (str  : String)
-      -> (item : Item (Ty,Usage) tu)
-              -> DecInfo (LookupFail)
-                         (IsFree str item)
-isFree str (I name tu) with (decEq str name)
-  isFree str (I str (t,u)) | (Yes Refl) with (u)
-    isFree str (I str (t,u)) | (Yes Refl) | USED
-        = No (IsUsed str) (isNotFree)
-      where
-        isNotFree : IsFree str (I str (t, USED)) -> Void
-        isNotFree (IF _ Refl) impossible
-
-    isFree str (I str (t,u)) | (Yes Refl) | FREE
-      = Yes (IF Refl Refl)
-
-  isFree str (I name tu) | (No contra)
-    = No (NotFound str) (\(IF Refl _) => contra Refl)
-
-FreeVar : String -> Context types -> Type
-FreeVar str ctxt
-  = Exists (IsFree str) ctxt
-
-lookup : (s    : String)
-      -> {types : List (Ty,Usage)}
-      -> (ctxt : Context types)
-              -> DecInfo (Error LookupFail) (FreeVar s ctxt)
-lookup s ctxt with (exists (isFree s) ctxt)
-  lookup s ctxt | (Yes (B item prfP prfE))
-    = Yes (B item prfP prfE)
-  lookup s ctxt | (No msg contra)
-      = No msg (lookupFailed contra)
+  public export
+  data IsFree : (item : (Ty, Usage)) -> Type
     where
-      lookupFailed : (Exists (IsFree s) ctxt -> Void) -> Exists (IsFree s) ctxt -> Void
-      lookupFailed f (B item prfP prfE) = f (B item prfP prfE)
+      FVar : (prf : u = FREE)
+                 -> IsFree (type, u)
 
-useEnv : (env : Context curr)
-      -> (use : Use curr prf next)
-             -> Context next
-useEnv ((I n (t,FREE)) :: rest) H
-  = I n (t, USED) :: rest
 
-useEnv (elem :: rest) (T x)
-  = elem :: useEnv rest x
+  Uninhabited (IsFree (ty,USED)) where
+    uninhabited (FVar Refl) impossible
 
-isUsed : (env : Context curr)
-             -> Dec (All Used curr)
+  isFree : (item : (Ty, Usage))
+                -> DecInfo ()
+                           (IsFree item)
+  isFree (ty, USED)
+    = No () absurd
+
+  isFree (ty, FREE)
+    = Yes (FVar Refl)
+
+  public export
+  FreeVar : {types : List (Ty, Usage)}
+         -> (key   : String)
+         -> (ctxt  : Context types)
+                  -> Type
+  FreeVar str ctxt
+   = Exists (Ty,Usage)
+            IsFree
+            str
+            ctxt
+
+  export
+  lookup : {types : List (Ty, Usage)}
+        -> (str  : String)
+        -> (ctxt : Context types)
+                -> DecInfo (Exists.Error ())
+                           (FreeVar str ctxt)
+  lookup = exists isFree
+
+
+use : (ctxt : Context curr)
+   -> (use  : Use curr prf next)
+           -> Context next
+use (I k (ty,FREE) :: rest) H
+  = I k (ty, USED) :: rest
+
+use (head :: tail) (T later)
+  = head :: use tail later
+
+
+isUsed : (ctxt : Context types)
+              -> Dec (All Used types)
 isUsed []
   = Yes []
 
-isUsed ((I _ i) :: rest) with (used i)
-  isUsed ((I _ i) :: rest) | (Yes prf) with (isUsed rest)
-    isUsed ((I _ i) :: rest) | (Yes prf) | (Yes x)
-      = Yes (prf :: x)
+isUsed ((I name x) :: tail) with (used x)
+  isUsed ((I name x) :: tail) | (Yes pH) with (isUsed tail)
+    isUsed ((I name x) :: tail) | (Yes pH) | (Yes pT)
+      = Yes (pH :: pT)
 
-    isUsed ((I _ i) :: rest) | (Yes prf) | (No contra)
-        = No (\(x::xs) => contra xs)
+    isUsed ((I name x) :: tail) | (Yes pH) | (No contra)
+      = No (\(a::as) => contra as)
 
-  isUsed ((I _ i) :: rest) | (No contra)
-    = No (\(x::xs) => contra x)
+  isUsed ((I name x) :: tail) | (No contra)
+    = No (\(a::as) => contra a)
 
-public export
-data FailingEdgeCase = InvalidSplit Nat Nat Nat Nat
-                     | InvalidEdge  Nat Nat Nat
+withLocThrow : FileContext -> Check.Error -> Idealised a
+withLocThrow fc e = throw (TyCheck $ Err fc e)
 
-public export
-data Error = Mismatch Ty Ty | ElemFail (Error LookupFail) | PortExpected Direction
-           | VectorExpected
-           | VectorTooShort
-           | VectorSizeMismatch Whole Whole Whole
-           | LinearityError (Context types)
-           | Err FileContext Check.Error
-           | NotEdgeCase FailingEdgeCase
-           | MismatchGate DType DType
-
+throw : Check.Error -> Idealised a
+throw = (throw . TyCheck)
 
 public export
-TyCheck : Type -> Type
-TyCheck = Either Check.Error
+allEqual : FileContext
+        -> (a,b,c : DType)
+                 -> Idealised (AllEqual a b c)
+allEqual fc a b c with (Views.allEqual a b c)
+  allEqual fc c c c | (Yes AE)
+    = pure AE
+  allEqual fc a b c | (No AB prfWhyNot)
+    = withLocThrow fc (MismatchGate a b)
+  allEqual fc a b c | (No AC prfWhyNot)
+    = withLocThrow fc (MismatchGate a c)
 
-lift : Dec a -> Check.Error -> TyCheck a
-lift (Yes prf) _ = Right prf
-lift (No contra) e = Left e
-
-throw : FileContext -> Check.Error -> TyCheck a
-throw fc e = Left $ Err fc e
-
-namespace Info
-  public export
-  lift : DecInfo e a -> Check.Error -> TyCheck a
-  lift (Yes prf)     _ = Right prf
-  lift (No m contra) e = Left e
-
-  public export
-  allEqual : FileContext
-          -> (a,b,c : DType)
-          -> TyCheck (AllEqual a b c)
-  allEqual fc a b c with (Views.allEqual a b c)
-    allEqual fc c c c | (Yes AE)
-      = pure AE
-    allEqual fc a b c | (No AB prfWhyNot)
-      = Left (Err fc (MismatchGate a b))
-    allEqual fc a b c | (No AC prfWhyNot)
-      = Left (Err fc (MismatchGate a c))
 
 data Result : (curr : List (Ty,Usage))
            -> Type
@@ -151,273 +130,253 @@ data Result : (curr : List (Ty,Usage))
      -> (term : Term cin type cout)
              -> Result cin
 
-typeCheck : {cin  : List (Ty,Usage)}
-         -> (curr : Context cin)
-         -> (ast  : AST)
-         -> TyCheck (Result cin)
-typeCheck curr (Var x) with (lookup (get x) curr)
-  typeCheck curr (Var x) | (Yes nidx) with (mkNameless nidx)
-    typeCheck curr (Var x) | (Yes nidx) | (N (I y (type, u)) (IF prf prfU) idx) with (prfU)
-      typeCheck curr (Var x) | (Yes nidx) | (N (I y (type, FREE)) (IF prf prfU) idx) | Refl with (use idx)
-        typeCheck curr (Var x) | (Yes nidx) | (N (I y (type, FREE)) (IF prf prfU) idx) | Refl | (MkDPair cout used) with (useEnv curr used)
-          typeCheck curr (Var x) | (Yes nidx) | (N (I y (type, FREE)) (IF prf prfU) idx) | Refl | (MkDPair cout used) | new
-            = pure (R type new (Var idx used))
+check : {cin  : List (Ty,Usage)}
+     -> (curr : Context cin)
+     -> (ast  : AST)
+             -> Idealised (Result cin)
+
+check curr (Var x) with (lookup (get x) curr)
+  check curr (Var x) | (Yes (E type item prf locC locN)) with (prf)
+    check curr (Var x) | (Yes (E (type, u) item prf locC locN)) | (FVar prf1) with (prf1)
+      check curr (Var x) | (Yes (E (type, FREE) item prf locC locN)) | (FVar prf1) | Refl with (use (V _ locN))
+        check curr (Var x) | (Yes (E (type, FREE) item prf locC locN)) | (FVar prf1) | Refl | (MkDPair next pU) with (use curr pU)
+          check curr (Var x) | (Yes (E (type, FREE) item prf locC locN)) | (FVar prf1) | Refl | (MkDPair next pU) | new
+            = pure (R type new (Var (V _ locN) pU))
+
+  check curr (Var x) | (No msg _)
+    = withLocThrow (span x) (ElemFail (get x) msg)
+
+check curr (Input fc x y name body)
+
+  = do R TyUnit Nil body <- check (I (get name) ((TyPort (MkPair x y)),FREE) :: curr)
+                                    body
+           | R ty Nil _ => throw (Mismatch TyUnit ty)
+           | R _  xs  _ => withLocThrow fc (LinearityError xs)
+
+       pure (R TyUnit Nil (NewSignal x y body))
+
+check curr (Wire fc type a b body)
+
+  = do R TyUnit Nil term <- check (I (get a) ((TyPort (MkPair OUTPUT type)), FREE) ::
+                                   I (get b) ((TyPort (MkPair INPUT  type)), FREE) :: curr)
+                                  body
+           | R ty Nil _ => throw (Mismatch TyUnit ty)
+           | R ty xs  _ => withLocThrow fc (LinearityError xs)
+
+       pure (R TyUnit Nil (Wire type term))
+
+check curr (Seq x y)
+  = do R TyGate ex x <- check curr x
+         | R ty _ _ => throw (Mismatch TyGate ty)
+
+       R TyUnit Nil y <- check ex y
+         | R ty Nil _ => throw (Mismatch TyUnit ty)
+         | R ty xs  _ => throw (LinearityError xs)
+
+       pure (R TyUnit Nil (Seq x y))
+
+check curr (Mux fc o c a b)
+  = do R (TyPort (OUTPUT,dtypeA)) cO o <- check curr o
+         | _ => withLocThrow fc (PortExpected OUTPUT)
+
+       R (TyPort (INPUT,LOGIC)) cC c <- check cO c
+         | R ty _ _ => withLocThrow fc (Mismatch (TyPort (INPUT,LOGIC)) ty)
+
+       R (TyPort (INPUT,dtypeB)) cA a <- check cC a
+         | _ => withLocThrow fc (PortExpected OUTPUT)
+
+       R (TyPort (INPUT,dtypeC)) cB b <- check cA b
+         | _ => withLocThrow fc (PortExpected OUTPUT)
 
 
-  typeCheck curr (Var x) | (No m _)
-    = Left (Err (span x) (ElemFail m))
+       AE <- allEqual fc dtypeA dtypeB dtypeC
 
-typeCheck curr (Seq x y)
-  = do (R TyGate ex termX) <- typeCheck curr x
-            | (R ty _ _) => Left (Mismatch TyGate ty)
+       pure (R TyGate cB (Mux o c a b))
 
-       (R TyUnit ey termY) <- typeCheck ex y
-             | (R ty _ _) => Left (Mismatch TyUnit ty)
+check curr (Dup fc a b i)
+  = do R (TyPort (OUTPUT,dtypeA)) cA a <- check curr a
+         | ty => withLocThrow fc (PortExpected OUTPUT)
 
-       case ey of
-         Nil => pure (R TyUnit Nil (Seq termX termY))
-         _   => Left (LinearityError ey)
+       R (TyPort (OUTPUT,dtypeB)) cB b <- check cA b
+         | ty => withLocThrow fc (PortExpected OUTPUT)
 
+       R (TyPort (INPUT,dtypeC)) cI i <- check cB i
+         | ty => withLocThrow fc (PortExpected INPUT)
 
-typeCheck curr (Input fc x y name body)
-  = do (R TyUnit next term) <- typeCheck (I (get name) ((TyPort (MkPair x y)),FREE) :: curr)
-                                         body
-           | (R ty _ _) => Left (Mismatch TyUnit ty)
-       case next of
-         [] => pure (R TyUnit Nil (NewSignal x y term))
-         _  => throw fc (LinearityError next)
+       AE <- allEqual fc dtypeA dtypeB dtypeC
 
-typeCheck curr (Wire fc type a b body)
+       pure (R TyGate cI (Dup a b i))
 
-  = do (R TyUnit next term) <- typeCheck (I (get a) ((TyPort (MkPair OUTPUT type)), FREE) ::
-                                          I (get b) ((TyPort (MkPair INPUT  type)), FREE) :: curr)
-                                          body
-           | (R ty _ _) => Left (Mismatch TyUnit ty)
+check curr (Not fc a b)
+  = do R (TyPort (OUTPUT,LOGIC)) cA a <- check curr a
+         | ty => withLocThrow fc (PortExpected OUTPUT)
 
-       case next of
-         Nil => pure (R TyUnit Nil (Wire type term))
-         _   => throw fc (LinearityError next)
+       R (TyPort (INPUT,LOGIC)) cB b <- check cA b
+         | ty => withLocThrow fc (PortExpected INPUT)
 
+       pure (R TyGate cB (Not a b))
 
-typeCheck curr (Mux fc o c a b)
-  = do (R (TyPort (OUTPUT,dtypeA)) cO termO) <- typeCheck curr o
-                  | ty => throw fc (PortExpected OUTPUT)
+check curr (Gate fc k a b c)
+  = do R (TyPort (OUTPUT,LOGIC)) cA a <- check curr a
+         | ty => withLocThrow fc (PortExpected OUTPUT)
 
-       (R (TyPort (INPUT,LOGIC)) cC termC) <- typeCheck cO c
-                  | (R ty _ _)
-                       => throw fc (Mismatch (TyPort (INPUT,LOGIC)) ty)
+       R (TyPort (INPUT,LOGIC)) cB b <- check cA b
+         | ty => withLocThrow fc (PortExpected INPUT)
 
-       (R (TyPort (INPUT,dtypeB)) cA termA) <- typeCheck cC a
-                  | ty => throw fc (PortExpected INPUT)
-
-       (R (TyPort (INPUT,dtypeC)) cB termB) <- typeCheck cA b
-                  | ty => throw fc (PortExpected INPUT)
-
-       Refl <- lift (decEq dtypeA dtypeB)
-                    (Err fc (MismatchGate dtypeA dtypeB))
-
-       Refl <- lift (decEq dtypeB dtypeC)
-                    (Err fc (MismatchGate dtypeA dtypeC))
-
-       pure (R TyGate cB (Mux termO termC termA termB))
-
-typeCheck curr (Dup fc a b i)
-  = do R (TyPort (OUTPUT,dtypeA)) cA termA <- typeCheck curr a
-                  | ty => throw fc (PortExpected OUTPUT)
-
-       R (TyPort (OUTPUT,dtypeB)) cB termB <- typeCheck cA b
-                  | ty => throw fc (PortExpected OUTPUT)
-
-       R (TyPort (INPUT,dtypeC)) cI termI <- typeCheck cB i
-                  | ty => throw fc (PortExpected INPUT)
-
-       Refl <- lift (decEq dtypeA dtypeB)
-                    (Err fc (MismatchGate dtypeA dtypeB))
-
-       Refl <- lift (decEq dtypeB dtypeC)
-                    (Err fc (MismatchGate dtypeA dtypeC))
-
-       pure (R TyGate cI (Dup termA termB termI))
+       R (TyPort (INPUT,LOGIC)) cC c <- check cB c
+         | ty => withLocThrow fc (PortExpected INPUT)
 
 
-typeCheck curr (Not fc a b)
-  = do R (TyPort (OUTPUT,LOGIC)) cA termA <- typeCheck curr a
-                  | ty => throw fc (PortExpected OUTPUT)
-
-       R (TyPort (INPUT,LOGIC)) cB termB <- typeCheck cA b
-                  | ty => throw fc (PortExpected INPUT)
-
-       pure (R TyGate cB (Not termA termB))
-
-typeCheck curr (Gate fc k a b c)
-  = do R (TyPort (OUTPUT,LOGIC)) cA termA <- typeCheck curr a
-                  | ty => throw fc (PortExpected OUTPUT)
-
-       R (TyPort (INPUT,LOGIC)) cB termB <- typeCheck cA b
-                  | ty => throw fc (PortExpected INPUT)
-
-       R (TyPort (INPUT,LOGIC)) cC termC <- typeCheck cB c
-                  | ty => throw fc (PortExpected INPUT)
+       pure (R TyGate cC (Gate k a b c))
 
 
-       pure (R TyGate cC (Gate k termA termB termC))
+check curr (IndexS fc o i)
+  = do R (TyPort (OUTPUT,dtypeO)) cO termO <- check curr o
+         | ty => withLocThrow fc (PortExpected OUTPUT)
 
+       R (TyPort (INPUT,BVECT (W (S Z) ItIsSucc) dtypeI)) cI termI <- check cO i
+         | R (TyPort (INPUT, BVECT s type)) _ _
+             => withLocThrow fc (Mismatch (TyPort (INPUT, BVECT (W (S Z) ItIsSucc) type))
+                                          (TyPort (INPUT, BVECT s type)))
+         | ty => withLocThrow fc (PortExpected INPUT)
 
+       Refl <- embed (TyCheck $ Err fc (MismatchGate dtypeO  dtypeI))
+                     (decEq dtypeO dtypeI)
 
-typeCheck curr (IndexS fc o i)
-  = do R (TyPort (OUTPUT,dtypeO)) cO termO <- typeCheck curr o
-                  | ty => Left (Err fc (PortExpected OUTPUT))
-
-       R (TyPort (INPUT,BVECT (W (S Z) ItIsSucc) dtypeI)) cI termI <- typeCheck cO i
-                  | R (TyPort (INPUT, BVECT s type)) _ _
-                       => throw fc (Mismatch (TyPort (INPUT, BVECT (W (S Z) ItIsSucc) type))
-                                             (TyPort (INPUT, BVECT s type)))
-                  | ty => throw fc (PortExpected INPUT)
-
-       Refl <- lift (decEq dtypeO dtypeI)
-                    (Err fc (MismatchGate dtypeO  dtypeI))
 
        pure (R TyGate cI (IndexSingleton termO termI))
 
-typeCheck curr (IndexE fc k a b i)
+check curr (IndexE fc k a b i)
 
-  = do R (TyPort (OUTPUT,dtypeA)) cA termA <- typeCheck curr a
-                  | ty => throw fc (PortExpected OUTPUT)
+  = do R (TyPort (OUTPUT,dtypeA)) cA termA <- check curr a
+                  | ty => withLocThrow fc (PortExpected OUTPUT)
 
-       R (TyPort (OUTPUT,BVECT free dtypeB)) cB termB <- typeCheck cA b
-                  | ty => throw fc (PortExpected OUTPUT)
+       R (TyPort (OUTPUT,BVECT free dtypeB)) cB termB <- check cA b
+                  | ty => withLocThrow fc (PortExpected OUTPUT)
 
-       R (TyPort (INPUT,BVECT size dtypeC)) cI termI <- typeCheck cB i
-                  | ty => throw fc (PortExpected INPUT)
+       R (TyPort (INPUT,BVECT size dtypeC)) cI termI <- check cB i
+                  | ty => withLocThrow fc (PortExpected INPUT)
 
-       Refl <- lift (decEq dtypeA dtypeB)
-                    (Err fc (MismatchGate dtypeA dtypeB))
-
-       Refl <- lift (decEq dtypeB dtypeC)
-                    (Err fc (MismatchGate dtypeB dtypeC))
+       AE <- allEqual fc dtypeA dtypeB dtypeC
 
        let p = case k of { F => minus (toNat size) 1; L => 0}
 
-       (s ** prf) <- Info.lift (EdgeCase.index size p)
-                               (Err fc (NotEdgeCase (InvalidEdge (toNat size) (S Z) (toNat free))))
+       (s ** prf) <- embed (const $ TyCheck $ Err fc (NotEdgeCase (InvalidEdge (toNat size) (S Z) (toNat free))))
+                           (EdgeCase.index size p)
 
-       Refl <- lift (decEq free s)
-                    (Err fc (NotEdgeCase (InvalidEdge (toNat size) (S Z) (toNat free))))
+
+       Refl <- embed (TyCheck $ Err fc (NotEdgeCase (InvalidEdge (toNat size) (S Z) (toNat free))))
+                     (decEq free s)
+
 
        pure (R TyGate cI (IndexEdge p prf termA termB termI))
 
+check curr (IndexP fc p a b c i)
+  = do R (TyPort (OUTPUT,dtypeA)) cA termA <- check curr a
+                  | ty => withLocThrow fc (PortExpected OUTPUT)
 
-typeCheck curr (IndexP fc p a b c i)
+       R (TyPort (OUTPUT,BVECT freeB dtypeB)) cB termB <- check cA b
+                  | ty => withLocThrow fc (PortExpected OUTPUT)
 
-  = do R (TyPort (OUTPUT,dtypeA)) cA termA <- typeCheck curr a
-                  | ty => Left (Err fc (PortExpected OUTPUT))
+       R (TyPort (OUTPUT,BVECT freeC dtypeC)) cC termC <- check cB c
+                  | ty => withLocThrow fc (PortExpected OUTPUT)
 
-       R (TyPort (OUTPUT,BVECT freeB dtypeB)) cB termB <- typeCheck cA b
-                  | ty => throw fc (PortExpected OUTPUT)
+       R (TyPort (INPUT,BVECT size dtypeD)) cI termI <- check cC i
+                  | ty => withLocThrow fc (PortExpected INPUT)
 
-       R (TyPort (OUTPUT,BVECT freeC dtypeC)) cC termC <- typeCheck cB c
-                  | ty => throw fc (PortExpected OUTPUT)
+       Refl <- embed (TyCheck $ Err fc (MismatchGate dtypeA (BVECT freeB dtypeB)))
+                     (decEq dtypeA dtypeB)
 
-       R (TyPort (INPUT,BVECT size dtypeD)) cI termI <- typeCheck cC i
-                  | ty => throw fc (PortExpected INPUT)
+       Refl <- embed (TyCheck $ Err fc (MismatchGate (BVECT freeB dtypeB) (BVECT freeC dtypeC)))
+                     (decEq dtypeB dtypeC)
 
-       Refl <- lift (decEq dtypeA dtypeB)
-                    (Err fc (MismatchGate dtypeA (BVECT freeB dtypeB)))
 
-       Refl <- lift (decEq dtypeB dtypeC)
-                    (Err fc (MismatchGate (BVECT freeB dtypeB) (BVECT freeC dtypeC)))
+       Refl <- embed (TyCheck $ Err fc (MismatchGate (BVECT freeC dtypeC) (BVECT size dtypeD)))
+                     (decEq dtypeC dtypeD)
 
-       Refl <- lift (decEq dtypeC dtypeD)
-                    (Err fc (MismatchGate (BVECT freeC dtypeC) (BVECT size dtypeD)))
 
-       (a ** b ** prf) <- Info.lift (Pivot.index p size)
-                                    (Err fc (NotEdgeCase (InvalidSplit p (toNat size) (toNat freeB) (toNat freeC))))
+       (a ** b ** prf) <- embed (const $ TyCheck $ Err fc (NotEdgeCase (InvalidSplit p (toNat size) (toNat freeB) (toNat freeC))))
+                                (Pivot.index p size)
 
-       Refl <- lift (decEq freeB a)
-                    (Err fc (MismatchGate (BVECT a     dtypeB)
-                                          (BVECT freeB dtypeB)))
 
-       Refl <- lift (decEq freeC b)
-                    (Err fc (MismatchGate (BVECT b     dtypeB)
-                                          (BVECT freeC dtypeB)))
+       Refl <- embed (TyCheck $ Err fc (MismatchGate (BVECT a     dtypeB)
+                                                     (BVECT freeB dtypeB)))
+                     (decEq freeB a)
+
+       Refl <- embed (TyCheck $ Err fc (MismatchGate (BVECT b     dtypeB)
+                                                     (BVECT freeC dtypeB)))
+                     (decEq freeC b)
 
        pure (R TyGate cI (IndexSplit p prf termA termB termC termI))
 
-typeCheck curr (MergeS fc o i)
+check curr (MergeS fc o i)
 
-  = do R (TyPort (OUTPUT,BVECT (W (S Z) ItIsSucc) dtypeO)) cO termO <- typeCheck curr o
+  = do R (TyPort (OUTPUT,BVECT (W (S Z) ItIsSucc) dtypeO)) cO termO <- check curr o
            | R (TyPort (INPUT, BVECT s type)) _ _
-                => throw fc (Mismatch (TyPort (OUTPUT, BVECT (W (S Z) ItIsSucc) type))
-                                      (TyPort (INPUT,  BVECT s                  type)))
-           | ty => throw fc (PortExpected OUTPUT)
+                => withLocThrow fc (Mismatch (TyPort (OUTPUT, BVECT (W (S Z) ItIsSucc) type))
+                                             (TyPort (INPUT,  BVECT s                  type)))
+           | ty => withLocThrow fc (PortExpected OUTPUT)
 
-       R (TyPort (INPUT, dtypeI)) cI termI <- typeCheck cO i
-           | ty => throw fc (PortExpected INPUT)
+       R (TyPort (INPUT, dtypeI)) cI termI <- check cO i
+           | ty => withLocThrow fc (PortExpected INPUT)
 
-       Refl <- lift (decEq dtypeO dtypeI)
-                    (Err fc (MismatchGate dtypeO dtypeI))
+       Refl <- embed (TyCheck $ Err fc (MismatchGate dtypeO dtypeI))
+                     (decEq dtypeO dtypeI)
+
 
        pure (R TyGate cI (MergeSingleton termO termI))
 
 
-typeCheck curr (MergeV fc o a b)
-  = do R (TyPort (OUTPUT, dtypeO)) cO termO <- typeCheck curr o
-           | ty => throw fc (PortExpected OUTPUT)
+check curr (MergeV fc o a b)
 
-       R (TyPort (INPUT, dtypeA)) cA termA <- typeCheck cO a
-           | ty => throw fc (PortExpected INPUT)
+  = do R (TyPort (OUTPUT, dtypeO)) cO termO <- check curr o
+           | ty => withLocThrow fc (PortExpected OUTPUT)
 
-       R (TyPort (INPUT, dtypeB)) cB termB <- typeCheck cA b
-           | ty => throw fc (PortExpected INPUT)
+       R (TyPort (INPUT, dtypeA)) cA termA <- check cO a
+           | ty => withLocThrow fc (PortExpected INPUT)
+
+       R (TyPort (INPUT, dtypeB)) cB termB <- check cA b
+           | ty => withLocThrow fc (PortExpected INPUT)
 
        case Views.allEqual LOGIC dtypeA dtypeB of
-            -- Case when merging two logic wires into a vector of size two
-            (Yes AE) =>
-              do Refl <- lift (decEq dtypeO (BVECT (W (S (S Z)) ItIsSucc) LOGIC))
-                              (Err fc (MismatchGate (BVECT (W (S (S Z)) ItIsSucc) LOGIC)
-                                                    dtypeO))
+         Yes AE
+           => do Refl <- embed (TyCheck (Err fc (MismatchGate (BVECT (W (S (S Z)) ItIsSucc) LOGIC)
+                                                              dtypeO)))
+                               (decEq dtypeO (BVECT (W (S (S Z)) ItIsSucc) LOGIC))
 
                  pure (R TyGate cB (Merge2L2V termO termA termB))
+         No msg prf
+           => case dtypeO of
+                LOGIC => withLocThrow fc VectorExpected
+                BVECT sO tO
+                  => case dtypeA of
+                       LOGIC => withLocThrow fc VectorExpected
+                       BVECT sA tA
+                         => case dtypeB of
+                              LOGIC => withLocThrow fc VectorExpected
+                              BVECT sB tB
+                                => do prfS <- embed (TyCheck (Err fc (VectorSizeMismatch sO sA sB)))
+                                                    (isPlus sA sB sO)
 
-            -- Case when merging two vectors. coudl be cleaner.
-            (No msgWhyNot prfWhyNot) =>
-                case dtypeO of
-                  LOGIC => throw fc VectorExpected
-                  BVECT sizeO typeO =>
-                    case dtypeA of
-                      LOGIC => throw fc VectorExpected
-                      BVECT sizeA typeA =>
-                        case dtypeB of
-                          LOGIC => throw fc VectorExpected
-                          BVECT sizeB typeB =>
-                            do prfSize <- lift (isPlus sizeA sizeB sizeO)
-                                               (Err fc (VectorSizeMismatch sizeO sizeA sizeB))
-                               AE <- allEqual fc typeO typeA typeB
+                                      AE <- allEqual fc tO tA tB
 
-                               pure (R TyGate cB (Merge2V2V prfSize termO termA termB))
+                                      pure (R TyGate cB (Merge2V2V prfS termO termA termB))
 
-typeCheck curr (Stop x) with (isUsed curr)
-  typeCheck curr (Stop x) | (Yes prf)
-    = Right (R TyUnit Nil (Stop prf))
 
-  typeCheck curr (Stop fc) | (No contra)
-    = throw fc (LinearityError curr)
+check curr (Stop fc)
+  = do prf <- embed (TyCheck (Err fc (LinearityError curr)))
+                    (isUsed curr)
+
+       pure (R TyUnit Nil (Stop prf))
 
 namespace Design
-  export
-  typeCheck : (ast : AST) -> TyCheck (Term Nil TyUnit Nil)
-  typeCheck ast with (typeCheck Nil ast)
-    typeCheck ast | (Left x)
-      = Left x
-
-    typeCheck ast | (Right (R TyUnit Nil term))
-      = Right term
-
-    typeCheck ast | (Right (R ty _ _))
-      = Left (Mismatch TyUnit ty)
 
   export
-  typeCheckIO : (ast : AST) -> IO (TyCheck (Term Nil TyUnit Nil))
-  typeCheckIO ast = pure (typeCheck ast)
+  check : (ast : AST)
+              -> Idealised (Term Nil TyUnit Nil)
+  check ast
+    = do R TyUnit Nil term <- check Nil ast
+           | R ty _ _ => throw (TyCheck (Mismatch TyUnit ty))
+         pure term
 
 -- [ EOF ]

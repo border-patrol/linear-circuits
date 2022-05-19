@@ -33,10 +33,17 @@ main
                                         printLn err
                                         exitFailure
 
+                     putStr "// "
+                     putStrLn (show ast)
+
                      Right term <- typeCheckIO ast
                        | Left err => do putStrLn "// LOG : Failure Type Checking"
                                         printLn err
                                         exitFailure
+
+                     putStr "// "
+                     putStrLn (show term)
+
                      Right res <- runIO term
                        | Left err => do putStrLn "// LOG : Failure Interpreting"
                                         putStrLn (showErr err)

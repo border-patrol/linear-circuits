@@ -5,36 +5,18 @@ import Data.List
 
 import Test.Golden
 
-%default total
+%default covering
 
-dump : TestPool
-dump
-  = MkTestPool "Dump"
-        []
-        Nothing
-        [
-          "netlist-common-good"
-        ]
-
-tests : TestPool
-tests
-  = MkTestPool "Tests"
-        []
-        Nothing
-        [
-          "netlist-linear-good-001"
-        , "netlist-linear-good-002"
-
-        , "netlist-linear-bad-001"
-        , "netlist-linear-bad-002"
-
-        , "netlist-datatype-001"
-        ]
-
-
-covering
 main : IO ()
 main
-  = runner [ tests, dump ]
+  = runner [ !tests ]
 
+  where
+    tests : IO TestPool
+    tests
+      = testsInDir "netlist"
+                   (const True)
+                   "NetList Tests"
+                   []
+                   Nothing
 -- [ EOF ]

@@ -1,7 +1,24 @@
+||| Environments.
+|||
+||| Module    : Environment.idr
+||| Copyright : (c) Jan de Muijnck-Hughes
+||| License   : see LICENSE
+|||
 module Toolkit.DeBruijn.Environment
 
-import public Data.List.Elem
-import public Toolkit.Data.DList
+import Decidable.Equality
+
+import Data.DPair
+
+import Toolkit.Decidable.Informative
+
+import Toolkit.Data.List.AtIndex
+import Toolkit.Data.DList
+import Toolkit.Data.DList.AtIndex
+
+import Toolkit.DeBruijn.Context.Item
+import Toolkit.DeBruijn.Context
+import Toolkit.DeBruijn.Renaming
 
 %default total
 
@@ -14,7 +31,7 @@ import public Toolkit.Data.DList
 ||| @ctxt The typing context.
 public export
 Env : (t : Type) -> (obj : t -> Type) -> (ctxt : List t) -> Type
-Env ty obj ctxt = DList ty obj ctxt
+Env = DList
 
 ||| Add an object to our execution environment.
 ||| @env The typing environment.
@@ -48,6 +65,5 @@ update : (idx : Elem t ctxt)
       -> Env ty e ctxt
 update Here      obj (_    :: store) = obj  :: store
 update (There x) obj (obj' :: store) = obj' :: update x obj store
-
 
 -- [ EOF ]

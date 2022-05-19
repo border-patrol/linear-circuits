@@ -1,0 +1,82 @@
+// LOG : Starting Idealised Linear
+// LOG : Parsing Successful
+// LOG : Type Checking Complete
+// LOG : Soundness Check Complete
+digraph G {
+31 [label="(1, 1) CHAN_IN : logic"];
+32 [label="(1, 1) CHAN_OUT : logic"];
+29 [label="(1, 1) CHAN_IN : logic"];
+30 [label="(1, 1) CHAN_OUT : logic"];
+26 [label="(1, 1) CHAN_IN : logic"];
+27 [label="(1, 1) CHAN_OUT : logic"];
+24 [label="(1, 1) CHAN_IN : logic"];
+25 [label="(1, 1) CHAN_OUT : logic"];
+20 [label="(1, 1) CHAN_IN : logic"];
+21 [label="(1, 1) CHAN_OUT : logic"];
+18 [label="(1, 1) CHAN_IN : logic"];
+19 [label="(1, 1) CHAN_OUT : logic"];
+16 [label="(1, 1) CHAN_IN : logic"];
+17 [label="(1, 1) CHAN_OUT : logic"];
+12 [label="(1, 1) CHAN_IN : logic"];
+13 [label="(1, 1) CHAN_OUT : logic"];
+10 [label="(1, 1) CHAN_IN : logic"];
+11 [label="(1, 1) CHAN_OUT : logic"];
+8 [label="(1, 1) CHAN_IN : logic"];
+9 [label="(1, 1) CHAN_OUT : logic"];
+6 [label="(1, 1) CHAN_IN : logic"];
+7 [label="(1, 1) CHAN_OUT : logic"];
+5 [label="OUT(1) OUTPUT : logic"];
+4 [label="OUT(1) OUTPUT : logic"];
+3 [label="IN(1) INPUT : logic"];
+2 [label="IN(1) INPUT : logic"];
+1 [label="IN(1) INPUT : logic"];
+14 [label="(1, 2) DUP"];
+15 [label="(1, 2) DUP"];
+22 [label="(1, 2) DUP"];
+23 [label="(2, 1) xor"];
+28 [label="(1, 2) DUP"];
+33 [label="(2, 1) and"];
+34 [label="(2, 1) and"];
+35 [label="(2, 1) xor"];
+36 [label="(2, 1) or"];
+	31 -> 32;
+	29 -> 30;
+	26 -> 27;
+	24 -> 25;
+	20 -> 21;
+	18 -> 19;
+	16 -> 17;
+	12 -> 13;
+	10 -> 11;
+	8 -> 9;
+	6 -> 7;
+	1 -> 14;
+	14 -> 6;
+	14 -> 8;
+	2 -> 15;
+	15 -> 10;
+	15 -> 12;
+	17 -> 22;
+	22 -> 18;
+	22 -> 20;
+	23 -> 16;
+	9 -> 23;
+	13 -> 23;
+	3 -> 28;
+	28 -> 24;
+	28 -> 26;
+	33 -> 29;
+	19 -> 33;
+	25 -> 33;
+	34 -> 31;
+	7 -> 34;
+	11 -> 34;
+	35 -> 5;
+	27 -> 35;
+	21 -> 35;
+	36 -> 4;
+	30 -> 36;
+	32 -> 36;
+}
+
+// LOG : BYE
