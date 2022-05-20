@@ -93,6 +93,6 @@ Show (Idealised.Error) where
   show (TyCheck x) = show x
   show (Parse f n) = show @{circuitspe} n
   show (Sound g e)
-    = showErr (g, e)
+    = unlines ["// LOG : Soundness Error:", showErr (g, e)]
 
 -- [ EOF ]

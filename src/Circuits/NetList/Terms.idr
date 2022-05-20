@@ -15,6 +15,11 @@ import Data.Nat
 import Toolkit.Data.DList
 import Toolkit.Data.Whole
 
+import Toolkit.Data.List.AtIndex
+import Toolkit.DeBruijn.Context.Item
+import Toolkit.DeBruijn.Context
+import Toolkit.DeBruijn.Renaming
+
 import Circuits.Common
 
 import Circuits.NetList.Types
@@ -27,8 +32,8 @@ data Term : (context : List Ty)
                     -> Type
   where
     Var : {type : Ty}
-       -> (prf  : Elem type ctxt)
-               -> Term ctxt type
+       -> (prf  : IsVar ctxt type)
+               -> Term  ctxt type
 
     Port : (flow  : Direction)
         -> (dtype : DType)

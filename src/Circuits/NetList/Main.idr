@@ -22,36 +22,34 @@ import Toolkit.Data.List.Occurs.Does
 import Circuits.NetList
 import Circuits.NetList.Pretty
 
+netlist : (fname : String)
+                -> NetList ()
+netlist fname
+  = do putStrLn "// LOG : Starting NetList "
+
+       ast <- fromFile fname
+
+       log "// \{show ast}"
+
+       log "// LOG : Parsing Successful"
+
+       term <- Design.check ast
+
+       log "// \{show term}"
+
+       log "// LOG : Type Checking Complete"
+
+       prf <- isSound term
+
+       log "// LOG : Soundness Check Complete"
+
+       putStrLn ((showGraph . fst . getGraph) prf)
+
+       log "// LOG : BYE"
+
 main : IO Unit
 main
-  = do putStrLn "// LOG : Starting NetList "
-       args <- getArgs
-
-       case args of
-         [x,y] => do Right ast <- fromFile y
-                       | Left err => do putStrLn "// LOG : Failure Parsing"
-                                        printLn err
-                                        exitFailure
-
-                     putStr "// "
-                     putStrLn (show ast)
-
-                     Right term <- typeCheckIO ast
-                       | Left err => do putStrLn "// LOG : Failure Type Checking"
-                                        printLn err
-                                        exitFailure
-
-                     putStr "// "
-                     putStrLn (show term)
-
-                     Right res <- runIO term
-                       | Left err => do putStrLn "// LOG : Failure Interpreting"
-                                        putStrLn (showErr err)
-                                        exitFailure
-                     putStrLn ((showGraph . fst . getGraph) res)
-                     exitSuccess
-         _ => do putStrLn "need at least a file name"
-                 exitFailure
-
+  = do fname <- processArgs !getArgs
+       run (netlist fname)
 
 -- [ EOF ]

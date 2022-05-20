@@ -135,7 +135,7 @@ check : {cin  : List (Ty,Usage)}
      -> (ast  : AST)
              -> Idealised (Result cin)
 
-check curr (Var x) with (lookup (get x) curr)
+check curr (Var x) with (FreeVar.lookup (get x) curr)
   check curr (Var x) | (Yes (E type item prf locC locN)) with (prf)
     check curr (Var x) | (Yes (E (type, u) item prf locC locN)) | (FVar prf1) with (prf1)
       check curr (Var x) | (Yes (E (type, FREE) item prf locC locN)) | (FVar prf1) | Refl with (use (V _ locN))

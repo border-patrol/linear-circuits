@@ -42,28 +42,58 @@ extend : {t : ty}
       -> Env ty e (t::ctxt)
 extend env obj = obj :: env
 
-||| Read an object from our typing environment.
-|||
-||| @idx Which object.
-||| @env The execution environment.
-export
-read : (idx : Elem t ctxt)
-    -> (env : Env ty e ctxt)
-    -> e t
-read Here      (obj::store) = obj
-read (There x) (obj::store) = read x store
-
-||| Add an object to our execution environment.
-|||
-||| @idx Where the object is.
-||| @obj The new object.
-||| @env The environment to which the object is added.
-export
-update : (idx : Elem t ctxt)
-      -> (obj : e t)
+namespace Elem
+  ||| Read an object from our typing environment.
+  |||
+  ||| @idx Which object.
+  ||| @env The execution environment.
+  export
+  read : (idx : Elem t ctxt)
       -> (env : Env ty e ctxt)
-      -> Env ty e ctxt
-update Here      obj (_    :: store) = obj  :: store
-update (There x) obj (obj' :: store) = obj' :: update x obj store
+      -> e t
+  read Here      (obj::store) = obj
+  read (There x) (obj::store) = read x store
+
+  ||| Add an object to our execution environment.
+  |||
+  ||| @idx Where the object is.
+  ||| @obj The new object.
+  ||| @env The environment to which the object is added.
+  export
+  update : (idx : Elem t ctxt)
+        -> (obj : e t)
+        -> (env : Env ty e ctxt)
+        -> Env ty e ctxt
+  update Here      obj (_    :: store) = obj  :: store
+  update (There x) obj (obj' :: store) = obj' :: update x obj store
+
+namespace IsVar
+  ||| Read an object from our typing environment.
+  |||
+  ||| @idx Which object.
+  ||| @env The execution environment.
+  export
+  read : (idx : IsVar ctxt t)
+      -> (env : Env ty e ctxt)
+      -> e t
+  read (V 0 Here) (elem :: rest)
+    = elem
+  read (V (S idx) (There later)) (elem :: rest)
+    = read (V idx later) rest
+
+  ||| Add an object to our execution environment.
+  |||
+  ||| @idx Where the object is.
+  ||| @obj The new object.
+  ||| @env The environment to which the object is added.
+  export
+  update : (idx : IsVar ctxt t)
+        -> (obj : e t)
+        -> (env : Env ty e ctxt)
+        -> Env ty e ctxt
+  update (V 0 Here) obj (elem :: rest)
+    = obj :: rest
+  update (V (S k) (There later)) obj (elem :: rest)
+    = elem :: update (V k later) obj rest
 
 -- [ EOF ]

@@ -1,3 +1,9 @@
+|||
+|||
+||| Module    : NetList/Check.idr
+||| Copyright : (c) Jan de Muijnck-Hughes
+||| License   : see LICENSE
+|||
 module Circuits.NetList.Check
 
 import Decidable.Equality
@@ -7,14 +13,21 @@ import Data.String
 import Data.List.Elem
 import Data.List.Quantifiers
 import Data.Fin
+import Data.Singleton
 
 import Toolkit.Decidable.Informative
 
 import Toolkit.Data.Location
 import Toolkit.Data.Whole
-
+import Toolkit.Data.DList
 import Toolkit.DeBruijn.Context
 
+import Toolkit.Data.List.AtIndex
+import Toolkit.DeBruijn.Context.Item
+import Toolkit.DeBruijn.Context
+import Toolkit.DeBruijn.Renaming
+
+import Circuits.NetList.Core
 import Circuits.NetList.Types
 import Circuits.NetList.Terms
 import Circuits.NetList.AST
@@ -25,44 +38,47 @@ public export
 Context : List Ty -> Type
 Context = Context Ty
 
-public export
-data Error = Mismatch Ty Ty
-           | MismatchD DType DType
-           | NotBound String
-           | VectorExpected
-           | PortChanExpected
-           | PortExpected
-           | OOB Nat Nat
-           | ErrI String
-           | Err FileContext Error
+throw : Check.Error -> NetList a
+throw = (throw . TyCheck)
 
-public export
-TyCheck : Type -> Type
-TyCheck = Either Error
+throwAt : FileContext
+       -> Check.Error
+       -> NetList a
+throwAt fc = (Check.throw . Err fc)
 
-lift : Dec a -> Error -> TyCheck a
-lift (Yes prf) _ = Right prf
-lift (No contra) e = Left e
+embedAt : FileContext
+       -> Check.Error
+       -> Dec     a
+       -> NetList a
+embedAt _ _ (Yes prf)
+  = pure prf
+embedAt fc err (No _)
+  = throwAt fc err
 
-throw : FileContext -> Check.Error -> TyCheck a
-throw fc e = Left $ Err fc e
+embedAtInfo : FileContext
+           -> Check.Error
+           -> DecInfo e a
+           -> NetList   a
+embedAtInfo _ _ (Yes prfWhy)
+  = pure prfWhy
+embedAtInfo fc err (No _ _)
+  = throwAt fc err
 
-namespace Info
-  public export
-  lift : DecInfo e a -> Check.Error -> TyCheck a
-  lift (Yes prf)     _ = Right prf
-  lift (No m contra) e = Left e
-
+||| Naive program transformations and checks.
 namespace Elab
 
   export
-  getDataType : FileContext
+  getDataType : (fc   : FileContext)
              -> (term : (type ** Term ctxt type))
-                     -> TyCheck DType
-  getDataType fc (MkDPair (TyPort (d,x)) snd) = pure x
-  getDataType fc (MkDPair (TyChan x) snd) = pure x
+                     -> NetList DType
+  getDataType fc (MkDPair (TyPort (d,x)) snd)
+    = pure x
+  getDataType fc (MkDPair (TyChan x) snd)
+    = pure x
   getDataType fc (MkDPair type snd)
-    = Left (Err fc PortChanExpected)
+    = throwAt fc PortChanExpected
+
+
 
   ||| Need to make sure that the indices are in the correct direction.
   rewriteTerm : Cast flow expected
@@ -93,7 +109,8 @@ namespace Elab
   rewriteTerm BI _ (Cast BO _) impossible
   rewriteTerm BO _ (Cast BO _) impossible
 
-  ||| When casting we finally know which direction indexing should go, so lets fix that.
+  ||| When casting we finally know which direction indexing should go,
+  ||| so lets fix that.
   shouldCast : {type : DType}
             -> (flow,expected : Direction)
             -> (term : Term ctxt (TyPort (flow,type)))
@@ -113,34 +130,37 @@ namespace Elab
     shouldCast flow expected term | (No contra)
       = No (\(prf,t) => contra prf)
 
-  portCast : {type : DType}
-        -> {flow : Direction}
-        -> FileContext
-        -> (expected : Direction)
-        -> (term : Term ctxt (TyPort (flow,type)))
-                -> TyCheck (Term ctxt (TyPort (expected,type)))
+  portCast : {type     : DType}
+          -> {flow     : Direction}
+          -> (fc       : FileContext)
+          -> (expected : Direction)
+          -> (term     : Term ctxt (TyPort (flow,type)))
+                      -> NetList (Term ctxt (TyPort (expected,type)))
 
   portCast {type} {flow = flow} fc exp term with (shouldCast flow exp term)
     portCast {type} {flow = flow} fc exp term | Yes (p,e)
-      = Right e
+      = pure e
     portCast {type} {flow = flow} fc exp term | No contra with (decEq flow exp)
       portCast {type} {flow = exp} fc exp term | No contra | (Yes Refl)
-        = Right term
+        = pure term
       portCast {type} {flow = flow} fc exp term | No contra | (No f)
-        = Left (Err fc (Mismatch (TyPort (exp,type)) (TyPort (flow,type))))
+        = throwAt fc (Mismatch (TyPort (exp,type))
+                               (TyPort (flow,type)))
 
   export
   checkPort : (fc    : FileContext)
            -> (exdir : Direction)
            -> (expty : DType)
            -> (term  : (type ** Term ctxt type))
-                    -> TyCheck (Term ctxt (TyPort (exdir,expty)))
+                    -> NetList (Term ctxt (TyPort (exdir,expty)))
 
   -- [ NOTE ]
   --
   checkPort fc exdir exty (MkDPair (TyPort (given,x)) term)
-    = do Refl <- lift (decEq exty x)
-                      (Err fc (MismatchD exty x))
+    = do Refl <- embedAt fc
+                         (MismatchD exty x)
+                         (decEq exty x)
+
 
          portCast fc exdir term
 
@@ -148,8 +168,9 @@ namespace Elab
   --
   -- READ implies INPUT
   checkPort fc INPUT exty (MkDPair (TyChan x) term)
-    = do Refl <- lift (decEq exty x)
-                      (Err fc (MismatchD exty x))
+    = do Refl <- embedAt fc (MismatchD exty x)
+                            (decEq exty x)
+
 
          pure (Project READ term)
 
@@ -157,29 +178,31 @@ namespace Elab
   --
   -- WRITE implies OUTPUT
   checkPort fc OUTPUT exty (MkDPair (TyChan x) term)
-    = do Refl <- lift (decEq exty x)
-                      (Err fc (MismatchD exty x))
+    = do Refl <- embedAt fc (MismatchD exty x)
+                            (decEq exty x)
 
-         Right (Project WRITE term)
+
+         pure (Project WRITE term)
 
   -- [ NOTE ]
   --
   -- INOUT Chan's impossible.
   checkPort fc INOUT exty (MkDPair (TyChan x) term)
-     = Left (Err fc (ErrI "INOUT CHAN not expected"))
+     = throwAt fc (ErrI "INOUT CHAN not expected")
 
 
   -- [ NOTE ]
   --
   -- Gates/TyUnit not expected
   checkPort fc exdir exty (MkDPair type term)
-     = Left (Err fc (Mismatch (TyPort (exdir,exty)) type))
+     = throwAt fc (Mismatch (TyPort (exdir,exty))
+                            type)
 
   export
   indexDir : {flow : Direction}
           -> (fc   : FileContext)
           -> (term : Term ctxt (TyPort (flow,BVECT (W (S n) ItIsSucc) type)))
-                  -> TyCheck (Index flow)
+                  -> NetList (Index flow)
   indexDir {flow} fc term with (flow)
     indexDir {flow = flow} fc term | INPUT
       = pure (DOWN DI)
@@ -190,164 +213,167 @@ namespace Elab
     indexDir {flow = flow} fc (Index idir what idx) | INOUT
       = pure idir
     indexDir {flow = flow} fc (Project how what) | INOUT
-      = Left (Err fc (ErrI "Shouldn't happen impossible indexing a projection with inout"))
+      = throwAt fc (ErrI "Shouldn't happen impossible indexing a projection with inout")
     indexDir {flow = flow} fc (Cast x what) | INOUT
-      = Left (Err fc (ErrI "Shouldn't happen impossible indexing a cast with inout"))
+      = throwAt fc (ErrI "Shouldn't happen impossible indexing a cast with inout")
 
-namespace TypeCheck
-  export
-  typeCheck : {types : List Ty}
-           -> (curr : Context types)
-           -> (ast  : AST)
-                   -> TyCheck (DPair Ty (Term types))
+construct : {types : List Ty}
+         -> (curr : Context types)
+         -> (ast  : AST)
+                 -> NetList (DPair Ty (Term types))
 
-  typeCheck curr (Var x)
-    = do prf <- lift (isBound (get x) curr)
-                     (Err (span x) (NotBound (get x)))
+construct curr (Var x)
+  = do prf <- embedAtInfo (span x)
+                          (NotBound (get x))
+                          (lookup (get x) curr)
 
-         let (N (I _ ty) prf idx) = mkNameless prf
+       let (ty ** loc ** idx) = deBruijn prf
 
-         pure (MkDPair ty (Var idx))
+       pure (ty ** Var (V loc idx))
 
-  typeCheck curr (Port fc flow ty n body)
-    = do (TyUnit ** term) <- typeCheck (I (get n) (TyPort (flow,ty))::curr) body
-           | (type ** _) => Left (Err fc (Mismatch TyUnit type))
+construct curr (Port fc flow ty n body)
+  = do (TyUnit ** term) <- construct (extend curr (get n) (TyPort (flow, ty)))
+                                     body
+         | (ty ** _) => throwAt fc (Mismatch TyUnit ty)
 
-         pure (_ ** Port flow ty term)
+       pure (_ ** Port flow ty term)
 
-  typeCheck curr (Wire fc ty n body)
-    = do (TyUnit ** term) <- typeCheck (I (get n) (TyChan ty)::curr) body
-           | (type ** _) => Left (Err fc (Mismatch TyUnit type))
+construct curr (Wire fc ty n body)
 
-         pure (_ ** Wire ty term)
+  = do (TyUnit ** term) <- construct (extend curr (get n) (TyChan ty))
+                                     body
+         | (ty ** _) => throwAt fc (Mismatch TyUnit ty)
 
-  typeCheck curr (GateDecl fc n g body)
-    = do (TyGate ** gate) <- typeCheck curr g
-           | (type ** _) => Left (Err fc (Mismatch TyGate type))
+       pure (_ ** Wire ty term)
 
-         (TyUnit ** term) <- typeCheck (I (get n) (TyGate)::curr) body
-           | (type ** _) => Left (Err fc (Mismatch TyUnit type))
+construct curr (GateDecl fc n g body)
+  = do (TyGate ** gate) <- construct curr g
+         | (type ** _) => throwAt fc (Mismatch TyGate type)
 
-         pure (_ ** GateDecl gate term)
+       (TyUnit ** term) <- construct (extend curr (get n) TyGate)
+                                     body
+         | (type ** _) => throwAt fc (Mismatch TyUnit type)
 
-  typeCheck curr (Assign fc o i rest)
-    =  do termI <- typeCheck curr i
+       pure (_ ** GateDecl gate term)
 
-          ity <- getDataType fc termI
+construct curr (Shim fc dir thing)
+  = do t <- construct curr thing
 
-          termO <- typeCheck curr o
-          oty <- getDataType fc termO
+       dtype <- getDataType fc t
 
-          Refl <- lift (decEq ity oty)
-                       (Err fc (MismatchD ity oty))
+       term <- checkPort fc dir dtype t
 
-          o' <- checkPort fc OUTPUT ity termO
-          i' <- checkPort fc INPUT  ity termI
+       pure (_ ** term)
 
 
-          (TyUnit ** r') <- typeCheck curr rest
-           | (type ** _) => Left (Err fc (Mismatch TyUnit type))
+construct curr (Assign fc o i rest)
+  =  do termI <- construct curr i
 
-          pure (_ ** Assign o' i' r')
+        ity <- getDataType fc termI
+
+        termO <- construct curr o
+
+        oty <- getDataType fc termO
+
+        Refl <- embedAt fc (MismatchD ity oty)
+                           (decEq ity oty)
+
+        o' <- checkPort fc OUTPUT ity termO
+
+        i' <- checkPort fc INPUT  ity termI
+
+        (TyUnit ** r') <- construct curr rest
+          | (type ** _) => throwAt fc (Mismatch TyUnit type)
+
+        pure (_ ** Assign o' i' r')
+
+construct curr (Mux fc o c l r)
+  = do termO <- construct curr o
+       termC <- construct curr c
+       termL <- construct curr l
+       termR <- construct curr r
+
+       o' <- checkPort fc OUTPUT LOGIC termO
+       c' <- checkPort fc INPUT  LOGIC termC
+       l' <- checkPort fc INPUT  LOGIC termL
+       r' <- checkPort fc INPUT  LOGIC termR
+
+       pure (_ ** Mux o' c' l' r')
+
+construct curr (GateU fc k o i)
+
+  = do termO <- construct curr o
+       termI <- construct curr i
+
+       o' <- checkPort fc OUTPUT LOGIC termO
+       i' <- checkPort fc INPUT  LOGIC termI
+
+       pure (_ ** GateU k o' i')
+
+construct curr (GateB fc k o l r)
+
+  = do termO <- construct curr o
+       termL <- construct curr l
+       termR <- construct curr r
+
+       o' <- checkPort fc OUTPUT LOGIC termO
+       l' <- checkPort fc INPUT  LOGIC termL
+       r' <- checkPort fc INPUT  LOGIC termR
+
+       pure (_ ** GateB k o' l' r')
+
+construct curr (Index fc idx t)
+
+  = do (TyPort (flow,BVECT (W (S n) ItIsSucc) type) ** term) <- construct curr t
+         | (type ** term)
+             => throwAt fc VectorExpected
+
+       case natToFin idx (S n) of
+         Nothing => throw (OOB idx (S n))
+         Just idx' => do idir <- indexDir fc term
+                         pure (_ ** Index idir term idx')
+
+construct curr (Split fc a b i)
+
+  = do termA <- construct curr a
+       termB <- construct curr b
+       termI <- construct curr i
+
+       a' <- checkPort fc OUTPUT LOGIC termA
+       b' <- checkPort fc OUTPUT LOGIC termB
+       i' <- checkPort fc INPUT  LOGIC termI
+
+       pure (_ ** Split a' b' i')
+
+construct curr (Collect fc o l r)
+
+  = do (TyPort (OUTPUT,BVECT (W (S (S Z)) ItIsSucc) type) ** o') <- construct curr o
+         | (TyPort (flow,BVECT (W (S (S n)) ItIsSucc) type) ** term)
+             => throwAt fc (Mismatch (TyPort (OUTPUT, BVECT (W (S (S Z)) ItIsSucc) type))
+                                     (TyPort (flow,   BVECT (W (S (S n)) ItIsSucc) type))
+                                       )
+         | (type ** term)
+             => throwAt fc VectorExpected
+
+       termL <- construct curr l
+       termR <- construct curr r
+
+       l' <- checkPort fc INPUT type termL
+       r' <- checkPort fc INPUT type termR
+
+       pure (_ ** Collect o' l' r')
 
 
-  typeCheck curr (Mux fc o c l r)
-    = do termO <- typeCheck curr o
-         termC <- typeCheck curr c
-         termL <- typeCheck curr l
-         termR <- typeCheck curr r
-
-         o' <- checkPort fc OUTPUT LOGIC termO
-         c' <- checkPort fc INPUT  LOGIC termC
-         l' <- checkPort fc INPUT  LOGIC termL
-         r' <- checkPort fc INPUT  LOGIC termR
-
-         pure (_ ** Mux o' c' l' r')
-
-  typeCheck curr (GateU fc k o i)
-    = do termO <- typeCheck curr o
-         termI <- typeCheck curr i
-
-         o' <- checkPort fc OUTPUT LOGIC termO
-         i' <- checkPort fc INPUT  LOGIC termI
-
-         pure (_ ** GateU k o' i')
-
-  typeCheck curr (GateB fc k o l r)
-
-    = do termO <- typeCheck curr o
-         termL <- typeCheck curr l
-         termR <- typeCheck curr r
-
-         o' <- checkPort fc OUTPUT LOGIC termO
-         l' <- checkPort fc INPUT  LOGIC termL
-         r' <- checkPort fc INPUT  LOGIC termR
-
-         pure (_ ** GateB k o' l' r')
-
-  typeCheck curr (Index fc idx t)
-
-    = do (TyPort (flow,BVECT (W (S n) ItIsSucc) type) ** term) <- typeCheck curr t
-           | (type ** term)
-               => Left (Err fc VectorExpected)
-
-         case natToFin idx (S n) of
-           Nothing => Left (OOB idx (S n))
-           Just idx' => do idir <- indexDir fc term
-                           pure (_ ** Index idir term idx')
-
-  typeCheck curr (Split fc a b i)
-
-    = do termA <- typeCheck curr a
-         termB <- typeCheck curr b
-         termI <- typeCheck curr i
-
-         a' <- checkPort fc OUTPUT LOGIC termA
-         b' <- checkPort fc OUTPUT LOGIC termB
-         i' <- checkPort fc INPUT  LOGIC termI
-
-         pure (_ ** Split a' b' i')
-
-  typeCheck curr (Collect fc o l r)
-    = do (TyPort (OUTPUT,BVECT (W (S (S Z)) ItIsSucc) type) ** o') <- typeCheck curr o
-           | (TyPort (flow,BVECT (W (S (S n)) ItIsSucc) type) ** term)
-               => Left (Err fc (Mismatch (TyPort (OUTPUT, BVECT (W (S (S Z)) ItIsSucc) type))
-                                         (TyPort (flow,   BVECT (W (S (S n)) ItIsSucc) type))
-                                         ))
-           | (type ** term)
-               => Left (Err fc VectorExpected)
-
-         termL <- typeCheck curr l
-         termR <- typeCheck curr r
-
-         l' <- checkPort fc INPUT  type termL
-         r' <- checkPort fc INPUT  type termR
-
-         pure (_ ** Collect o' l' r')
-
-  typeCheck curr (Shim fc dir thing)
-
-    = do t <- typeCheck curr thing
-
-         dtype <- getDataType fc t
-
-         term <- checkPort fc dir dtype t
-
-         pure (_ ** term)
-
-  typeCheck curr (Stop x)
-    = pure (_ ** Stop)
+construct curr (Stop fc)
+  = pure (_ ** Stop)
 
 namespace Design
   export
-  typeCheck : (ast : AST) -> TyCheck (Term Nil TyUnit)
-  typeCheck ast with (typeCheck Nil ast)
-    typeCheck ast | (Left x) = Left x
-    typeCheck ast | (Right (MkDPair TyUnit term)) = Right term
-    typeCheck ast | (Right (MkDPair ty snd)) = Left (Mismatch TyUnit ty)
+  check : (ast : AST) -> NetList (Term Nil TyUnit)
+  check ast
+    = do (TyUnit ** term) <- construct Nil ast
+           | (ty ** term) => throw (Mismatch TyUnit ty)
+         pure term
 
-  export
-  typeCheckIO : (ast : AST) -> IO (TyCheck (Term Nil TyUnit))
-  typeCheckIO ast = pure (typeCheck ast)
 
 -- [ EOF ]

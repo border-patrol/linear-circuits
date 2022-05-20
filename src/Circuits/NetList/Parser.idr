@@ -10,6 +10,8 @@ import Circuits.NetList.Types
 import Circuits.NetList.AST
 import Circuits.NetList.Lexer
 
+import Circuits.NetList.Core
+
 %default total
 
 namespace Direction
@@ -259,14 +261,17 @@ namespace Terms
          symbol ";"
          pure (foldPorts e ps (foldBody e b))
 
-namespace Idealised
+namespace NetList
 
   export
   fromFile : (fname : String)
-                   -> IO (Either (ParseError Token) AST)
+                   -> NetList AST
   fromFile fname
-    = case !(parseFile NetList.Lexer design fname) of
-        Left err  => pure (Left err)
-        Right ast => pure (Right (setSource fname ast))
+    = do ast <- parseFile (Parse fname)
+                NetList.Lexer
+                design
+                fname
+         pure (setSource fname ast)
+
 
 -- [ EOF ]

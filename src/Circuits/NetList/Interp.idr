@@ -11,10 +11,17 @@ import public Toolkit.Decidable.Informative
 import public Toolkit.Data.Graph.EdgeBounded
 import public Toolkit.Data.Graph.EdgeBounded.HasExactDegree.All
 
-import Toolkit.Data.List.DeBruijn
 import Toolkit.Data.Whole
+import Toolkit.Data.DList
+import Toolkit.Data.List.AtIndex
+import Toolkit.DeBruijn.Context.Item
+import Toolkit.DeBruijn.Context
+import Toolkit.DeBruijn.Renaming
+import Toolkit.DeBruijn.Environment
 
 import Circuits.NetList.Pretty
+import Circuits.NetList.Core
+
 import Circuits.NetList.Types
 import Circuits.NetList.Terms
 
@@ -325,25 +332,28 @@ isValid r with (getGraph r)
       = No (g,msg) (\(D graph (G graph) prf) => contra prf)
 
 public export
-data Run : (term : Term Nil TyUnit) -> Type where
-  R : (prf  : Valid (interp Nil Z (MkGraph Nil Nil) term))
-           -> Run term
+data IsSound : (term : Term Nil TyUnit) -> Type where
+  R : (prf : Valid (interp Nil Z (MkGraph Nil Nil) term))
+          -> IsSound term
 
 public export
-getGraph : Run term -> DPair (Graph String) ValidGraph
+getGraph : IsSound term -> DPair (Graph String) ValidGraph
 getGraph (R (D g x y)) = MkDPair g y
 
-export
 run : (term : Term Nil TyUnit)
-           -> DecInfo (Graph String, HasExactDegree.Error String) (Run term)
+           -> DecInfo (Graph String, HasExactDegree.Error String)
+                      (IsSound term)
 run term with (isValid (interp Nil Z empty term))
   run term | (Yes prf) = Yes (R prf)
   run term | (No msg contra) = No msg (\(R prf) => contra prf)
 
 export
-runIO : (term : Term Nil TyUnit)
-             -> IO (Either (Graph String, HasExactDegree.Error String)
-                           (Run term))
-runIO term = pure $ (asEither (run term))
+isSound : (term : Term Nil TyUnit)
+               -> NetList (IsSound term)
+
+isSound term
+  = embed (\(a,b) => Sound a b)
+          (run term)
+
 
 -- [ EOF ]

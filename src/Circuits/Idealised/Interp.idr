@@ -402,8 +402,8 @@ export
 isSound : (term : Term Nil TyUnit Nil)
                -> Idealised (IsSound term)
 isSound term
-  = do prf <- embed (\(a,b) => Sound a b)
-                    (run term)
-       pure prf
+  = embed (\(a,b) => Sound a b)
+          (run term)
+
 
 -- [ EOF ]

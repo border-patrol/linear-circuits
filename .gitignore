@@ -10,6 +10,8 @@ tags
 TAGS
 
 tests/**/output
+tests/**/*.dot
+tests/**/*.png
 
 # IDE and editors
 *.swp

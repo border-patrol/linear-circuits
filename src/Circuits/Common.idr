@@ -1,11 +1,20 @@
 module Circuits.Common
 
+import System
+
 import Decidable.Equality
 
 import Data.Nat
 import Toolkit.Data.Whole
 
 %default total
+
+export
+processArgs : List String -> IO String
+processArgs [exe,fname] = pure fname
+processArgs _
+  = do putStrLn "Exactly one file at a time."
+       exitFailure
 
 public export
 data DType = LOGIC | BVECT Whole DType

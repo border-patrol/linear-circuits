@@ -9,6 +9,7 @@ module Toolkit.DeBruijn.Context
 import Decidable.Equality
 
 import Data.DPair
+import Data.Singleton
 
 import Toolkit.Decidable.Informative
 
@@ -124,5 +125,33 @@ exists f key (head :: tail) with (holds f key head)
     exists f key (head :: tail) | (No (WrongName x y) contra) | (No msgR contraR)
       = No msgR
            (notLater contra contraR)
+
+
+namespace Lookup
+
+  public export
+  IsBound : {kind  : Type}
+         -> {types : List kind}
+         -> (key   : String)
+         -> (ctxt  : Context kind types)
+                  -> Type
+  IsBound {kind} str ctxt
+    = Exists kind Singleton
+                str
+                ctxt
+
+  single : (item : kind)
+                -> DecInfo () (Singleton item)
+  single item = Yes (Val item)
+
+
+  export
+  lookup : {kind  : Type}
+        -> {types : List kind}
+        -> (str   : String)
+        -> (ctxt  : Context kind types)
+                 -> DecInfo (Exists.Error ())
+                            (IsBound str ctxt)
+  lookup = exists single
 
 -- [ EOF ]

@@ -1,5 +1,6 @@
 module Circuits.NetList
 
+import public Circuits.NetList.Core
 import public Circuits.NetList.Types
 import public Circuits.NetList.Terms
 import public Circuits.NetList.AST

@@ -18,48 +18,20 @@ import Toolkit.Data.List.DeBruijn
 import Toolkit.Data.List.Occurs.Does
 import Toolkit.Data.Graph.EdgeBounded
 import Toolkit.Data.Graph.EdgeBounded.HasExactDegree
+import Toolkit.Data.List.AtIndex
+import Toolkit.DeBruijn.Context.Item
+import Toolkit.DeBruijn.Context
+import Toolkit.DeBruijn.Renaming
 
 import Circuits.Common
+import public Circuits.Common.Pretty
+
+import Circuits.NetList.Error
 import Circuits.NetList.AST
 import Circuits.NetList.Types
 
 import Circuits.NetList.Terms
-import Circuits.NetList.Check
 
-import public Circuits.Common.Pretty
-
-export
-Show Direction where
-  show INPUT  = "input"
-  show OUTPUT = "output"
-  show INOUT  = "inout"
-
-
-export
-Show (Types.Cast.Cast f t) where
-  show BI = "down"
-  show BO = "up"
-
-export
-Show (Index f) where
-  show (UP _) = "UP"
-  show (DOWN _) = "DOWN"
-
-export
-Show Gate.Binary.Kind where
-  show AND  = "and"
-  show IOR  = "or"
-  show XOR  = "xor"
-  show ANDN = "nand"
-  show IORN = "nor"
-  show XORN = "xnor"
-
-export
-Show Ty where
-  show TyUnit         = "()"
-  show (TyPort (d,t)) = "TyPort(" <+> show d <+> "," <+> show t <+> ")"
-  show TyGate         = "TyGate"
-  show (TyChan t)     = "TyChan(" <+> show t <+> ")"
 
 export
 Show AST where
@@ -102,9 +74,8 @@ Show AST where
   show (Stop x)
     = "(Stop)"
 
-toNat : Elem x xs -> Nat
-toNat Here = Z
-toNat (There y) = S (toNat y)
+toNat : IsVar ctxt type -> Nat
+toNat (V pos prf) = pos
 
 Show (Project dir) where
   show WRITE = "Write"
@@ -155,36 +126,5 @@ Show (Term ctxt type) where
     = "(Cast \{show dir} \{show what})"
 
 
-export
-Show Check.Error where
-  show (Mismatch x y)
-    = "Type Mismatch:\n\n"
-      <+>
-      unlines [unwords ["\tExpected:",show x], unwords ["\tGiven:", show y]]
-
-  show (MismatchD x y)
-    = "Type Mismatch:\n\n"
-      <+>
-      unlines [unwords ["\tExpected:",show x], unwords ["\tGiven:", show y]]
-
-
-  show (NotBound x)
-    = unwords ["Undeclared variable:", x]
-
-  show (VectorExpected)
-    = "Vector Expected"
-
-  show (PortChanExpected)
-    = "Port or Wire Expected"
-
-  show (PortExpected)
-    = "Port Expected"
-
-  show (ErrI msg)
-    = "Internal Err: " <+> msg
-  show (OOB x y)
-    = unwords ["Out of Bounds:" , show x, "is not within", show y]
-
-  show (Err x y) = unwords [show x, show y]
 
 -- [ EOF ]
