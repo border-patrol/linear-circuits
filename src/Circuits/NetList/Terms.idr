@@ -78,9 +78,8 @@ data Term : (context : List Ty)
          -> (i : Term ctxt (TyPort (INPUT,  LOGIC)))
               -> Term ctxt TyGate
 
-    Collect : {type : DType}
-           -> (o   : Term ctxt (TyPort (OUTPUT, BVECT (W (S (S Z)) ItIsSucc) type)))
-           -> (l,r : Term ctxt (TyPort (INPUT,  type)))
+    Collect : (o   : Term ctxt (TyPort (OUTPUT, LOGIC)))
+           -> (l,r : Term ctxt (TyPort (INPUT,  LOGIC)))
                   -> Term ctxt TyGate
 
     Split : (l,r : Term ctxt (TyPort (OUTPUT, LOGIC)))

@@ -251,10 +251,10 @@ interp env c g (Split a b i)
             (fromLists [av,bv,iv,sVertex]
                        (esIS ++ esSA ++ esSB))
 
-interp env c g (Collect {type} o a b)
+interp env c g (Collect o a b)
 
   = let c1 = S c
-    in let s = size type
+    in let s = size LOGIC
 
     in let sVertex = both "COLLECT" c1 s
 

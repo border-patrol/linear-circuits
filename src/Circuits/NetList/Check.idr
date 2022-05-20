@@ -347,19 +347,13 @@ construct curr (Split fc a b i)
 
 construct curr (Collect fc o l r)
 
-  = do (TyPort (OUTPUT,BVECT (W (S (S Z)) ItIsSucc) type) ** o') <- construct curr o
-         | (TyPort (flow,BVECT (W (S (S n)) ItIsSucc) type) ** term)
-             => throwAt fc (Mismatch (TyPort (OUTPUT, BVECT (W (S (S Z)) ItIsSucc) type))
-                                     (TyPort (flow,   BVECT (W (S (S n)) ItIsSucc) type))
-                                       )
-         | (type ** term)
-             => throwAt fc VectorExpected
-
+  = do termO <- construct curr o
        termL <- construct curr l
        termR <- construct curr r
 
-       l' <- checkPort fc INPUT type termL
-       r' <- checkPort fc INPUT type termR
+       o' <- checkPort fc OUTPUT LOGIC termO
+       l' <- checkPort fc INPUT  LOGIC termL
+       r' <- checkPort fc INPUT  LOGIC termR
 
        pure (_ ** Collect o' l' r')
 
