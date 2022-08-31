@@ -28,24 +28,27 @@ data Term : (start : List Item)
                    -> Type
   where
     -- ## Vars
-    VarPort : (prf : IsFreePort (I (TyPort (flow,type)) u) ctxt_a)
-           -> (use : UsePort ctxt_a prf ctxt_b)
-                  -> Term ctxt_a
-                          (TyPort (flow,type))
-                          ctxt_b
+    FreePort : (prf : IsFreePort (I (TyPort (dir,type)) u) old)
+            -> (use : UsePort    old prf new)
+                   -> Term old (TyPort (dir,type)) new
+
+    VarGate : (prf : IsGate (I TyGate TyGate) curr)
+                  -> Term curr TyGate curr
+
+    VarChan : (prf : IsChan (I (TyChan type) (TyChan uin uout)) curr)
+                  -> Term curr (TyChan type) curr
 
     -- ## Structure
-
     Port : (flow : Direction)
         -> (type : DType)
-        -> (urgh : FreePort flow type item)
+        -> (urgh : Port.Init flow type item)
         -> (body : Term (item :: ctxt)
                         TyUnit
                         Nil)
                 -> Term ctxt TyUnit Nil
 
     Wire : (type : DType)
-        -> (urgh : FreeChan type item)
+        -> (urgh : Channel.Init type item)
         -> (body : Term (item :: ctxt)
                         TyUnit
                         Nil)
@@ -60,6 +63,11 @@ data Term : (start : List Item)
     Stop : (prf : All CanStop ctxt)
                -> Term ctxt TyUnit Nil
 
+    Assign : {type : DType}
+          -> (o    : Term a (TyPort (OUTPUT,type)) b)
+          -> (i    : Term b (TyPort (INPUT,type)) c)
+          -> (body : Term d TyUnit e)
+                  -> Term a TyUnit e
     -- ## Gates
 
     Mux : (out  : Term a (TyPort (OUTPUT, LOGIC)) b)
@@ -87,26 +95,40 @@ data Term : (start : List Item)
                  -> Term a TyGate                  d
 
     Collect : {type : DType}
-           -> (out  : Term a (TyPort (OUTPUT,BVECT (W (S (S Z)) ItIsSucc) type)) b)
-           -> (inA  : Term b (TyPort (OUTPUT,type)) c)
-           -> (inB  : Term c (TyPort (INPUT, type)) d)
+           -> (out  : Term a (TyPort (OUTPUT, type)) b)
+           -> (inA  : Term b (TyPort (INPUT,  type)) c)
+           -> (inB  : Term c (TyPort (INPUT,  type)) d)
                    -> Term a TyGate                  d
 
-    -- ## Port Manipulation & Channel Projection
+    -- ## Casting
 
     Cast : (cast : Cast INOUT flow)
         -> (port : Term a (TyPort (INOUT, type)) b)
                 -> Term a (TyPort (flow,  type)) b
 
-    Project : (how : Project dir)
-           -> (prf : IsFreeChannel how (I (TyChan type) (TyChan ein eout)) this)
-           -> (use : ProjectChannel how this prf that)
-                  -> Term this (TyPort (dir,type)) that
+    -- ## Indexing
 
     Index : (idir : Index flow)
-         -> (idx : Fin a)
-         -> (prf : CanIndexPort idx (I (TyPort (flow, BVECT (W (S n) ItIsSucc) type)) u) this)
-         -> (use : IndexPort idx this prf that)
-                -> Term this (TyPort (flow,type)) that
+         -> (idx  : List Nat)
+         -> (prf  : IsFreePortAt idx
+                                 (I (TyPort (flow, BVECT (W (S n) ItIsSucc) type))
+                                 u)
+                                 old)
+         -> (use : UsePortAt idx old prf new)
+                -> Term old (TyPort (flow,type)) new
 
+    -- ## Channel Projection
+
+    Project : (how : Project dir)
+           -> (prf : CanProject how (I (TyChan type) u) old)
+           -> (use : UseChannel how old prf new)
+                  -> Term old (TyPort (dir, type)) new
+
+    ProjectAt : (how  : Project dir) -- TODO check
+             -> (idx  : List Nat)
+             -> (prf  : CanProjectAt how idx (I (TyChan (BVECT (W (S n) ItIsSucc)
+                                                               type))
+                                                        u) old)
+             -> (use  : UseChannelAt how idx old prf new)
+                     -> Term old (TyPort (dir, type)) new
 -- [ EOF ]

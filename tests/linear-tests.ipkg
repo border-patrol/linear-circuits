@@ -1,0 +1,7 @@
+package linear-tests
+
+depends = contrib, test
+
+executable = linear-tests
+
+main = Linear

@@ -1,7 +1,12 @@
 module Toolkit.Data.Vect.Extra
 
+import Data.Nat
+
 import public Decidable.Equality
 import        Data.Vect
+import public Data.Vect.AtIndex
+
+import public Toolkit.Decidable.Informative
 
 %default total
 
@@ -105,6 +110,34 @@ namespace ReplaceAt
     replaceAt (FS x) (y :: xs) this that | (No contra)
       = No (notLater contra)
 
+namespace Diff
+
+  public export
+  data AtIndex : (idx : Fin  m)
+              -> (xs  : Vect n type)
+              -> (x   : type)
+                     -> Type
+    where
+      I : {idx : Fin n}
+       -> {xs  : Vect n type}
+       -> (prf : AtIndex.AtIndex idx xs x)
+              -> Diff.AtIndex idx xs x
+
+  public export
+  index : DecEq type
+       => {m,n : Nat}
+       -> (idx : Fin m)
+       -> (xs  : Vect n type)
+              -> Dec (DPair type (Diff.AtIndex idx xs))
+  index {m,n} idx xs with (decEq m n)
+    index {m=m,n=m} idx xs | (Yes Refl) with (Find.index idx xs)
+      index {m=m,n=m} idx xs | (Yes Refl) | (Yes (x ** prf))
+        = Yes (x ** I prf)
+      index {m=m,n=m} idx xs | (Yes Refl) | (No contra)
+        = No (\(MkDPair x (I prf)) => contra (x ** prf))
+    index {m,n} idx xs | (No contra)
+      = No (\(MkDPair x (I prf)) => contra Refl)
+
 namespace Quantifier
   namespace AtIndex
 
@@ -137,8 +170,7 @@ namespace Quantifier
 
 
     export
-    atIndex : {type : Type}
-           -> {p    : type -> Type}
+    atIndex : {p    : type -> Type}
            -> (dec  : (this : type) -> Dec (p this))
            -> (idx  : Fin n)
            -> (xs   : Vect n type)
@@ -183,8 +215,7 @@ namespace Quantifier
       indexDiffers f (At x) = f Refl
 
       export
-      atIndexI : {type : Type}
-              -> {p    : type -> Type}
+      atIndexI : {p    : type -> Type}
               -> {m,n  : Nat}
               -> (dec  : (this : type) -> Dec (p this))
               -> (idx  : Fin m)
@@ -200,5 +231,68 @@ namespace Quantifier
         atIndexI {m = m} {n = n} dec idx xs | (No contra)
           = No (indexDiffers contra)
 
+  namespace Nat
+    public export
+    data AtIndex : (type : Type)
+                -> (p,q  : (a : type) -> Type)
+                -> (idx  : Nat)
+                -> (xs   : Vect n type)
+                        -> Type
+      where
+        Here : (prf : p x)
+                   -> AtIndex type p q Z (x::xs)
+
+        There : (later : AtIndex type p q    next            xs)
+                      -> AtIndex type p q (S next) (not_x :: xs)
+
+    public export
+    data AtIndexNot : (type : Type)
+                   -> (p,q  : (a : type) -> Type)
+                   -> (idx  : Nat)
+                   -> (xs   : Vect n type)
+                           -> Type
+       where
+         IOOB  : AtIndexNot type p q n xs
+         NotSatH : (prf : q x)
+                       -> AtIndexNot type p q n (x::xs)
+         NotSatT : AtIndexNot type p q    n      xs
+                -> AtIndexNot type p q (S n) (x::xs)
+
+    Uninhabited (AtIndex type p q Z Nil) where
+      uninhabited (Here _) impossible
+
+    Uninhabited (AtIndex type p q (S n) Nil) where
+      uninhabited (Here _) impossible
+
+    export
+    atIndex : {p,q  : type -> Type}
+           -> (dec  : (this : type) -> DecInfo (q this) (p this))
+           -> (idx  : Nat)
+           -> (xs   : Vect n type)
+                   -> DecInfo (AtIndexNot type p q idx xs)
+                              (AtIndex    type p q idx xs)
+    atIndex _ Z []
+      = No IOOB absurd
+
+    atIndex _ (S k) []
+      = No IOOB absurd
+
+    atIndex dec Z (x :: xs) with (dec x)
+      atIndex dec Z (x :: xs) | (Yes prf)
+        = Yes (Here prf)
+
+      atIndex dec Z (x :: xs) | (No msg no)
+        = No (NotSatH msg)
+             (\(Here prf) => no prf)
+
+    atIndex dec (S k) (x :: xs) with (atIndex dec k xs)
+      atIndex dec (S k) (x :: xs) | (Yes prf)
+        = Yes (There prf)
+      atIndex dec (S k) (x :: xs) | (No IOOB no)
+        = No IOOB
+             (\(There later) => no later)
+      atIndex dec (S k) (x :: xs) | (No prf no)
+        = No (NotSatT prf)
+             (\(There later) => no later)
 
 -- [ EOF ]

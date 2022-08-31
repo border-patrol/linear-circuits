@@ -35,6 +35,21 @@ test-netlist: netlist-testbin
 	$(THREADS) \
 	--only $(ONLY)
 
+# [ Typical Linear language ]
+
+.PHONY: linear-testbin linear
+
+testbin-linear:
+	${IDRIS2} --build linear-tests.ipkg
+
+test-linear: linear-testbin
+	${TARGETDIR}/linear-tests        \
+	$(PROG_BIN)    \
+	--timing         \
+	$(UPDATE) \
+	$(THREADS) \
+	--only $(ONLY)
+
 # [ Idealised Netlist language ]
 
 .PHONY: idealised-testbin idealised

@@ -32,7 +32,6 @@ import Circuits.NetList.Types
 
 import Circuits.NetList.Terms
 
-
 export
 Show AST where
   show (Var (MkRef span get))
@@ -124,7 +123,5 @@ Show (Term ctxt type) where
 
   show (Cast dir what)
     = "(Cast \{show dir} \{show what})"
-
-
 
 -- [ EOF ]

@@ -25,39 +25,6 @@ import Circuits.NetList.Types
 
 %default total
 
-export
-Show Direction where
-  show INPUT  = "input"
-  show OUTPUT = "output"
-  show INOUT  = "inout"
-
-
-export
-Show (Types.Cast.Cast f t) where
-  show BI = "down"
-  show BO = "up"
-
-export
-Show (Index f) where
-  show (UP _) = "UP"
-  show (DOWN _) = "DOWN"
-
-export
-Show Gate.Binary.Kind where
-  show AND  = "and"
-  show IOR  = "or"
-  show XOR  = "xor"
-  show ANDN = "nand"
-  show IORN = "nor"
-  show XORN = "xnor"
-
-export
-Show Ty where
-  show TyUnit         = "()"
-  show (TyPort (d,t)) = "TyPort(" <+> show d <+> "," <+> show t <+> ")"
-  show TyGate         = "TyGate"
-  show (TyChan t)     = "TyChan(" <+> show t <+> ")"
-
 
 namespace Check
   public export

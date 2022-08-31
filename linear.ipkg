@@ -1,0 +1,13 @@
+package linear
+
+depends = contrib
+
+sourcedir = "src"
+
+main = Circuits.NetList.Linear.Main
+
+executable = "netlistL"
+
+modules = Circuits.NetList.Linear.Main
+
+-- [ EOF ]

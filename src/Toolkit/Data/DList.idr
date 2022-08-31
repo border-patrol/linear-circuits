@@ -37,6 +37,7 @@ data DList : (aTy : Type)
       -> (rest : DList aTy elemTy xs)
       -> DList aTy elemTy (x::xs)
 
+
 public export
 mapToList : (forall x . e x -> b)
          -> DList a e xs

@@ -122,7 +122,7 @@ namespace Types
     array
         = do ty <- logic
              ns <- indices
-             pure (arraytype ty ns)
+             pure (arraytype ty (reverse ns))
       where
         mustBeZero : Nat -> Whole -> RuleEmpty Whole
         mustBeZero    Z  (W w prf) = pure (W (S w) ItIsSucc)

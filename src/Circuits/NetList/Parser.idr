@@ -21,8 +21,6 @@ namespace Direction
           <|> gives "input"  INPUT
           <|> gives "output" OUTPUT
 
-
-
 namespace Kinds
 
   export
@@ -97,7 +95,7 @@ namespace Terms
         = do s <- Toolkit.location
              r <- ref'
              is <- indices
-             pure (build s r is)
+             pure (build s r (reverse is))
 
   data Body = WDecl  FileContext DType Ref
             | GInst  FileContext Binary.Kind Ref AST AST AST

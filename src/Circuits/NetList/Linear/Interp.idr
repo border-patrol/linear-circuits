@@ -23,7 +23,7 @@ import Circuits.NetList.Linear.Terms
 import Circuits.NetList.Pretty
 
 %default total
-
+{-
 public export
 InterpTy : Ty -> Type
 InterpTy TyUnit
@@ -369,5 +369,5 @@ runIO : (term : Term Nil TyUnit Nil)
              -> IO (Either (Graph String, HasExactDegree.Error String)
                            (Run term))
 runIO term = pure $ (asEither (run term))
-
+-}
 -- [ EOF ]

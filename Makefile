@@ -50,9 +50,35 @@ netlist-test-run: netlist-test-bin
 			 UPDATE='' \
 			 ONLY=$(ONLY)
 
-.PHONY: idealised idealised-test-bin idealised-test-update idealised-test-fast
+# [ Linear Netlist language ]
+
+.PHONY: linear linear-test-bin linear-test-update linear-test-fast
+
+linear:
+	$(IDRIS2) --build linear.ipkg
+
+
+linear-test-bin:
+	${MAKE} -C tests testbin-linear IDRIS2=$(IDRIS2)
+
+linear-test-update: linear-test-bin
+	${MAKE} -C tests test-linear \
+			 IDRIS2=$(IDRIS2) \
+			 PROG_BIN=$(TARGETDIR)/netlistL \
+			 UPDATE=--interactive \
+			 THREADS='' \
+			 ONLY=$(ONLY)
+
+linear-test-run: linear-test-bin
+	${MAKE} -C tests test-linear \
+			 IDRIS2=$(IDRIS2) \
+			 PROG_BIN=$(TARGETDIR)/netlistL \
+			 UPDATE='' \
+			 ONLY=$(ONLY)
 
 # [ Idealised Netlist language ]
+
+.PHONY: idealised idealised-test-bin idealised-test-update idealised-test-fast
 
 idealised:
 	$(IDRIS2) --build idealised.ipkg
@@ -74,7 +100,7 @@ idealised-test-run: idealised-test-bin
 			 IDRIS2=$(IDRIS2) \
 			 PROG_BIN=$(TARGETDIR)/idealised \
 			 UPDATE='' \
-			 ONLY=$(ONLY) \
+			 ONLY=$(ONLY)
 
 # [ Housekeeping ]
 

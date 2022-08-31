@@ -96,6 +96,17 @@ export
 
 export
 %inline
+(<|>) : TheRug e a
+     -> Lazy (TheRug e a)
+     -> TheRug e a
+(<|>) (MkTheRug first) backup
+  = MkTheRug (do res <- first
+                 case res of
+                   (Left _)    => rugRun backup
+                   (Right val) => pure (Right val))
+
+export
+%inline
 (>>) : TheRug e ()
     -> TheRug e a
     -> TheRug e a
@@ -148,6 +159,44 @@ tryCatch onErr prog
   = MkTheRug (run (pure . Left . onErr)
                   (pure . Right)
                   prog)
+
+export
+%inline
+tryCatchRun : (prog  : TheRug ea a)
+           -> (onErr : ea -> TheRug ea a)
+                    -> TheRug ea a
+tryCatchRun (MkTheRug this) onErr
+  = MkTheRug (do res <- this
+                 case res of
+                   (Left e)    => rugRun (onErr e)
+                   (Right val) => pure (Right val))
+
+export
+%inline
+tryCatchOn : (shouldFail : ea -> Bool)
+          -> (prog : TheRug ea a)
+          -> (next : TheRug ea a)
+                   -> TheRug ea a
+tryCatchOn shouldFail (MkTheRug this) next
+  = MkTheRug (do res <- this
+                 case res of
+                   (Left e)
+                     => if shouldFail e
+                        then pure (Left e)
+                        else rugRun next
+                   (Right val) => pure (Right val))
+
+namespace Either
+  export
+  %inline
+  embed : (f      : e -> b)
+       -> (result : Either e r)
+                 -> TheRug b r
+  embed _ (Right val)
+    = pure val
+
+  embed f (Left err)
+    = throw (f err)
 
 namespace Decidable
   export

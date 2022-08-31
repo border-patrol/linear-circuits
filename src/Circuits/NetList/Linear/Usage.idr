@@ -1,3 +1,9 @@
+||| Usage predicates over types, datatypes, and contexts.
+|||
+||| Module    : Usage.idr
+||| Copyright : (c) Jan de Muijnck-Hughes
+||| License   : see LICENSE
+|||
 module Circuits.NetList.Linear.Usage
 
 import Decidable.Equality
@@ -20,15 +26,20 @@ import Circuits.Common
 
 import Circuits.NetList.Types
 
+import public Circuits.NetList.Linear.Context
+
 import public Circuits.NetList.Linear.Usage.DataType
 import public Circuits.NetList.Linear.Usage.DataType.Use.Full
 import public Circuits.NetList.Linear.Usage.DataType.Use.Partial
 
 import public Circuits.NetList.Linear.Usage.TermType
-import public Circuits.NetList.Linear.Usage.TermType.Use.Port
-import public Circuits.NetList.Linear.Usage.TermType.Use.Channel
+import public Circuits.NetList.Linear.Usage.TermType.Port
+import public Circuits.NetList.Linear.Usage.TermType.Port.Use
+import public Circuits.NetList.Linear.Usage.TermType.Channel
+import public Circuits.NetList.Linear.Usage.TermType.Channel.Use
 
-import public Circuits.NetList.Linear.Usage.Item
+import public Circuits.NetList.Linear.Usage.Item.Port
+import public Circuits.NetList.Linear.Usage.Item.Channel
 import public Circuits.NetList.Linear.Usage.Context
 
 %default total

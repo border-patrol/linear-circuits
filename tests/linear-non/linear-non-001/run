@@ -1,0 +1,7 @@
+# -*- mode: sh;-*-
+
+echo "Example Non-Linearly Wired Circuits"
+
+echo Example1.sv
+
+# -- EOF

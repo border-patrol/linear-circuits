@@ -79,5 +79,8 @@ namespace Index
     decEq x y {i = i} {j = i} {eTy = eTy} | (Yes Refl) = Indexed.decEq x y Refl
     decEq x y {i = i} {j = j} {eTy = eTy} | (No contra) = No (indexAreSame contra)
 
+public export
+same : Equals kind type x y -> x = y
+same (Same Refl Refl) = Refl
 
 -- --------------------------------------------------------------------- [ EOF ]
