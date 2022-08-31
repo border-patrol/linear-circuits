@@ -30,7 +30,6 @@ import Circuits.NetList.Pretty
 import Circuits.NetList.Lexer
 import Circuits.NetList.Linear.Error
 import Circuits.NetList.Linear.AST
-
 import Circuits.NetList.Types
 
 --import Circuits.NetList.Linear.Terms
@@ -82,8 +81,6 @@ toNat (V pos prf) = pos
 Show (Project dir) where
   show WRITE = "Write"
   show READ = "Read"
-
-
 
 {-
 export

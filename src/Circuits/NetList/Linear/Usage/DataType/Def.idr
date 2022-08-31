@@ -56,20 +56,15 @@ DecEqIdx DType Usage where
     decEq x y Refl | (No no)
       = No (\(Same Refl Refl) => no Refl)
 
-public export
-data SafeIndex : (n   : Nat)
-              -> (us  : Vect m (Usage type))
-                     -> Type
-  where
-    SI : {ms : Vect m (Usage type)} -> (f : Fin m) -> NatToFin n m f -> SafeIndex n ms
+export
+Show Usage where
+  show USED = "USED"
+  show FREE = "FREE"
 
 export
-safeIndex : {m  : Nat}
-         -> (n  : Nat)
-         -> (us : Vect m (Usage type))
-               -> Dec (SafeIndex n us)
-safeIndex n {m} us with (Safe.natToFin n m)
-  safeIndex n {m = m} us | (Yes ((fst ** snd))) = Yes (SI fst snd)
-  safeIndex n {m = m} us | (No contra) = No (\(SI fst prf) => contra (fst ** prf))
+Show (Usage type) where
+  show (Logic u) = show u
+  show (Array us) = show us
+
 
 -- [ EOF ]

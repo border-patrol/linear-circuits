@@ -141,8 +141,8 @@ canProjectAt fc how idx str ctxt with (canProjectAt' how idx str ctxt)
 
   canProjectAt fc how idx str ctxt | (No (NotSatisfied ((I (TyPort x) _) ** prf)) _)
     = throwAt fc (ErrI "Internal error canProjectAt")
-  canProjectAt fc how idx str ctxt | (No (NotSatisfied ((I (TyChan x) _) ** prf)) _)
-    = throwAt fc (LinearityError [str])
+  canProjectAt fc how idx str ctxt | (No (NotSatisfied ((I (TyChan x) u) ** prf)) _)
+    = throwAt fc (LinearityError ["\{str} := \{show u}"])
 
   canProjectAt fc how idx str ctxt | (No (NotSatisfied ((I _ _) ** prf)) _)
     = throwAt fc PortChanExpected

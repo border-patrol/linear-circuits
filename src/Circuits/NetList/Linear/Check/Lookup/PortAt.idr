@@ -125,7 +125,7 @@ isFreePortAt fc idx str ctxt with (isFreePortAt' idx str ctxt)
     isFreePortAt fc idx str ctxt | (No msg _) | NotFound
       = throwAt fc (NotBound str)
     isFreePortAt fc idx str ctxt | (No msg _) | (NotSatisfied (((I (TyPort (flow, type)) (TyPort u)) ** (FreeAtNot (FreeAtNot prf)))))
-      = throwAt fc (LinearityError [str])
+      = throwAt fc (LinearityError ["\{str} := \{show u}"])
     isFreePortAt fc idx str ctxt | (No msg _) | (NotSatisfied (((I (TyChan type) u) ** (FreeAtNot FreeAtNotChan))))
       = throwAt fc PortExpected
     isFreePortAt fc idx str ctxt | (No msg _) | (NotSatisfied (((I TyGate u) ** (FreeAtNot FreeAtNotGate))))

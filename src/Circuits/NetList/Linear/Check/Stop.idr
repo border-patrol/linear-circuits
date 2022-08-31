@@ -93,6 +93,6 @@ canStop fc ctxt with (examine ctxt)
       canStop fc ctxt | (AUN is [] xs [] ys) | AllOk | Refl
         = pure xs
     canStop fc ctxt | (AUN is ps xs ns ys) | AllOkNot
-      = throwAt fc  (LinearityError (mapToList (\(I n _) => n) ns))
+      = throwAt fc  (LinearityError (mapToList (\(I n (I ty u)) => "\{n} := \{show u}") ns))
 
 -- [ EOF ]

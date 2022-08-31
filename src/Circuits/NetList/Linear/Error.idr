@@ -82,7 +82,7 @@ Show Check.Error where
   show (Err x y) = unwords [show x, show y]
 
   show (LinearityError names)
-    = "Linearity Error:\n \{show names}"
+    = "Linearity Error:\n\{unlines names}"
 
 export
 Show (NetList.Linear.Error) where

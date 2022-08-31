@@ -4,4 +4,5 @@ Example6.sv
 // (Port output logic "out" (Port input logic "a" (Port input logic[3] "bc" (Gate "n1" (GateB nand (Shim output (Var out)) (Shim input (Var a)) (Shim input (Index Example6.sv:5:19-24: input [(Example6.sv:5:21-24:, 1)] bc))) (Stop)))))
 // LOG : Parsing Successful
 Example6.sv:7:0-0: Linearity Error:
- ["bc"]
+bc := [FREE, USED, FREE]
+

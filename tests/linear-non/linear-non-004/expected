@@ -4,4 +4,15 @@ Example4.sv
 // (Port output logic "out" (Port input logic "i0" (Port input logic "i1" (Port input logic "i2" (Port input logic "i3" (Port input logic "s1" (Port input logic "s0" (Wire logic "y0" (Wire logic "y1" (Wire logic "y2" (Wire logic "y3" (Wire logic "s1n" (Wire logic "s0n" (Gate "n1" (GateU not (Shim output (Var s1n)) (Shim input (Var s1))) (Gate "n2" (GateU not (Shim output (Var s0n)) (Shim input (Var s0))) (Stop))))))))))))))))
 // LOG : Parsing Successful
 Example4.sv:24:0-0: Linearity Error:
- ["s0n", "s1n", "y3", "y2", "y1", "y0", "i3", "i2", "i1", "i0", "out"]
+s0n := (USED, FREE)
+s1n := (USED, FREE)
+y3 := (FREE, FREE)
+y2 := (FREE, FREE)
+y1 := (FREE, FREE)
+y0 := (FREE, FREE)
+i3 := FREE
+i2 := FREE
+i1 := FREE
+i0 := FREE
+out := FREE
+

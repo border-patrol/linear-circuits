@@ -58,6 +58,17 @@ data Usage : Ty -> Type where
   TyUnit : Usage TyUnit
 
 export
+Show (TermType.Usage type) where
+  show (TyPort u)
+    = show u
+
+  show (TyChan ein eout)
+    = "(\{show ein}, \{show eout})"
+
+  show TyGate = "()"
+  show TyUnit = "()"
+
+export
 DecEq (TermType.Usage type) where
   decEq (TyPort u) (TyPort x)
     = decDo $ do Refl <- decEq u x `otherwise` (\Refl => Refl)

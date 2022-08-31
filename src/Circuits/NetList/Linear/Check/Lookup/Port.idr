@@ -96,7 +96,7 @@ namespace Lookup
     isFreePort {types = types} fc str curr | (No NotFound _)
       = throwAt fc (NotBound str)
     isFreePort {types = types} fc str curr | (No (NotSatisfied ((I (TyPort x) u) ** p)) _)
-      = throwAt fc (LinearityError [str])
+      = throwAt fc (LinearityError ["\{str} := \{show u}"])
     isFreePort {types = types} fc str curr | (No (NotSatisfied ((I _ _) ** p)) _)
       = throwAt fc PortExpected
 
