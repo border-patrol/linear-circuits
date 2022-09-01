@@ -77,6 +77,6 @@ namespace Lookup
     isChan fc str ctxt | (No NotFound _)
       = throwAt fc (NotBound str)
     isChan fc str ctxt | (No (NotSatisfied x) _)
-      = throwAt fc PortExpected
+      = throwAt fc (ErrI "Something")
 
 -- [ EOF ]

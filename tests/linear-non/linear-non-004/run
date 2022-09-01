@@ -1,8 +1,19 @@
 # -*- mode: sh;-*-
 
 echo "Example Non-Linearly Wired Circuits"
+echo "Whole host of wires and ports are not used."
 
-echo Example4.sv
-$1 Example4.sv | tee Example4.dot
+echo "## Circuits"
+echo "\`\`\`"
+$1 Example.sv
+echo "\`\`\`"
+
+echo "## Verilator"
+echo "\`\`\`"
+
+verilator --lint-only --Wall Example.sv 2>&1
+
+echo "\`\`\`"
+
 
 # -- EOF

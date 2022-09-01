@@ -1,11 +1,11 @@
-module Example2( output logic out
-               , input  logic i0
-               , input  logic i1
-               , input  logic i2
-               , input  logic i3
-               , input  logic s1
-               , input  logic s0
-                 );
+module Example( output logic out
+              , input  logic i0
+              , input  logic i1
+              , input  logic i2
+              , input  logic i3
+              , input  logic s1
+              , input  logic s0
+                );
 
    wire logic y0;
    wire logic y1;

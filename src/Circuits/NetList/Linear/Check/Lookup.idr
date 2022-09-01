@@ -39,6 +39,12 @@ import Circuits.NetList.Linear.Check.Lookup.ProjectAt
 
 %default total
 
+%inline
+whenExcept : Linear.Error -> Maybe Linear.Error
+whenExcept e@(TyCheck (NotBound str)) = Just e
+whenExcept e@(TyCheck (LinearityError strs)) = Just e
+whenExcept _ = Nothing
+
 namespace Full
   export
   lookup : {types : List Item}
@@ -47,20 +53,9 @@ namespace Full
         -> (ctxt : Context types)
                 -> Linear (DPair Ty (API.Result types))
   lookup fc str ctxt
-      = tryCatchOn portFail (isFreePort fc str ctxt)
-      $ tryCatchOn gateFail (isGate fc str ctxt)
-      $                     (isChan fc str ctxt)
-    where
-
-      portFail : Linear.Error -> Bool
-      portFail (TyCheck (NotBound str)) = True
-      portFail (TyCheck (LinearityError strs)) = True
-      portFail _ = False
-
-      gateFail : Linear.Error -> Bool
-      gateFail (TyCheck (NotBound str)) = True
-      gateFail _ = False
-
+      = handleWith whenExcept (isGate fc str ctxt)
+      $ handleWith whenExcept (isChan fc str ctxt)
+                              (isFreePort fc str ctxt)
 
 namespace Partial
   %inline
@@ -73,12 +68,11 @@ namespace Partial
     = throwAt fc (ErrI "Projecting INOUT")
 
   %inline
-  portFail' : Linear.Error -> Bool
-  portFail' (TyCheck (NotBound str)) = True
-  portFail' (TyCheck (LinearityError strs)) = True
-  portFail' (TyCheck PortChanExpected) = True
-  portFail' (TyCheck (IOOB xs ys)) = True
-  portFail' _ = False
+  whenExcept : Linear.Error -> Maybe Linear.Error
+  whenExcept e@(TyCheck (NotBound str))        = Just e
+  whenExcept e@(TyCheck (LinearityError strs)) = Just e
+  whenExcept e@(TyCheck (IOOB xs ys))          = Just e
+  whenExcept _ = Nothing
 
   export
   lookup : {types : List Item}
@@ -90,9 +84,10 @@ namespace Partial
                 -> Linear (DPair Ty (API.Result types))
   lookup fc ed idx str ctxt
 
-    = tryCatchOn portFail' (isFreePortAt fc     idx str ctxt)
-    $                      (do how <- buildHow fc ed
-                               canProjectAt fc how idx str ctxt)
+    = handleWith Partial.whenExcept
+                 (isFreePortAt fc idx str ctxt)
+                 (do how <- buildHow fc ed
+                     canProjectAt fc how idx str ctxt)
 
 
 -- [ EOF ]

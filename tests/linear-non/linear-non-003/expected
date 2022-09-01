@@ -1,8 +1,13 @@
 Example Non-Linearly Wired Circuits
-Example3.sv
+Input has unused elements
+## Circuits
+```
 // LOG : Starting Linear NetList 
-// (Port output logic "out" (Port input logic[2][2] "bc" (Gate "n1" (GateB nand (Shim output (Var out)) (Shim input (Index Example3.sv:4:16-24: input [(Example3.sv:4:21-24:, 1), (Example3.sv:4:18-21:, 0)] bc)) (Shim input (Index Example3.sv:4:26-34: input [(Example3.sv:4:31-34:, 0), (Example3.sv:4:28-31:, 1)] bc))) (Stop))))
 // LOG : Parsing Successful
-Example3.sv:6:0-0: Linearity Error:
+Example.sv:6:0-0: Linearity Error:
 bc := [[FREE, USED], [USED, FREE]]
 
+```
+## Verilator
+```
+```

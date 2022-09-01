@@ -1,7 +1,18 @@
 # -*- mode: sh;-*-
 echo "Example Non-Linearly Wired Circuits"
+echo "Output has an unused entry."
 
-echo Example2.sv
-$1 Example2.sv | tee Example2.dot
+echo "## Circuits"
+echo "\`\`\`"
+$1 Example.sv
+echo "\`\`\`"
+
+echo "## Verilator"
+echo "\`\`\`"
+
+verilator --lint-only --Wall Example.sv 2>&1
+
+echo "\`\`\`"
+
 
 # -- EOF

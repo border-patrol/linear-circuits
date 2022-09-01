@@ -1,8 +1,18 @@
 Example Non-Linearly Wired Circuits
-Example6.sv
+## Circuits
+```
 // LOG : Starting Linear NetList 
-// (Port output logic "out" (Port input logic "a" (Port input logic[3] "bc" (Gate "n1" (GateB nand (Shim output (Var out)) (Shim input (Var a)) (Shim input (Index Example6.sv:5:19-24: input [(Example6.sv:5:21-24:, 1)] bc))) (Stop)))))
 // LOG : Parsing Successful
-Example6.sv:7:0-0: Linearity Error:
+Example.sv:7:0-0: Linearity Error:
 bc := [FREE, USED, FREE]
 
+```
+## Verilator
+```
+%Warning-UNUSED: Example.sv:3: Bits of signal are not used: 'bc'[2,0]
+                             : ... In instance Example
+              , input  logic[2:0] bc
+                                  ^~
+                 ... Use "/* verilator lint_off UNUSED */" and lint_on around source to disable this message.
+%Error: Exiting due to 1 warning(s)
+```

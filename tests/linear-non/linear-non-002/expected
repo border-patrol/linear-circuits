@@ -1,8 +1,13 @@
 Example Non-Linearly Wired Circuits
-Example2.sv
+Output has an unused entry.
+## Circuits
+```
 // LOG : Starting Linear NetList 
-// (Port inout logic[2] "out" (Port input logic "b" (Port input logic "c" (Gate "n1" (GateB nand (Shim output (Index Example2.sv:5:11-17: output [(Example2.sv:5:14-17:, 0)] out)) (Shim input (Var b)) (Shim input (Var c))) (Stop)))))
 // LOG : Parsing Successful
-Example2.sv:7:0-0: Linearity Error:
+Example.sv:7:0-0: Linearity Error:
 out := [USED, FREE]
 
+```
+## Verilator
+```
+```

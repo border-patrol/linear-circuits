@@ -1,8 +1,19 @@
 # -*- mode: sh;-*-
 
 echo "Example Non-Linearly Wired Circuits"
+echo "Input is dangling"
 
-echo Example5.sv
-$1 Example5.sv | tee Example5.dot
+echo "## Circuits"
+echo "\`\`\`"
+$1 Example.sv
+echo "\`\`\`"
+
+echo "## Verilator"
+echo "\`\`\`"
+
+verilator --lint-only --Wall Example.sv 2>&1
+
+echo "\`\`\`"
+
 
 # -- EOF

@@ -2,7 +2,15 @@
 
 echo "Example Non-Linearly Wired Circuits"
 
-echo Example6.sv
-$1 Example6.sv | tee Example6.dot
+echo "## Circuits"
+echo "\`\`\`"
+$1 Example.sv
+echo "\`\`\`"
+
+echo "## Verilator"
+echo "\`\`\`"
+verilator --lint-only --Wall Example.sv 2>&1
+
+echo "\`\`\`"
 
 # -- EOF

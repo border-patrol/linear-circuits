@@ -28,7 +28,7 @@ linear fname
 
        ast <- fromFile fname
 
-       log "// \{show ast}"
+--       log "// \{show ast}"
 
        log "// LOG : Parsing Successful"
 

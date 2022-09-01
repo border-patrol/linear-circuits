@@ -1,6 +1,19 @@
 Example Non-Linearly Wired Circuits
-Example5.sv
+Input is dangling
+## Circuits
+```
 // LOG : Starting Linear NetList 
-// (Port output logic "out" (Port input logic "left" (Port input logic "right" (Gate "n1" (GateB nand (Shim output (Var out)) (Shim input (Var left)) (Shim input (Var left))) (Stop)))))
 // LOG : Parsing Successful
-Example5.sv:5:22-26: Port Expected
+Example.sv:5:22-26: Linearity Error:
+left := USED
+
+```
+## Verilator
+```
+%Warning-UNUSED: Example.sv:3: Signal is not used: 'right'
+                             : ... In instance Example
+              , input  logic right
+                             ^~~~~
+                 ... Use "/* verilator lint_off UNUSED */" and lint_on around source to disable this message.
+%Error: Exiting due to 1 warning(s)
+```
