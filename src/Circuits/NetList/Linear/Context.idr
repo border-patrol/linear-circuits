@@ -117,5 +117,4 @@ hasType type (I getType getUsage) with (decEq type getType)
   hasType type (I getType getUsage) | (No contra)
     = No (\(HT _) => contra Refl)
 
-
 -- [ EOF ]

@@ -6,6 +6,7 @@ import Decidable.Equality
 
 import Data.Nat
 import Toolkit.Data.Whole
+import Toolkit.Data.Vect.Extra
 
 %default total
 
@@ -45,6 +46,46 @@ DecEq DType where
     decEq (BVECT k x) (BVECT j y) | (No contra)
       = No (\Refl => contra Refl)
 
+public export
+data HasTypeAt : (type  : DType)
+              -> (idx   : List Nat)
+              -> (typeO : DType)
+                       -> Type
+  where
+    Here  : HasTypeAt (BVECT w type) [idx] type
+    There : HasTypeAt          type      (i'::is) typeo
+         -> HasTypeAt (BVECT w type) (i:: i'::is) typeo
+
+Uninhabited (HasTypeAt LOGIC ns type) where
+  uninhabited Here impossible
+  uninhabited (There x) impossible
+
+Uninhabited (HasTypeAt type Nil typeo) where
+  uninhabited Here impossible
+  uninhabited (There x) impossible
+
+public export
+data HasTypeAtResult : (type : DType) -> (idx : List Nat) -> Type
+  where
+    R : {type,typeo : DType} -> HasTypeAt type idx typeo -> HasTypeAtResult type idx
+
+export
+hasTypeAt : (type : DType)
+         -> (idx  : List Nat)
+                 -> Dec (HasTypeAtResult type idx)
+hasTypeAt type []
+  = No (\(R prf) => absurd prf)
+
+hasTypeAt LOGIC (x :: xs)
+  = No (\(R prf) => absurd prf)
+
+hasTypeAt (BVECT w type) (x :: [])
+  = Yes (R Here)
+hasTypeAt (BVECT w type) (x :: (y :: xs)) with (hasTypeAt type (y::xs))
+  hasTypeAt (BVECT w type) (x :: (y :: xs)) | (Yes (R prf))
+    = Yes (R (There prf))
+  hasTypeAt (BVECT w type) (x :: (y :: xs)) | (No no)
+    = No (\(R (There prf)) => no (R prf))
 
 public export
 data Usage = USED | FREE

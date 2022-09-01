@@ -119,21 +119,25 @@ canProjectAt fc how idx str ctxt with (canProjectAt' how idx str ctxt)
     canProjectAt fc WRITE idx str ctxt | (Yes (E (I (TyChan LOGIC) (TyChan ein eout)) item (ProjectAt prf) locC locN)) | (ProjectAtWrite x)
       = throwAt fc (ErrI "Internal error should not get here, this case is impossible.")
 
-    canProjectAt fc WRITE idx str ctxt | (Yes (E (I (TyChan (BVECT (W (S n) ItIsSucc) z)) (TyChan ein eout)) item (ProjectAt prf) locC locN)) | (ProjectAtWrite x)
+    canProjectAt fc WRITE idx str ctxt | (Yes (E (I (TyChan (BVECT (W (S n) ItIsSucc) type)) (TyChan ein eout)) item (ProjectAt prf) locC locN)) | (ProjectAtWrite x)
       = do let prfIdx = deBruijn locC locN
            let (new ** use) = useChannelAt _ prfIdx
            let next = update ctxt use
-           pure (_ ** R next (ProjectAt WRITE idx prfIdx use))
+           R prfT <- embedAt fc (IOOB idx (BVECT (W (S n) ItIsSucc) type))
+                                (hasTypeAt (BVECT (W (S n) ItIsSucc) type) idx)
+           pure (_ ** R next (ProjectAt WRITE idx prfIdx use prfT))
 
 
     canProjectAt fc READ idx str ctxt | (Yes (E (I (TyChan LOGIC) (TyChan ein eout)) item (ProjectAt prf) locC locN)) | (ProjectAtRead x)
       = throwAt fc (ErrI "Internal error should not get here, this case is impossible.")
 
-    canProjectAt fc READ idx str ctxt | (Yes (E (I (TyChan (BVECT (W (S n) ItIsSucc) z)) (TyChan ein eout)) item (ProjectAt prf) locC locN)) | (ProjectAtRead x)
+    canProjectAt fc READ idx str ctxt | (Yes (E (I (TyChan (BVECT (W (S n) ItIsSucc) type)) (TyChan ein eout)) item (ProjectAt prf) locC locN)) | (ProjectAtRead x)
       = do let prfIdx = deBruijn locC locN
            let (new ** use) = useChannelAt _ prfIdx
            let next = update ctxt use
-           pure (_ ** R next (ProjectAt READ idx prfIdx use))
+           R prfT <- embedAt fc (IOOB idx (BVECT (W (S n) ItIsSucc) type))
+                                (hasTypeAt (BVECT (W (S n) ItIsSucc) type) idx)
+           pure (_ ** R next (ProjectAt READ idx prfIdx use prfT))
 
   canProjectAt fc how idx str ctxt | (No NotFound _)
     = throwAt fc (NotBound str)

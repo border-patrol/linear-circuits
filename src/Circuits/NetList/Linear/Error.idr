@@ -37,6 +37,7 @@ namespace NetList
                  | PortChanExpected
                  | PortExpected
                  | OOB Nat Nat
+                 | IOOB (List Nat) DType
                  | ErrI String
                  | Err FileContext Check.Error
                  | LinearityError (List String)
@@ -78,6 +79,9 @@ Show Check.Error where
     = "Internal Err: " <+> msg
   show (OOB x y)
     = unwords ["Out of Bounds:" , show x, "is not within", show y]
+
+  show (IOOB x y)
+    = unwords ["Out of Bounds:" , show x, "does not index ", show y]
 
   show (Err x y) = unwords [show x, show y]
 

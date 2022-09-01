@@ -63,6 +63,7 @@ namespace Full
 
 
 namespace Partial
+  %inline
   buildHow : (fc : FileContext) -> (dir : Direction) -> Linear (Project dir)
   buildHow fc INPUT
     = pure READ
@@ -71,10 +72,12 @@ namespace Partial
   buildHow fc INOUT
     = throwAt fc (ErrI "Projecting INOUT")
 
+  %inline
   portFail' : Linear.Error -> Bool
   portFail' (TyCheck (NotBound str)) = True
   portFail' (TyCheck (LinearityError strs)) = True
   portFail' (TyCheck PortChanExpected) = True
+  portFail' (TyCheck (IOOB xs ys)) = True
   portFail' _ = False
 
   export
@@ -86,9 +89,10 @@ namespace Partial
         -> (ctxt  : Context types)
                 -> Linear (DPair Ty (API.Result types))
   lookup fc ed idx str ctxt
-      = tryCatchOn portFail' (isFreePortAt fc     idx str ctxt)
-      $                      (do how <- buildHow fc ed
-                                 canProjectAt fc how idx str ctxt)
+
+    = tryCatchOn portFail' (isFreePortAt fc     idx str ctxt)
+    $                      (do how <- buildHow fc ed
+                               canProjectAt fc how idx str ctxt)
 
 
 -- [ EOF ]

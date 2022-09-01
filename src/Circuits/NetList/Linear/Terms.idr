@@ -114,8 +114,9 @@ data Term : (start : List Item)
                                  (I (TyPort (flow, BVECT (W (S n) ItIsSucc) type))
                                  u)
                                  old)
-         -> (use : UsePortAt idx old prf new)
-                -> Term old (TyPort (flow,type)) new
+         -> (use  : UsePortAt idx old prf new)
+         -> (prfT : HasTypeAt (BVECT (W (S n) ItIsSucc) type) idx typeo)
+                -> Term old (TyPort (flow,typeo)) new
 
     -- ## Channel Projection
 
@@ -130,5 +131,8 @@ data Term : (start : List Item)
                                                                type))
                                                         u) old)
              -> (use  : UseChannelAt how idx old prf new)
-                     -> Term old (TyPort (dir, type)) new
+             -> (prfT : HasTypeAt (BVECT (W (S n) ItIsSucc) type) idx typeo)
+                     -> Term old (TyPort (dir, typeo)) new
+
+
 -- [ EOF ]

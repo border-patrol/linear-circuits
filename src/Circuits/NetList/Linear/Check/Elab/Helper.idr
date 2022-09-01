@@ -36,19 +36,19 @@ rewriteTerm _ _ (R new (FreePort prf use))
   = R new (FreePort prf use)
 
 -- [ NOTE ] Indices are what we care about.
-rewriteTerm BI (UP UB) (R new (Index _ idx prf use))
-  = R new (Index (UP UB) idx prf use)
+rewriteTerm BI (UP UB) (R new (Index _ idx prf use o))
+  = R new (Index (UP UB) idx prf use o)
 
-rewriteTerm BI (DOWN DB) (R new (Index _ idx prf use))
-  = R new (Index (DOWN DB) idx prf use)
+rewriteTerm BI (DOWN DB) (R new (Index _ idx prf use o))
+  = R new (Index (DOWN DB) idx prf use o)
 
-rewriteTerm BO (UP UB) (R new (Index _ idx prf use))
-  = R new (Index (UP UB) idx prf use)
+rewriteTerm BO (UP UB) (R new (Index _ idx prf use o))
+  = R new (Index (UP UB) idx prf use o)
 
-rewriteTerm BO (DOWN DB) (R new (Index _ idx prf use))
-  = R new (Index (DOWN DB) idx prf use)
+rewriteTerm BO (DOWN DB) (R new (Index _ idx prf use o))
+  = R new (Index (DOWN DB) idx prf use o)
 
--- [ NOTE ] Impossible Casesr
+-- [ NOTE ] Impossible Cases
 rewriteTerm BI _ (R _ (Cast BI _)) impossible
 rewriteTerm BI _ (R _ (Cast BO _)) impossible
 
@@ -61,10 +61,10 @@ rewriteTerm BI _ (R _ (Project WRITE _ _)) impossible
 rewriteTerm BO _ (R _ (Project READ _ _)) impossible
 rewriteTerm BI _ (R _ (Project READ _ _)) impossible
 
-rewriteTerm BO _ (R _ (ProjectAt WRITE _ _ _)) impossible
-rewriteTerm BI _ (R _ (ProjectAt WRITE _ _ _)) impossible
-rewriteTerm BO _ (R _ (ProjectAt READ  _ _ _)) impossible
-rewriteTerm BI _ (R _ (ProjectAt READ  _ _ _)) impossible
+rewriteTerm BO _ (R _ (ProjectAt WRITE _ _ _ _)) impossible
+rewriteTerm BI _ (R _ (ProjectAt WRITE _ _ _ _)) impossible
+rewriteTerm BO _ (R _ (ProjectAt READ  _ _ _ _)) impossible
+rewriteTerm BI _ (R _ (ProjectAt READ  _ _ _ _)) impossible
 
 
 ||| When casting we finally know which direction indexing should go,

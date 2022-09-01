@@ -118,7 +118,9 @@ isFreePortAt fc idx str ctxt with (isFreePortAt' idx str ctxt)
                         INPUT => DOWN DI
                         OUTPUT => UP UO
                         INOUT => UP UB
-           pure (_ ** R next (Index idir str prfIdx use))
+           R prfT <- embedAt fc (IOOB str (BVECT (W (S n) ItIsSucc) type))
+                                (hasTypeAt (BVECT (W (S n) ItIsSucc) type) str)
+           pure (_ ** R next (Index idir str prfIdx use prfT))
 
 
   isFreePortAt fc idx str ctxt | (No msg _) with (msg)

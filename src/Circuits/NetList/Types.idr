@@ -202,126 +202,35 @@ Show Ty where
   show TyGate         = "TyGate"
   show (TyChan t)     = "TyChan(" <+> show t <+> ")"
 
-namespace DataType
-  ||| Is the nested index valid for the datatype
-  public export
-  data ValidIndex : (i    : List Nat)
-                 -> (type : DType)
-                 -> (ns   : Vect (length i) Nat)
-                 -> (is   : DVect Nat Fin (length i) ns )
-                 -> Type
-    where
-      VHere : NatToFin n (S m) f -> ValidIndex [n]
-                                               (BVECT (W (S m)
-                                                      ItIsSucc)
-                                                      type)
-                                               [S m]
-                                               [f]
-
-      VThere : NatToFin    n                      (S m)                                    f
-            -> ValidIndex     (n'::ns)                            type          (m'::ms)      (f'::fs)
-            -> ValidIndex (n::(n'::ns)) (BVECT (W (S m) ItIsSucc) type) (S m :: (m'::ms)) (f::(f'::fs))
-
-  public export
-  data ValidIndexResult : (is   : List Nat)
-                       -> (type : DType)
-                               -> Type
-    where
-      VIR : (ns : Vect (length i) Nat)
-         -> (is : DVect Nat Fin (length i) ns)
-         -> (prf : ValidIndex       i type ns is)
-                -> ValidIndexResult i type
-
-  Uninhabited (ValidIndex Nil (BVECT n type) ns is) where
-    uninhabited (VHere _) impossible
-
-  Uninhabited (ValidIndex as LOGIC ns is) where
-    uninhabited (VHere _) impossible
-
-
-  export
-  validIndex : (is   : List Nat)
-            -> (type : DType)
-                    -> Dec (ValidIndexResult is type)
-
-  validIndex Nil LOGIC       = No (\(VIR ms ns prf) => absurd prf)
-  validIndex Nil (BVECT x y) = No (\(VIR ms ns prf) => absurd prf)
-
-  validIndex (x :: xs) LOGIC = No (\(VIR ms ns prf) => absurd prf)
-
-  validIndex (x :: Nil) (BVECT w type) with (w) -- to satisfy the coverage checker.
-    validIndex (x :: Nil) (BVECT w type) | (W (S n) ItIsSucc) with (Safe.natToFin x (S n))
-      validIndex (x :: Nil) (BVECT w type) | (W (S n) ItIsSucc) | (Yes (idx ** prf))
-        = Yes (VIR [S n] [idx] (VHere prf))
-      validIndex (x :: Nil) (BVECT w type) | (W (S n) ItIsSucc) | (No no)
-        = No (\(VIR [S n] [f] (VHere y)) => no (f ** y))
-
-  validIndex (x :: (x' :: xs)) (BVECT w type) with (w) -- to satisfy the coverage checker.
-    validIndex (x :: (x' :: xs)) (BVECT w type) | (W (S n) ItIsSucc) with (Safe.natToFin x (S n))
-      validIndex (x :: (x' :: xs)) (BVECT w type) | (W (S n) ItIsSucc) | (Yes (idx ** prf)) with (validIndex (x'::xs) type)
-        validIndex (x :: (x' :: xs)) (BVECT w type) | (W (S n) ItIsSucc) | (Yes (idx ** prf)) | (Yes (VIR (y :: ys) (ex :: rest) prfs))
-          = Yes (VIR (S n::y::ys) (idx::ex::rest) (VThere prf prfs))
-
-        validIndex (x :: (x' :: xs)) (BVECT w type) | (W (S n) ItIsSucc) | (Yes (idx ** prf)) | (No no)
-          = No (\(VIR (S n :: (m' :: ms)) (f' :: (f'' :: fs)) (VThere y z)) => no (VIR (m'::ms) (f''::fs) z))
-
-      validIndex (x :: (x' :: xs)) (BVECT w type) | (W (S n) ItIsSucc) | (No no)
-          = No (\(VIR (S n :: (m' :: ms)) (f' :: (f'' :: fs)) (VThere y z)) => no (f' ** y))
-
-
-||| Is the nested index valid for ports or chans.
 public export
-data Index : (i    : List Nat)
-          -> (type : Ty)
-          -> (ns   : Vect (length i) Nat)
-          -> (is   : DVect Nat Fin (length i) ns)
-                  -> Type
+data HasData : (type  : Ty)
+            -> (dtype : DType)
+                     -> Type
   where
-    IP : {ns   : Vect (length i) Nat}
-      -> (is  : DVect Nat Fin (length i) ns)
-      -> ValidIndex i type ns is
-      -> Index i (TyPort (flow,type)) ns is
-    IC : {ns   : Vect (length i) Nat}
-      -> (is  : DVect Nat Fin (length i) ns)
-      -> ValidIndex i type ns is
-      -> Index i (TyChan       type)  ns is
+    HDP : (d : DType) -> HasData (TyPort (flow,d)) d
+    HDC : (d : DType) -> HasData (TyChan d)        d
 
-Uninhabited (Index i TyGate ns is) where
-  uninhabited (IP _ x) impossible
+Uninhabited (HasData TyGate type) where
+  uninhabited (HDP d) impossible
 
-Uninhabited (Index i TyUnit ns is) where
-  uninhabited (IP _ x) impossible
+Uninhabited (HasData TyUnit type) where
+  uninhabited (HDP d) impossible
 
-public export
-data IndexResult : (i : List Nat)
-                -> (type : Ty)
-                -> Type
+data HasDataResult : (type : Ty)
+                          -> Type
   where
-    IR : (prf : Index       i type m ms)
-             -> IndexResult i type
+    HDR : HasData type dtype -> HasDataResult type
 
 export
-index : (ns   : List Nat)
-          -> (type : Ty)
-                  -> Dec (IndexResult ns type)
+hasData : (type : Ty) -> Dec (HasDataResult type)
 
-index ns (TyPort (flow, type)) with (validIndex ns type)
-  index ns (TyPort (flow, type)) | (Yes (VIR xs is prf))
-    = Yes (IR (IP is prf))
+hasData (TyPort (f,d))
+  = Yes (HDR (HDP d))
 
-  index ns (TyPort (flow, type)) | (No no)
-    = No (\(IR (IP _ prf)) => no (VIR _ _ prf))
+hasData (TyChan d)
+  = Yes (HDR (HDC d))
 
-index ns (TyChan type) with (validIndex ns type)
-  index ns (TyChan type) | (Yes (VIR xs is prf))
-    = Yes (IR (IC is prf))
-  index ns (TyChan type) | (No no)
-    = No (\(IR (IC _ prf)) => no (VIR _ _ prf))
-
-index ns TyGate
-  = No (\(IR prf) => absurd prf)
-index ns TyUnit
-  = No (\(IR prf) => absurd prf)
-
+hasData TyGate = No (\(HDR prf) => absurd prf)
+hasData TyUnit = No (\(HDR prf) => absurd prf)
 
 -- [ EOF ]
