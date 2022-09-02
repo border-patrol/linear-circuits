@@ -1,0 +1,40 @@
+# Example Linearly Wired Circuits
+## Circuits
+```
+// LOG : Starting NetList 
+// (Port output logic "out" (Port input logic "a" (Port input logic "b" (Port input logic "c" (Port input logic "d" (Wire logic "x" (Wire logic "y" (Gate "gate_1" (GateB and (Shim output (Var x)) (Shim input (Var a)) (Shim input (Var b))) (Gate "gate_2" (GateB or (Shim output (Var y)) (Shim input (Var c)) (Shim input (Var d))) (Gate "gate_3" (GateB xor (Shim output (Var out)) (Shim input (Var x)) (Shim input (Var y))) (Stop)))))))))))
+// LOG : Parsing Successful
+// (Port output logic (Port input logic (Port input logic (Port input logic (Port input logic (Wire logic (Wire logic (Gate (GateB and (Project Write (Var 1)) (Var 5) (Var 4)) (Gate (GateB or (Project Write (Var 1)) (Var 4) (Var 3)) (Gate (GateB xor (Var 8) (Project Read (Var 3)) (Project Read (Var 2))) Stop))))))))))
+// LOG : Type Checking Complete
+// LOG : Soundness Check Complete
+digraph G {
+8 [label="(1, 1) CHAN_IN : logic"];
+9 [label="(1, 1) CHAN_OUT : logic"];
+6 [label="(1, 1) CHAN_IN : logic"];
+7 [label="(1, 1) CHAN_OUT : logic"];
+5 [label="IN(1) INPUT : logic"];
+4 [label="IN(1) INPUT : logic"];
+3 [label="IN(1) INPUT : logic"];
+2 [label="IN(1) INPUT : logic"];
+1 [label="OUT(1) OUTPUT : logic"];
+10 [label="(2, 1) and"];
+11 [label="(2, 1) or"];
+12 [label="(2, 1) xor"];
+	8 -> 9;
+	6 -> 7;
+	2 -> 10;
+	3 -> 10;
+	10 -> 6;
+	4 -> 11;
+	5 -> 11;
+	11 -> 8;
+	7 -> 12;
+	9 -> 12;
+	12 -> 1;
+}
+
+// LOG : BYE
+```
+## Verilator
+```
+```

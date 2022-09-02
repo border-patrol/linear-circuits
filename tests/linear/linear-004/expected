@@ -1,0 +1,11 @@
+# Example Linearly Wired Circuits
+## Circuits
+```
+// LOG : Starting Linear NetList 
+// LOG : Parsing Successful
+// LOG : Type Checking Complete
+// LOG : BYE
+```
+## Verilator
+```
+```

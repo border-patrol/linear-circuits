@@ -1,0 +1,39 @@
+# Example Non-Linearly Wired Circuits
+Wire  has an unused entry.
+## Circuits
+```
+// LOG : Starting NetList 
+// (Port output logic "out" (Port input logic[3] "ab" (Gate "n1" (GateB nand (Shim output (Var out)) (Shim input (Index 0 (Var ab))) (Shim input (Index 1 (Var ab)))) (Stop))))
+// LOG : Parsing Successful
+// (Port output logic (Port input logic[3] (Gate (GateB nand (Var 1) (Index DOWN (Var 0) 0) (Index DOWN (Var 0) 1)) Stop)))
+// LOG : Type Checking Complete
+// LOG : Soundness Error:
+digraph G {
+5 [label="(1, 1) IDX [1](DOWN)"];
+4 [label="(1, 1) IDX [0](DOWN)"];
+2 [label="IN(3) INPUT : logic[3]"];
+1 [label="OUT(1) OUTPUT : logic"];
+3 [label="(2, 1) nand"];
+	2 -> 5;
+	2 -> 4;
+	4 -> 3;
+	5 -> 3;
+	3 -> 1;
+}
+
+//because:
+// Vertex 2
+//  has expected degree OUT 3
+//  but we found degree OUT 2
+
+
+```
+## Verilator
+```
+%Warning-UNUSED: Example.sv:2: Bits of signal are not used: 'ab'[2]
+                             : ... In instance Example
+              , input  logic[2:0] ab
+                                  ^~
+                 ... Use "/* verilator lint_off UNUSED */" and lint_on around source to disable this message.
+%Error: Exiting due to 1 warning(s)
+```

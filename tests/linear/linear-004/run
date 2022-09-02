@@ -1,0 +1,19 @@
+# -*- mode: sh;-*-
+
+echo "# Example Linearly Wired Circuits"
+
+echo "## Circuits"
+echo "\`\`\`"
+$1 Example.sv
+echo "\`\`\`"
+
+echo "## Verilator"
+echo "\`\`\`"
+
+verilator --lint-only --Wall Example.sv 2>&1
+
+
+echo "\`\`\`"
+
+
+# -- EOF

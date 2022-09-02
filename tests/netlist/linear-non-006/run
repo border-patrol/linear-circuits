@@ -1,0 +1,18 @@
+# -*- mode: sh;-*-
+
+echo "Example Non-Linearly Wired Circuits"
+
+echo "## Circuits"
+echo "\`\`\`"
+$1 Example.sv  | tee Example.dot
+echo "\`\`\`"
+
+dot -Tpng Example.dot > Example.png
+
+echo "## Verilator"
+echo "\`\`\`"
+verilator --lint-only --Wall Example.sv 2>&1
+
+echo "\`\`\`"
+
+# -- EOF

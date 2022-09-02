@@ -1,0 +1,34 @@
+Example Non-Linearly Wired Circuits
+Output has an unused entry.
+## Circuits
+```
+// LOG : Starting NetList 
+// (Port inout logic[2] "out" (Port input logic "b" (Port input logic "c" (Gate "n1" (GateB nand (Shim output (Index 0 (Var out))) (Shim input (Var b)) (Shim input (Var c))) (Stop)))))
+// LOG : Parsing Successful
+// (Port inout logic[2] (Port input logic (Port input logic (Gate (GateB nand (Cast up (Index UP (Var 2) 0)) (Var 1) (Var 0)) Stop))))
+// LOG : Type Checking Complete
+// LOG : Soundness Error:
+digraph G {
+5 [label="(1, 1) CAST"];
+6 [label="(1, 1) IDX [0](UP)"];
+3 [label="IN(1) INPUT : logic"];
+2 [label="IN(1) INPUT : logic"];
+1 [label="INOUT(2) INOUT : logic[2]"];
+4 [label="(2, 1) nand"];
+	5 -> 6;
+	6 -> 1;
+	2 -> 4;
+	3 -> 4;
+	4 -> 5;
+}
+
+//because:
+// Vertex 1
+//  has expected degree IN 2
+//  but we found degree IN 1
+
+
+```
+## Verilator
+```
+```

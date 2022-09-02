@@ -1,0 +1,28 @@
+# Example Linearly Wired Circuits
+## Circuits
+```
+// LOG : Starting NetList 
+// (Port output logic "o" (Port input logic "i" (Wire logic "temp" (Wire logic "temp2" (Assign (Shim output (Var temp)) (Shim input (Var i)) (Assign (Shim output (Var temp2)) (Shim input (Var temp)) (Assign (Shim output (Var o)) (Shim input (Var temp2)) (Stop))))))))
+// LOG : Parsing Successful
+// (Port output logic (Port input logic (Wire logic (Wire logic (Assign (Project Write (Var 1)) <- (Var 2) (Assign (Project Write (Var 0)) <- (Project Read (Var 1)) (Assign (Var 3) <- (Project Read (Var 0)) Stop)))))))
+// LOG : Type Checking Complete
+// LOG : Soundness Check Complete
+digraph G {
+5 [label="(1, 1) CHAN_IN : logic"];
+6 [label="(1, 1) CHAN_OUT : logic"];
+3 [label="(1, 1) CHAN_IN : logic"];
+4 [label="(1, 1) CHAN_OUT : logic"];
+2 [label="IN(1) INPUT : logic"];
+1 [label="OUT(1) OUTPUT : logic"];
+	6 -> 1;
+	4 -> 5;
+	2 -> 3;
+	5 -> 6;
+	3 -> 4;
+}
+
+// LOG : BYE
+```
+## Verilator
+```
+```

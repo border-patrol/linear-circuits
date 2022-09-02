@@ -9,7 +9,7 @@ import Test.Golden
 
 nonLinear : IO TestPool
 nonLinear
-  = testsInDir "linear-non"
+  = testsInDir "linear"
                (const True)
                "Non-Linearly Wired NetList Tests"
                []

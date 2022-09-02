@@ -1,0 +1,100 @@
+Example Non-Linearly Wired Circuits
+Whole host of wires and ports are not used.
+## Circuits
+```
+// LOG : Starting NetList 
+// (Port output logic "out" (Port input logic "i0" (Port input logic "i1" (Port input logic "i2" (Port input logic "i3" (Port input logic "s1" (Port input logic "s0" (Wire logic "y0" (Wire logic "y1" (Wire logic "y2" (Wire logic "y3" (Wire logic "s1n" (Wire logic "s0n" (Gate "n1" (GateU not (Shim output (Var s1n)) (Shim input (Var s1))) (Gate "n2" (GateU not (Shim output (Var s0n)) (Shim input (Var s0))) (Stop))))))))))))))))
+// LOG : Parsing Successful
+// (Port output logic (Port input logic (Port input logic (Port input logic (Port input logic (Port input logic (Port input logic (Wire logic (Wire logic (Wire logic (Wire logic (Wire logic (Wire logic (Gate (GateU not (Project Write (Var 1)) (Var 7)) (Gate (GateU not (Project Write (Var 1)) (Var 7)) Stop)))))))))))))))
+// LOG : Type Checking Complete
+// LOG : Soundness Error:
+digraph G {
+18 [label="(1, 1) CHAN_IN : logic"];
+19 [label="(1, 1) CHAN_OUT : logic"];
+16 [label="(1, 1) CHAN_IN : logic"];
+17 [label="(1, 1) CHAN_OUT : logic"];
+14 [label="(1, 1) CHAN_IN : logic"];
+15 [label="(1, 1) CHAN_OUT : logic"];
+12 [label="(1, 1) CHAN_IN : logic"];
+13 [label="(1, 1) CHAN_OUT : logic"];
+10 [label="(1, 1) CHAN_IN : logic"];
+11 [label="(1, 1) CHAN_OUT : logic"];
+8 [label="(1, 1) CHAN_IN : logic"];
+9 [label="(1, 1) CHAN_OUT : logic"];
+7 [label="IN(1) INPUT : logic"];
+6 [label="IN(1) INPUT : logic"];
+5 [label="IN(1) INPUT : logic"];
+4 [label="IN(1) INPUT : logic"];
+3 [label="IN(1) INPUT : logic"];
+2 [label="IN(1) INPUT : logic"];
+1 [label="OUT(1) OUTPUT : logic"];
+20 [label="(1, 1) not"];
+21 [label="(1, 1) not"];
+	18 -> 19;
+	16 -> 17;
+	14 -> 15;
+	12 -> 13;
+	10 -> 11;
+	8 -> 9;
+	6 -> 20;
+	20 -> 16;
+	7 -> 21;
+	21 -> 18;
+}
+
+//because:
+// Vertex 19
+//  has expected degree OUT 1
+//  but we found degree OUT 0
+
+
+```
+## Verilator
+```
+%Warning-UNDRIVEN: Example.sv:1: Signal is not driven: 'out'
+                               : ... In instance Example
+module Example( output logic out
+                             ^~~
+                   ... Use "/* verilator lint_off UNDRIVEN */" and lint_on around source to disable this message.
+%Warning-UNUSED: Example.sv:2: Signal is not used: 'i0'
+                             : ... In instance Example
+              , input  logic i0
+                             ^~
+%Warning-UNUSED: Example.sv:3: Signal is not used: 'i1'
+                             : ... In instance Example
+              , input  logic i1
+                             ^~
+%Warning-UNUSED: Example.sv:4: Signal is not used: 'i2'
+                             : ... In instance Example
+              , input  logic i2
+                             ^~
+%Warning-UNUSED: Example.sv:5: Signal is not used: 'i3'
+                             : ... In instance Example
+              , input  logic i3
+                             ^~
+%Warning-UNUSED: Example.sv:10: Signal is not driven, nor used: 'y0'
+                              : ... In instance Example
+   wire logic y0;
+              ^~
+%Warning-UNUSED: Example.sv:11: Signal is not driven, nor used: 'y1'
+                              : ... In instance Example
+   wire logic y1;
+              ^~
+%Warning-UNUSED: Example.sv:12: Signal is not driven, nor used: 'y2'
+                              : ... In instance Example
+   wire logic y2;
+              ^~
+%Warning-UNUSED: Example.sv:13: Signal is not driven, nor used: 'y3'
+                              : ... In instance Example
+   wire logic y3;
+              ^~
+%Warning-UNUSED: Example.sv:14: Signal is not used: 's1n'
+                              : ... In instance Example
+   wire logic s1n;
+              ^~~
+%Warning-UNUSED: Example.sv:15: Signal is not used: 's0n'
+                              : ... In instance Example
+   wire logic s0n;
+              ^~~
+%Error: Exiting due to 11 warning(s)
+```
