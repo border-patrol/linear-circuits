@@ -1,7 +1,6 @@
 ||| Stuff that goes wrong.
 |||
-||| Module    : Error.idr
-||| Copyright : (c) Jan de Muijnck-Hughes
+||| Copyright : see COPYRIGHT
 ||| License   : see LICENSE
 |||
 module Circuits.NetList.Linear.Error

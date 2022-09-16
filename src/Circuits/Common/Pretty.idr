@@ -1,3 +1,7 @@
+|||
+||| Copyright : see COPYRIGHT
+||| License   : see LICENSE
+|||
 module Circuits.Common.Pretty
 
 import System.File

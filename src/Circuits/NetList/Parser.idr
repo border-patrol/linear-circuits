@@ -1,3 +1,7 @@
+|||
+||| Copyright : see COPYRIGHT
+||| License   : see LICENSE
+|||
 module Circuits.NetList.Parser
 
 import Data.Nat

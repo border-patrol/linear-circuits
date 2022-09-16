@@ -1,3 +1,7 @@
+|||
+||| Copyright : see COPYRIGHT
+||| License   : see LICENSE
+|||
 module Circuits.NetList.Linear.Check.Lookup.Chan
 
 import Decidable.Equality

@@ -1,3 +1,7 @@
+|||
+||| Copyright : see COPYRIGHT
+||| License   : see LICENSE
+|||
 module Toolkit.Text.Lexer.Run
 
 import System.File

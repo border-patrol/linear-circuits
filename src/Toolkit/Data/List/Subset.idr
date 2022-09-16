@@ -1,3 +1,7 @@
+|||
+||| Copyright : see COPYRIGHT
+||| License   : see LICENSE
+|||
 module Toolkit.Data.List.Subset
 
 import Toolkit.Decidable.Informative

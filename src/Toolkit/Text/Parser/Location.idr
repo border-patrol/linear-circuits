@@ -1,3 +1,7 @@
+|||
+||| Copyright : see COPYRIGHT
+||| License   : see LICENSE
+|||
 module Toolkit.Text.Parser.Location
 
 import Text.Lexer
@@ -22,3 +26,5 @@ namespace Toolkit
     location fname = do
       l <- Toolkit.location
       pure (record { source = Just fname} l)
+
+-- [ EOF ]

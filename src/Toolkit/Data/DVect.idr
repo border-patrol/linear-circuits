@@ -1,14 +1,13 @@
--- --------------------------------------------------------------- [ DVect.idr ]
--- Module    : DVect.idr
--- Copyright : (c) 2015,2016 See CONTRIBUTORS.md
--- License   : see LICENSE
--- --------------------------------------------------------------------- [ EOH ]
 ||| A `list` construct to create lists of dependent types.
 |||
 ||| One of the problems with using dependent types is that types
 ||| depend on values. This affects the ability to construct lists of
 ||| values that have a dependent type. The existing `List` type cannot
 ||| be used as it requires all elements to have the same type.
+|||
+||| Copyright : see COPYRIGHT
+||| License   : see LICENSE
+|||
 module Toolkit.Data.DVect
 
 import Data.Nat

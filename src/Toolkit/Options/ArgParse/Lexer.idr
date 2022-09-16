@@ -1,3 +1,7 @@
+|||
+||| Copyright : see COPYRIGHT
+||| License   : see LICENSE
+|||
 module Toolkit.Options.ArgParse.Lexer
 
 import Data.String

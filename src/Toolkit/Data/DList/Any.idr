@@ -1,3 +1,8 @@
+||| The Any list quantifier for the DList quantifier.
+|||
+||| Copyright : see COPYRIGHT
+||| License   : see LICENSE
+|||
 module Toolkit.Data.DList.Any
 
 import Toolkit.Decidable.Informative

@@ -1,11 +1,11 @@
 ||| The Core Computation Context.
 |||
-||| Module    : Core.idr
-||| Copyright : (c) Jan de Muijnck-Hughes
-||| License   : see LICENSE
-|||
 ||| `TheRug` is defined in the toolkit. Here we establish the synonyms
 ||| required for `Idealised`.
+|||
+|||
+||| Copyright : see COPYRIGHT
+||| License   : see LICENSE
 |||
 module Circuits.NetList.Core
 

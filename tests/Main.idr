@@ -1,4 +1,7 @@
-||| Borrowed From Idris2 and improved with Test.Unit
+|||
+||| Copyright : see COPYRIGHT
+||| License   : see LICENSE
+|||
 module Main
 
 import Data.List

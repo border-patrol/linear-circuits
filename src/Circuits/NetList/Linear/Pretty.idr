@@ -1,3 +1,7 @@
+|||
+||| Copyright : see COPYRIGHT
+||| License   : see LICENSE
+|||
 module Circuits.NetList.Linear.Pretty
 
 import System.File
@@ -31,8 +35,6 @@ import Circuits.NetList.Lexer
 import Circuits.NetList.Linear.Error
 import Circuits.NetList.Linear.AST
 import Circuits.NetList.Types
-
---import Circuits.NetList.Linear.Terms
 
 export
 Show AST where

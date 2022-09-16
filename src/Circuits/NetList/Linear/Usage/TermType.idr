@@ -1,10 +1,10 @@
 ||| Declare the use of Terms
 |||
-||| Module    : TermType.idr
-||| Copyright : (c) Jan de Muijnck-Hughes
+||| Predicates are defined in submodules.
+|||
+||| Copyright : see COPYRIGHT
 ||| License   : see LICENSE
 |||
-||| Predicates are defined in submodules.
 module Circuits.NetList.Linear.Usage.TermType
 
 import Decidable.Equality

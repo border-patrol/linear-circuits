@@ -1,7 +1,7 @@
 ||| Easing working with n-dimensional vectors.
 |||
-||| Module    : Spaces.idr
-||| Copyright : (c) Jan de Muijnck-Hughes
+|||
+||| Copyright : see COPYRIGHT
 ||| License   : see LICENSE
 |||
 module Toolkit.Data.Spaces

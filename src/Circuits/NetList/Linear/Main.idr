@@ -1,3 +1,7 @@
+|||
+||| Copyright : see COPYRIGHT
+||| License   : see LICENSE
+|||
 module Circuits.NetList.Linear.Main
 
 import System
@@ -28,13 +32,9 @@ linear fname
 
        ast <- fromFile fname
 
---       log "// \{show ast}"
-
        log "// LOG : Parsing Successful"
 
        term <- check ast
-
---       log "// \{show termNonLin}"
 
        log "// LOG : Type Checking Complete"
 --

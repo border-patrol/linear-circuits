@@ -1,3 +1,7 @@
+|||
+||| Copyright : see COPYRIGHT
+||| License   : see LICENSE
+|||
 module Toolkit.Text.Parser.Run
 
 import System.File
@@ -94,4 +98,4 @@ parseFile lexer grammar fname =
         Left err      => pure (Left (runConvert (Just fname) err))
         Right (val,_) => pure (Right val)
 
--- --------------------------------------------------------------------- [ EOF ]
+-- [ EOF ]

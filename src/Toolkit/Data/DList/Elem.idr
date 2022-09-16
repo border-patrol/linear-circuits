@@ -1,3 +1,8 @@
+||| The Elem list quantifier for the DList quantifier.
+|||
+||| Copyright : see COPYRIGHT
+||| License   : see LICENSE
+|||
 module Toolkit.Data.DList.Elem
 
 import Toolkit.Data.DList

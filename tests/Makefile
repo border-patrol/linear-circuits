@@ -1,11 +1,7 @@
-# -- [ Makefile ]
 #
-# Makefile for testing
+# Copyright : see COPYRIGHT
+# License   : see LICENSE
 #
-# Copyright : (c) Jan de Muijnck-Hughes
-# License   : see ../LICENSE
-#
-# -- [ EOH ]
 
 # [ Options ]
 

@@ -2,6 +2,10 @@
 |||
 ||| Borrowed from Idris2 `Rug` is the core computation context that
 ||| brings the computations together.
+|||
+||| Copyright : see COPYRIGHT
+||| License   : see LICENSE
+|||
 module Toolkit.TheRug
 
 import System

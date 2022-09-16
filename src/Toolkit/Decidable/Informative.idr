@@ -1,4 +1,5 @@
-||| A version of `Dec` that returns a meaningful error message as well as proof of void.
+||| A version of `Dec` that returns a meaningful error message as well
+||| as proof of void.
 |||
 ||| When dealing with decidable properties for type-level computations
 ||| the existing `Dec` data type is useful.  However, when using
@@ -6,7 +7,13 @@
 ||| property failed.  One can always encode failing cases within the
 ||| property itself but that is not necessarily a advantageous.
 |||
-||| `DecInfo` provides a data structure to capture decidable properties together with an informative error message for when the property does not hold.
+||| `DecInfo` provides a data structure to capture decidable
+||| properties together with an informative error message for when the
+||| property does not hold.
+|||
+||| Copyright : see COPYRIGHT
+||| License   : see LICENSE
+|||
 module Toolkit.Decidable.Informative
 
 import Decidable.Equality

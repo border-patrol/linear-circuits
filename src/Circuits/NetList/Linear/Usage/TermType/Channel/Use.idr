@@ -1,7 +1,6 @@
 ||| Using Channels
 |||
-||| Module    : Channel/Use.idr
-||| Copyright : (c) Jan de Muijnck-Hughes
+||| Copyright : see COPYRIGHT
 ||| License   : see LICENSE
 |||
 module Circuits.NetList.Linear.Usage.TermType.Channel.Use

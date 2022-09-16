@@ -1,3 +1,8 @@
+||| Everything has a place.
+|||
+||| Copyright : see COPYRIGHT
+||| License   : see LICENSE
+|||
 module Toolkit.Data.DList.Interleaving
 
 import public Toolkit.Data.List.Interleaving

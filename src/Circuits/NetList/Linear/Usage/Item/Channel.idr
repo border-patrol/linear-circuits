@@ -1,7 +1,6 @@
 ||| Reason about useage of channel items.
 |||
-||| Module    : Channel.idr
-||| Copyright : (c) Jan de Muijnck-Hughes
+||| Copyright : see COPYRIGHT
 ||| License   : see LICENSE
 |||
 module Circuits.NetList.Linear.Usage.Item.Channel

@@ -1,7 +1,6 @@
 ||| Use partially used data structures.
 |||
-||| Module    : Partial.idr
-||| Copyright : (c) Jan de Muijnck-Hughes
+||| Copyright : see COPYRIGHT
 ||| License   : see LICENSE
 |||
 module Circuits.NetList.Linear.Usage.DataType.Use.Partial

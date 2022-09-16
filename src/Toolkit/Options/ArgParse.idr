@@ -1,8 +1,7 @@
--- ------------------------------------------------------------ [ ArgParse.idr ]
--- Description :
--- Copyright   : (c) Jan de Muijnck-Hughes
--- License     : see LICENSE
--- --------------------------------------------------------------------- [ EOH ]
+|||
+||| Copyright : see COPYRIGHT
+||| License   : see LICENSE
+|||
 module Toolkit.Options.ArgParse
 
 import Data.List

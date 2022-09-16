@@ -1,7 +1,7 @@
 ||| An Idealised HDL for linear wirings.
 |||
-||| Module    : Idealised.idr
-||| Copyright : (c) Jan de Muijnck-Hughes
+|||
+||| Copyright : see COPYRIGHT
 ||| License   : see LICENSE
 |||
 module Circuits.Idealised

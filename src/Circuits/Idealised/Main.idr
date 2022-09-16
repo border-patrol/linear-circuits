@@ -1,3 +1,9 @@
+||| Main entry point for the Idealised type-checker.
+|||
+|||
+||| Copyright : see COPYRIGHT
+||| License   : see LICENSE
+|||
 module Circuits.Idealised.Main
 
 import System

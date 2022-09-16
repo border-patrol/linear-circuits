@@ -23,6 +23,10 @@
 |||   example (x, y) (a, b) | (No contra) = No (\Refl => contra Refl)
 ||| ```
 |||
+|||
+||| Copyright : see COPYRIGHT
+||| License   : see LICENSE
+|||
 module Toolkit.Decidable.Do
 
 import Decidable.Equality

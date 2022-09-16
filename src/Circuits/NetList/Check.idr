@@ -1,7 +1,5 @@
 |||
-|||
-||| Module    : NetList/Check.idr
-||| Copyright : (c) Jan de Muijnck-Hughes
+||| Copyright : see COPYRIGHT
 ||| License   : see LICENSE
 |||
 module Circuits.NetList.Check

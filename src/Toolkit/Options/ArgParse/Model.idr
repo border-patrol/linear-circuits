@@ -1,8 +1,7 @@
--- --------------------------------------------------------------- [ Model.idr ]
--- Description : The Model
--- Copyright   : (c) Jan de Muijnck-Hughes
--- License     : see LICENSE
--- --------------------------------------------------------------------- [ EOH ]
+|||
+||| Copyright : see COPYRIGHT
+||| License   : see LICENSE
+|||
 module Toolkit.Options.ArgParse.Model
 
 %default total

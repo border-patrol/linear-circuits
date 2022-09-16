@@ -1,4 +1,7 @@
 |||
+||| Copyright : see COPYRIGHT
+||| License   : see LICENSE
+|||
 module Toolkit.Data.Graph.EdgeBounded.HasExactDegree
 
 import Decidable.Equality

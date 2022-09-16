@@ -1,7 +1,6 @@
 ||| Usage predicates over types, datatypes, and contexts.
 |||
-||| Module    : Usage.idr
-||| Copyright : (c) Jan de Muijnck-Hughes
+||| Copyright : see COPYRIGHT
 ||| License   : see LICENSE
 |||
 module Circuits.NetList.Linear.Usage

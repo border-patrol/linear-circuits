@@ -1,11 +1,6 @@
-# -- [ Makefile ]
 #
-# Makefile for the project.
-#
-# Copyright : (c) Jan de Muijnck-Hughes
-# License   : see ../LICENSE
-#
-# -- [ EOH ]
+# Copyright : see COPYRIGHT
+# License   : see LICENSE
 
 # [ Options ]
 
@@ -18,10 +13,10 @@ bopts ?=
 
 # [ Build the Core Gubbins ]
 
-.PHONY: circuits
-
-circuits:
-	$(IDRIS2) --build circuits.ipkg
+# .PHONY: circuits
+#
+# circuits:
+#	$(IDRIS2) --build circuits.ipkg
 
 
 # [ Typical Netlist language ]

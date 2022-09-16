@@ -1,7 +1,6 @@
 |||
 |||
-||| Module    : UsedAt.idr
-||| Copyright : (c) Jan de Muijnck-Hughes
+||| Copyright : see COPYRIGHT
 ||| License   : see LICENSE
 |||
 module Circuits.NetList.Linear.Usage.Item.Port.UsedAt

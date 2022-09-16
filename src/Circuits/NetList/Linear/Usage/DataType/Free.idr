@@ -1,7 +1,6 @@
 ||| Predicates to denote full freedom
 |||
-||| Module    : DataType.idr
-||| Copyright : (c) Jan de Muijnck-Hughes
+||| Copyright : see COPYRIGHT
 ||| License   : see LICENSE
 |||
 module Circuits.NetList.Linear.Usage.DataType.Free

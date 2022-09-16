@@ -1,7 +1,5 @@
 |||
-|||
-||| Module    : Context.idr
-||| Copyright : (c) Jan de Muijnck-Hughes
+||| Copyright : see COPYRIGHT
 ||| License   : see LICENSE
 |||
 module Toolkit.DeBruijn.Context
