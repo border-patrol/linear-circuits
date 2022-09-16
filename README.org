@@ -1,4 +1,59 @@
 #+TITLE: Linear Circuits
 
+We are interested in the /physical/ structure of Hardware Designs, that is how they are wired rather than how they behave.
 
-Experiments in wiring up digital circuits linearly.
+In the first instance we are interested in Netlists:
+The result of synthesis.
+Specifically, we looked at SystemVerilog (a well-known Hardware Design & Verification language).
+
+Specifically, we are interested in:
+
+1. How to develop a valid structural type-system to 'type' Netlists.
+2. How to extend the type-system to ensure that wires are used exactly once.
+3. What changes would be needed to the language's syntax to make it more conducive towards linear typing.
+
+We are /just/ interested in wiring things together.
+
+
+Our contributions are that we have:
+
+1. Developed a structural type-system for Verilog-style netlists.
+2. Developed a sub-structural type-system for Verilog-style netlists.
+3. Developed a new sub-structural type-system syntax to make Verilog-style netlists more conducive to being linear.
+4. Mechanised our formalisation in Idris2, a known dependently-typed general purpose functional programming language;
+5. presented our formalisms as /verified type-checkers/ for creating hardware designs using DSLs using valid SystemVerilog syntax;
+6. Used a definitional interpreter approach to provide a soundness check to reason about wire-safety
+
+Our type-safety result is described as one of being *well-wired*.
+Netlists are ostensibly a description of a multi-graph and we use a denotational semantics to transform netlist descriptions into valid multi-graphs.
+Our soundness checks ensure that a valid graph is one in which the expected degree of nodes in the graph are found when inspecting the graph's list of edges.
+
+More information is in the paper, and seen in the code.
+
+* Languages presented
+** =Circuits.NetList=
+
+This is a simply typed netlist in the style of SystemVerilog.
+This mechanisation will allow ill-wired designs to type-check.
+The soundness check is much stricter and borrows from the linear variant (see below) to show that 'well-typed' (wired) designs are in fact not 'well-wired'.
+
+** =Circuits.NetList.Linear=
+
+This is a 'linearly-typed' netlist in the style of SystemVerilog, and parses the same style of netlists as =Circuits.NetList=.
+The type-system, however, ensures that *all* wires (and those in bitvectors) *must* be used *exactly once*.
+This ensures that any wiring decisions to split and join wires is made explicitly.
+We introduce new primitives =split= and =collect= to weaken linearity.
+
+The type-system does not guard against ill-behaved designs.
+That is future work.
+
+** =Circuits.Idealised=
+
+This is a re-imagining of what a netlist language would look like if we could change the syntax to be linear-aware.
+
+
+* Note
+
+This is a constant work in progress.
+
+The code is not polished.
