@@ -28,12 +28,14 @@ import Toolkit.DeBruijn.Context
 import Toolkit.DeBruijn.Renaming
 
 import Circuits.Common
+
 import public Circuits.Common.Pretty
 
-import Circuits.NetList.Pretty
 import Circuits.NetList.Lexer
 import Circuits.NetList.Linear.Error
 import Circuits.NetList.Linear.AST
+import Circuits.NetList.Linear.Usage
+import Circuits.NetList.Linear.Terms
 import Circuits.NetList.Types
 
 export
@@ -77,56 +79,60 @@ Show AST where
   show (Stop x)
     = "(Stop)"
 
-toNat : IsVar ctxt type -> Nat
-toNat (V pos prf) = pos
+--toNat : IsVar ctxt type -> Nat
+--toNat (V pos prf) = pos
 
-Show (Project dir) where
-  show WRITE = "Write"
-  show READ = "Read"
+toNat : Elem p x xs -> Nat
+toNat (Here prfSame prfSat) = 0
+toNat (There rest) = toNat rest
 
-{-
+
 export
-Show (Term ctxt type) where
-  show (Var prf)
-    = "(Var \{show (toNat prf)})"
+Show (Term i type o) where
+  show (FreePort prf use)
+    = "(VarPort \{show (toNat prf)}})"
 
-  show (Port flow dtype body)
-    = "(Port \{show flow} \{show dtype} \{show body})"
+  show (VarGate prf)
+    = "(VarGate \{show (toNat prf)})"
 
-  show (Wire x body)
+  show (VarChan prf)
+    = "(VarChan \{show (toNat prf)})"
+
+  show (Port flow x urgh body)
+    = "(Port \{show flow} \{show x} \{show body})"
+
+  show (Wire x urgh body)
     = "(Wire \{show x} \{show body})"
 
-  show (GateDecl g body)
-    = "(Gate \{show g} \{show body})"
+  show (Gate gate body)
+    = "(Gate \{show gate} \{show body})"
 
-  show Stop
+  show (Stop prf)
     = "Stop"
 
-  show (Assign i o body)
-    = "(Assign \{show i} <- \{show o} \{show body})"
+  show (Assign x y body)
+    = "(Assign \{show x} \{show y} \{show body})"
+  show (Mux out ctrl inA inB)
+    = "(Mux \{show out} \{show ctrl} \{show inA} \{show inB})"
+  show (GateU kind out inA)
+    = "(GateU \{show kind} \{show out} \{show inA} )"
 
-  show (Index idir what idx)
-    = "(Index \{show idir} \{show what} \{show idx})"
+  show (GateB kind out inA inB)
+    = "(GateB \{show kind} \{show out} \{show inA} \{show inB})"
+  show (Split outA outB inp)
+    = "(Collect \{show outA} \{show outB} \{show inp})"
+  show (Collect out inA inB)
+    = "(Collect \{show out} \{show inA} \{show inB})"
 
-  show (Mux o c l r)
-    = "(Mux \{show o} \{show c} \{show l} \{show r})"
+  show (Cast cast port)
+    = "(Cast \{show cast} \{show port})"
 
-  show (GateB x o l r)
-    = "(GateB \{show x} \{show o} \{show l} \{show r})"
+  show (Index idir idx prf use prfT)
+    = "(Index \{show idir} \{show idx} \{show (toNat prf)})"
 
-  show (GateU x o i)
-    = "(GateU \{show x} \{show o} \{show i})"
+  show (Project how prf use)
+    = "(Project \{show how} \{show $ toNat prf})"
+  show (ProjectAt how idx prf use prfT)
+    = "(ProjectAt \{show how} \{show idx} \{show $ toNat prf})"
 
-  show (Collect o l r)
-    = "(Collect \{show o} \{show l} \{show r})"
-
-  show (Split l r i)
-    = "(Split \{show l} \{show r} \{show i})"
-
-  show (Project how what)
-    = "(Project \{show how} \{show what})"
-
-  show (Cast dir what)
-    = "(Cast \{show dir} \{show what})"
--}
 -- [ EOF ]

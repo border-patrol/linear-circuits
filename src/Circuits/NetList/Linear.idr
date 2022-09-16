@@ -12,7 +12,7 @@ import public Circuits.NetList.Linear.Pretty
 import public Circuits.NetList.Linear.Terms
 import public Circuits.NetList.Linear.Usage
 import public Circuits.NetList.Linear.Check
---import public Circuits.NetList.Linear.Interp
+import public Circuits.NetList.Linear.Interp
 
 
 -- [ EOF ]

@@ -80,10 +80,6 @@ Show AST where
 toNat : IsVar ctxt type -> Nat
 toNat (V pos prf) = pos
 
-Show (Project dir) where
-  show WRITE = "Write"
-  show READ = "Read"
-
 export
 Show (Term ctxt type) where
   show (Var prf)

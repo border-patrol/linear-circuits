@@ -4,8 +4,10 @@ echo "# Example Linearly Wired Circuits"
 
 echo "## Circuits"
 echo "\`\`\`"
-$1 Example.sv
+$1 Example.sv | tee Example.dot
 echo "\`\`\`"
+
+dot -Tpng Example.dot > Example.png
 
 echo "## Verilator"
 echo "\`\`\`"

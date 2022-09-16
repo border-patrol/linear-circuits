@@ -52,6 +52,11 @@ namespace Proj
     WRITE : Project OUTPUT
     READ  : Project INPUT
 
+export
+Show (Project dir) where
+  show WRITE = "Write"
+  show READ = "Read"
+
 namespace Cast
 
   public export

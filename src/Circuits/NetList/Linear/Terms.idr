@@ -32,7 +32,8 @@ data Term : (start : List Item)
                    -> Type
   where
     -- ## Vars
-    FreePort : (prf : IsFreePort (I (TyPort (dir,type)) u) old)
+    FreePort : {old,new : List Item}
+            -> (prf : IsFreePort (I (TyPort (dir,type)) u) old)
             -> (use : UsePort    old prf new)
                    -> Term old (TyPort (dir,type)) new
 
@@ -43,7 +44,8 @@ data Term : (start : List Item)
                   -> Term curr (TyChan type) curr
 
     -- ## Structure
-    Port : (flow : Direction)
+    Port : {item : Item}
+        -> (flow : Direction)
         -> (type : DType)
         -> (urgh : Port.Init flow type item)
         -> (body : Term (item :: ctxt)
@@ -51,7 +53,8 @@ data Term : (start : List Item)
                         Nil)
                 -> Term ctxt TyUnit Nil
 
-    Wire : (type : DType)
+    Wire : {item : Item}
+        -> (type : DType)
         -> (urgh : Channel.Init type item)
         -> (body : Term (item :: ctxt)
                         TyUnit
@@ -69,9 +72,9 @@ data Term : (start : List Item)
 
     Assign : {type : DType}
           -> (o    : Term a (TyPort (OUTPUT,type)) b)
-          -> (i    : Term b (TyPort (INPUT,type)) c)
-          -> (body : Term d TyUnit e)
-                  -> Term a TyUnit e
+          -> (i    : Term b (TyPort (INPUT,type))  c)
+          -> (body : Term c TyUnit d)
+                  -> Term a TyUnit d
     -- ## Gates
 
     Mux : (out  : Term a (TyPort (OUTPUT, LOGIC)) b)
@@ -112,7 +115,9 @@ data Term : (start : List Item)
 
     -- ## Indexing
 
-    Index : (idir : Index flow)
+    Index : {old,new : List Item}
+         -> {typeo   : DType}
+         -> (idir : Index flow)
          -> (idx  : List Nat)
          -> (prf  : IsFreePortAt idx
                                  (I (TyPort (flow, BVECT (W (S n) ItIsSucc) type))
@@ -124,12 +129,15 @@ data Term : (start : List Item)
 
     -- ## Channel Projection
 
-    Project : (how : Project dir)
+    Project : {old,new : List Item}
+           -> (how : Project dir)
            -> (prf : CanProject how (I (TyChan type) u) old)
            -> (use : UseChannel how old prf new)
                   -> Term old (TyPort (dir, type)) new
 
-    ProjectAt : (how  : Project dir) -- TODO check
+    ProjectAt : {old,new : List Item}
+             -> {typeo   : DType}
+             -> (how  : Project dir)
              -> (idx  : List Nat)
              -> (prf  : CanProjectAt how idx (I (TyChan (BVECT (W (S n) ItIsSucc)
                                                                type))

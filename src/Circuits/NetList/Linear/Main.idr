@@ -37,12 +37,12 @@ linear fname
        term <- check ast
 
        log "// LOG : Type Checking Complete"
---
---       prf <- isSound term
---
---       log "// LOG : Soundness Check Complete"
---
---       putStrLn ((showGraph . fst . getGraph) prf)
+
+       prf <- isSound term
+
+       log "// LOG : Soundness Check Complete"
+
+       putStrLn ((showGraph . fst . getGraph) prf)
 
        log "// LOG : BYE"
 

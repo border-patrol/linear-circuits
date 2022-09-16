@@ -4,6 +4,21 @@
 // LOG : Starting Linear NetList 
 // LOG : Parsing Successful
 // LOG : Type Checking Complete
+// LOG : Soundness Check Complete
+digraph G {
+5 [label="(1, 1) CHAN_IN : logic"];
+6 [label="(1, 1) CHAN_OUT : logic"];
+3 [label="(1, 1) CHAN_IN : logic"];
+4 [label="(1, 1) CHAN_OUT : logic"];
+2 [label="IN(1) INPUT : logic"];
+1 [label="OUT(1) OUTPUT : logic"];
+	6 -> 1;
+	4 -> 5;
+	2 -> 3;
+	5 -> 6;
+	3 -> 4;
+}
+
 // LOG : BYE
 ```
 ## Verilator
