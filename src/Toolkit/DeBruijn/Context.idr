@@ -11,11 +11,11 @@ import Data.Singleton
 
 import Toolkit.Decidable.Informative
 
-import Toolkit.Data.List.AtIndex
+import public Toolkit.Data.List.AtIndex
 import Toolkit.Data.DList
 import Toolkit.Data.DList.AtIndex
 
-import Toolkit.DeBruijn.Context.Item
+import public Toolkit.DeBruijn.Context.Item
 
 %default total
 

@@ -19,8 +19,6 @@ import Data.Nat
 import Toolkit.Data.DList
 import Toolkit.Data.Whole
 
-import Toolkit.Data.List.AtIndex
-import Toolkit.DeBruijn.Context.Item
 import Toolkit.DeBruijn.Context
 import Toolkit.DeBruijn.Renaming
 

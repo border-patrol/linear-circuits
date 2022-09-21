@@ -43,6 +43,20 @@ mapToList : (forall x . e x -> b)
 mapToList _ Nil = Nil
 mapToList f (x::xs) = f x :: mapToList f xs
 
+public export
+lookup : (idx : Elem x xs)
+      -> (ps  : DList type pred xs)
+             -> pred x
+lookup Here (elem :: rest) = elem
+lookup (There y) (elem :: rest) = lookup y rest
+
+public export
+replace : (idx : Elem x xs)
+       -> (new : pred x)
+       -> (ps  : DList type pred xs)
+              -> DList type pred xs
+replace Here new (elem :: rest) = new :: rest
+replace (There y) new (elem :: rest) = elem :: replace y new rest
 
 ||| Function to show a `DList`.
 |||

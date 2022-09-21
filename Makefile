@@ -102,7 +102,7 @@ idealised-test-run: idealised-test-bin
 .PHONY: clobber clean
 
 clean:
-	$(IDRIS2) --clean circuits.ipkg
+#	$(IDRIS2) --clean circuits.ipkg
 	${MAKE} -C tests clean
 
 clobber: clean
