@@ -37,6 +37,7 @@ This is a simply typed netlist in the style of SystemVerilog.
 This mechanisation will allow ill-wired designs to type-check.
 The soundness check is much stricter and borrows from the linear variant (see below) to show that 'well-typed' (wired) designs are in fact not 'well-wired'.
 
+
 ** =Circuits.NetList.Linear=
 
 This is a 'linearly-typed' netlist in the style of SystemVerilog, and parses the same style of netlists as =Circuits.NetList=.
@@ -51,6 +52,21 @@ That is future work.
 
 This is a re-imagining of what a netlist language would look like if we could change the syntax to be linear-aware.
 
+* Code Structure
+
+Each of the presented languages has the following module layout:
+
+1. The Core Computation context, and Errors, can be found in =Core= & =Error=.
+2. The DSL Front End can be found in: =AST=, =Lexer=, =Parser=.
+3. The Type Checker/Elaborator in: =Check=.
+4. Types & Terms defined in: =Types= & =Terms=.
+5. Soundness check as a definitional interpreter: =Interp=.
+5. Library API: =<Name>=
+6. Main program entry point: =Main=
+
+* Tests
+
+The test suite is presented in =test= and can be run from the top-level =Makefile=.
 
 * Note
 
