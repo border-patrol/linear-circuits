@@ -4,7 +4,7 @@ Output has an unused entry.
 ```
 // LOG : Starting Linear NetList 
 // LOG : Parsing Successful
-Example.sv:7:0-0: Linearity Error:
+../../shared/linear-non/MissingOutputs.sv:7:0-0: Linearity Error:
 out := [USED, FREE]
 
 ```

@@ -4,7 +4,7 @@ Whole host of wires and ports are not used.
 ```
 // LOG : Starting Linear NetList 
 // LOG : Parsing Successful
-Example.sv:24:0-0: Linearity Error:
+../../shared/linear-non/UnusedThings.sv:24:0-0: Linearity Error:
 s0n := (USED, FREE)
 s1n := (USED, FREE)
 y3 := (FREE, FREE)
@@ -20,49 +20,49 @@ out := FREE
 ```
 ## Verilator
 ```
-%Warning-UNDRIVEN: Example.sv:1: Signal is not driven: 'out'
-                               : ... In instance Example
-module Example( output logic out
-                             ^~~
+%Warning-UNDRIVEN: ../../shared/linear-non/UnusedThings.sv:1: Signal is not driven: 'out'
+                                                            : ... In instance UnusedThings
+module UnusedThings( output logic out
+                                  ^~~
                    ... Use "/* verilator lint_off UNDRIVEN */" and lint_on around source to disable this message.
-%Warning-UNUSED: Example.sv:2: Signal is not used: 'i0'
-                             : ... In instance Example
+%Warning-UNUSED: ../../shared/linear-non/UnusedThings.sv:2: Signal is not used: 'i0'
+                                                          : ... In instance UnusedThings
               , input  logic i0
                              ^~
-%Warning-UNUSED: Example.sv:3: Signal is not used: 'i1'
-                             : ... In instance Example
+%Warning-UNUSED: ../../shared/linear-non/UnusedThings.sv:3: Signal is not used: 'i1'
+                                                          : ... In instance UnusedThings
               , input  logic i1
                              ^~
-%Warning-UNUSED: Example.sv:4: Signal is not used: 'i2'
-                             : ... In instance Example
+%Warning-UNUSED: ../../shared/linear-non/UnusedThings.sv:4: Signal is not used: 'i2'
+                                                          : ... In instance UnusedThings
               , input  logic i2
                              ^~
-%Warning-UNUSED: Example.sv:5: Signal is not used: 'i3'
-                             : ... In instance Example
+%Warning-UNUSED: ../../shared/linear-non/UnusedThings.sv:5: Signal is not used: 'i3'
+                                                          : ... In instance UnusedThings
               , input  logic i3
                              ^~
-%Warning-UNUSED: Example.sv:10: Signal is not driven, nor used: 'y0'
-                              : ... In instance Example
+%Warning-UNUSED: ../../shared/linear-non/UnusedThings.sv:10: Signal is not driven, nor used: 'y0'
+                                                           : ... In instance UnusedThings
    wire logic y0;
               ^~
-%Warning-UNUSED: Example.sv:11: Signal is not driven, nor used: 'y1'
-                              : ... In instance Example
+%Warning-UNUSED: ../../shared/linear-non/UnusedThings.sv:11: Signal is not driven, nor used: 'y1'
+                                                           : ... In instance UnusedThings
    wire logic y1;
               ^~
-%Warning-UNUSED: Example.sv:12: Signal is not driven, nor used: 'y2'
-                              : ... In instance Example
+%Warning-UNUSED: ../../shared/linear-non/UnusedThings.sv:12: Signal is not driven, nor used: 'y2'
+                                                           : ... In instance UnusedThings
    wire logic y2;
               ^~
-%Warning-UNUSED: Example.sv:13: Signal is not driven, nor used: 'y3'
-                              : ... In instance Example
+%Warning-UNUSED: ../../shared/linear-non/UnusedThings.sv:13: Signal is not driven, nor used: 'y3'
+                                                           : ... In instance UnusedThings
    wire logic y3;
               ^~
-%Warning-UNUSED: Example.sv:14: Signal is not used: 's1n'
-                              : ... In instance Example
+%Warning-UNUSED: ../../shared/linear-non/UnusedThings.sv:14: Signal is not used: 's1n'
+                                                           : ... In instance UnusedThings
    wire logic s1n;
               ^~~
-%Warning-UNUSED: Example.sv:15: Signal is not used: 's0n'
-                              : ... In instance Example
+%Warning-UNUSED: ../../shared/linear-non/UnusedThings.sv:15: Signal is not used: 's0n'
+                                                           : ... In instance UnusedThings
    wire logic s0n;
               ^~~
 %Error: Exiting due to 11 warning(s)

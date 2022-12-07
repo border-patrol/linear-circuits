@@ -1,10 +1,12 @@
 # -*- mode: sh;-*-
 
+FILE="../../shared/linear/SimpleWiring.sv"
+
 echo "# Example Linearly Wired Circuits"
 
 echo "## Circuits"
 echo "\`\`\`"
-$1 Example.sv | tee Example.dot
+$1 $FILE | tee Example.dot
 echo "\`\`\`"
 
 dot -Tpng Example.dot > Example.png
@@ -13,7 +15,7 @@ dot -Tpng Example.dot > Example.png
 echo "## Verilator"
 echo "\`\`\`"
 
-verilator --lint-only --Wall Example.sv 2>&1
+verilator --lint-only --Wall $FILE 2>&1
 
 
 echo "\`\`\`"

@@ -1,4 +1,4 @@
-module Example( output logic out
+module UnusedThings( output logic out
               , input  logic i0
               , input  logic i1
               , input  logic i2

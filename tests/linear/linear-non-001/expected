@@ -4,14 +4,14 @@ Wire  has an unused entry.
 ```
 // LOG : Starting Linear NetList 
 // LOG : Parsing Successful
-Example.sv:6:0-0: Linearity Error:
+../../shared/linear-non/MissingInputs.sv:6:0-0: Linearity Error:
 ab := [USED, USED, FREE]
 
 ```
 ## Verilator
 ```
-%Warning-UNUSED: Example.sv:2: Bits of signal are not used: 'ab'[2]
-                             : ... In instance Example
+%Warning-UNUSED: ../../shared/linear-non/MissingInputs.sv:2: Bits of signal are not used: 'ab'[2]
+                                                           : ... In instance MissingInputs
               , input  logic[2:0] ab
                                   ^~
                  ... Use "/* verilator lint_off UNUSED */" and lint_on around source to disable this message.

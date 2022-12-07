@@ -1,4 +1,4 @@
-module Example( output logic out
+module SimpleRandom( output logic out
               , input logic a
               , input logic b
               , input logic c

@@ -4,14 +4,14 @@ Input is dangling
 ```
 // LOG : Starting Linear NetList 
 // LOG : Parsing Successful
-Example.sv:5:22-26: Linearity Error:
+../../shared/linear-non/DanglingInput.sv:5:22-26: Linearity Error:
 left := USED
 
 ```
 ## Verilator
 ```
-%Warning-UNUSED: Example.sv:3: Signal is not used: 'right'
-                             : ... In instance Example
+%Warning-UNUSED: ../../shared/linear-non/DanglingInput.sv:3: Signal is not used: 'right'
+                                                           : ... In instance DanglingInput
               , input  logic right
                              ^~~~~
                  ... Use "/* verilator lint_off UNUSED */" and lint_on around source to disable this message.

@@ -1,4 +1,4 @@
-module Example( output logic    out
+module MissingInputs( output logic    out
               , input  logic[2:0] ab
               );
 

@@ -4,7 +4,7 @@ Input has unused elements
 ```
 // LOG : Starting Linear NetList 
 // LOG : Parsing Successful
-Example.sv:6:0-0: Linearity Error:
+../../shared/linear-non/MissingInputDiag.sv:6:0-0: Linearity Error:
 bc := [[FREE, USED], [USED, FREE]]
 
 ```

@@ -1,4 +1,4 @@
-module Example( output logic      out
+module SimpleArray( output logic      out
               , inout  logic[1:0] bc
               );
 

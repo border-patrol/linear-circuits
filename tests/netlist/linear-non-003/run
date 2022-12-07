@@ -1,11 +1,13 @@
 # -*- mode: sh;-*-
 
+FILE=../../shared/linear-non/MissingInputDiag.sv
+
 echo "Example Non-Linearly Wired Circuits"
 echo "Input has unused elements"
 
 echo "## Circuits"
 echo "\`\`\`"
-$1 Example.sv | tee Example.dot
+$1 $FILE | tee Example.dot
 echo "\`\`\`"
 
 dot -Tpng Example.dot > Example.png
@@ -13,7 +15,7 @@ dot -Tpng Example.dot > Example.png
 echo "## Verilator"
 echo "\`\`\`"
 
-verilator --lint-only --Wall Example.sv 2>&1
+verilator --lint-only --Wall $FILE 2>&1
 
 echo "\`\`\`"
 

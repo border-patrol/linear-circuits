@@ -1,4 +1,4 @@
-module Example( output logic    out
+module DanglingArray( output logic    out
               , input  logic    a
               , input  logic[2:0] bc
               );

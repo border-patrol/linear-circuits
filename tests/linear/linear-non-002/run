@@ -1,16 +1,19 @@
 # -*- mode: sh;-*-
+
+FILE=../../shared/linear-non/MissingOutputs.sv
+
 echo "Example Non-Linearly Wired Circuits"
 echo "Output has an unused entry."
 
 echo "## Circuits"
 echo "\`\`\`"
-$1 Example.sv
+$1 $FILE
 echo "\`\`\`"
 
 echo "## Verilator"
 echo "\`\`\`"
 
-verilator --lint-only --Wall Example.sv 2>&1
+verilator --lint-only --Wall $FILE 2>&1
 
 echo "\`\`\`"
 

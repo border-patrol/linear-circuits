@@ -3,14 +3,14 @@ Example Non-Linearly Wired Circuits
 ```
 // LOG : Starting Linear NetList 
 // LOG : Parsing Successful
-Example.sv:7:0-0: Linearity Error:
+../../shared/linear-non/DanglingArray.sv:7:0-0: Linearity Error:
 bc := [FREE, USED, FREE]
 
 ```
 ## Verilator
 ```
-%Warning-UNUSED: Example.sv:3: Bits of signal are not used: 'bc'[2,0]
-                             : ... In instance Example
+%Warning-UNUSED: ../../shared/linear-non/DanglingArray.sv:3: Bits of signal are not used: 'bc'[2,0]
+                                                           : ... In instance DanglingArray
               , input  logic[2:0] bc
                                   ^~
                  ... Use "/* verilator lint_off UNUSED */" and lint_on around source to disable this message.

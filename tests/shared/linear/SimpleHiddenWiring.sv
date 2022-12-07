@@ -1,4 +1,4 @@
-module Example( output logic    o
+module SimpleHiddenWiring( output logic    o
               , input  logic    i
               );
 
