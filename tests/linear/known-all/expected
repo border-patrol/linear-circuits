@@ -1,0 +1,56 @@
+Example Known Circuits
+## Circuits
+### FlipFlopD.sv
+```
+// LOG : Starting Linear NetList 
+// LOG : Parsing Successful
+../../shared/known/FlipFlopD.sv:12:17-18: Linearity Error:
+i := USED
+
+```
+### Verilator
+```
+%Warning-UNOPT: ../../shared/known/FlipFlopD.sv:5: Signal unoptimizable: Feedback to public clock or circular logic: 'oinv'
+  , output logic oinv
+                 ^~~~
+                ... Use "/* verilator lint_off UNOPT */" and lint_on around source to disable this message.
+                ../../shared/known/FlipFlopD.sv:5:      Example path: oinv
+                ../../shared/known/FlipFlopD.sv:18:      Example path: ASSIGNW
+                ../../shared/known/FlipFlopD.sv:4:      Example path: o
+                ../../shared/known/FlipFlopD.sv:20:      Example path: ASSIGNW
+                ../../shared/known/FlipFlopD.sv:5:      Example path: oinv
+%Error: Exiting due to 1 warning(s)
+```
+### FullAdder.sv
+```
+// LOG : Starting Linear NetList 
+// LOG : Parsing Successful
+../../shared/known/FullAdder.sv:13:13-14: Linearity Error:
+a := USED
+
+```
+### Verilator
+```
+```
+### HalfAdder.sv
+```
+// LOG : Starting Linear NetList 
+// LOG : Parsing Successful
+../../shared/known/HalfAdder.sv:9:16-17: Linearity Error:
+a := USED
+
+```
+### Verilator
+```
+```
+### Mux21.sv
+```
+// LOG : Starting Linear NetList 
+// LOG : Parsing Successful
+../../shared/known/Mux21.sv:13:14-20: Linearity Error:
+select := USED
+
+```
+### Verilator
+```
+```

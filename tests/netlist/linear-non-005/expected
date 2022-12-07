@@ -27,8 +27,8 @@ digraph G {
 ```
 ## Verilator
 ```
-%Warning-UNUSED: Example.sv:3: Signal is not used: 'right'
-                             : ... In instance Example
+%Warning-UNUSED: ../../shared/linear-non/DanglingInput.sv:3: Signal is not used: 'right'
+                                                           : ... In instance DanglingInput
               , input  logic right
                              ^~~~~
                  ... Use "/* verilator lint_off UNUSED */" and lint_on around source to disable this message.

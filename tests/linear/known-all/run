@@ -1,0 +1,24 @@
+# -*- mode: sh;-*-
+
+FILES=$(ls ../../shared/known/*.sv)
+
+echo "Example Known Circuits"
+
+echo "## Circuits"
+
+for f in $FILES;
+do
+  fname=$(basename "$f")
+  echo "### $fname"
+  echo "\`\`\`"
+  $1 $f
+  echo "\`\`\`"
+
+  echo "### Verilator"
+  echo "\`\`\`"
+  verilator --lint-only --Wall $f 2>&1
+  echo "\`\`\`"
+
+done
+
+# -- EOF

@@ -1,0 +1,292 @@
+Example Known Circuits
+## Circuits
+## FlipFlopDLin.sv
+```
+// LOG : Starting NetList 
+// (Port input logic "i" (Port input logic "clock" (Port output logic "o" (Port output logic "oinv" (Wire logic "iA" (Wire logic "iB" (Gate "s1" (Split (Shim output (Var iA)) (Shim output (Var iB)) (Shim input (Var i))) (Wire logic "clockA" (Wire logic "clockB" (Gate "s2" (Split (Shim output (Var clockA)) (Shim output (Var clockB)) (Shim input (Var clock))) (Wire logic "notI" (Gate "n" (GateU not (Shim output (Var notI)) (Shim input (Var iA))) (Wire logic "na1o" (Gate "na1" (GateB nand (Shim output (Var na1o)) (Shim input (Var iB)) (Shim input (Var clockA))) (Wire logic "na2o" (Gate "na2" (GateB nand (Shim output (Var na2o)) (Shim input (Var notI)) (Shim input (Var clockB))) (Wire logic "q" (Wire logic "qAlt" (Wire logic "qinv" (Wire logic "qinvAlt" (Gate "na3" (GateB nand (Shim output (Var q)) (Shim input (Var qinvAlt)) (Shim input (Var na1o))) (Gate "na4" (GateB nand (Shim output (Var qinv)) (Shim input (Var qAlt)) (Shim input (Var na2o))) (Gate "s3" (Split (Shim output (Var o)) (Shim output (Var qAlt)) (Shim input (Var q))) (Gate "s4" (Split (Shim output (Var oinv)) (Shim output (Var qinvAlt)) (Shim input (Var qinv))) (Stop)))))))))))))))))))))))))
+// LOG : Parsing Successful
+// (Port input logic (Port input logic (Port output logic (Port output logic (Wire logic (Wire logic (Gate (Split (Project Write (Var 1)) (Project Write (Var 0)) (Var 5)) (Wire logic (Wire logic (Gate (Split (Project Write (Var 1)) (Project Write (Var 0)) (Var 7)) (Wire logic (Gate (GateU not (Project Write (Var 0)) (Project Read (Var 6))) (Wire logic (Gate (GateB nand (Project Write (Var 0)) (Project Read (Var 7)) (Project Read (Var 5))) (Wire logic (Gate (GateB nand (Project Write (Var 0)) (Project Read (Var 4)) (Project Read (Var 6))) (Wire logic (Wire logic (Wire logic (Wire logic (Gate (GateB nand (Project Write (Var 3)) (Project Read (Var 0)) (Project Read (Var 7))) (Gate (GateB nand (Project Write (Var 2)) (Project Read (Var 3)) (Project Read (Var 6))) (Gate (Split (Var 19) (Project Write (Var 4)) (Project Read (Var 5))) (Gate (Split (Var 19) (Project Write (Var 3)) (Project Read (Var 4))) Stop))))))))))))))))))))))))
+// LOG : Type Checking Complete
+// LOG : Soundness Check Complete
+digraph G {
+31 [label="(1, 1) CHAN_OUT : logic"];
+28 [label="(1, 1) CHAN_IN : logic"];
+27 [label="(1, 1) CHAN_OUT : logic"];
+24 [label="(1, 1) CHAN_IN : logic"];
+21 [label="(1, 1) CHAN_IN : logic"];
+22 [label="(1, 1) CHAN_OUT : logic"];
+18 [label="(1, 1) CHAN_IN : logic"];
+19 [label="(1, 1) CHAN_OUT : logic"];
+15 [label="(1, 1) CHAN_IN : logic"];
+16 [label="(1, 1) CHAN_OUT : logic"];
+13 [label="(1, 1) CHAN_OUT : logic"];
+11 [label="(1, 1) CHAN_OUT : logic"];
+8 [label="(1, 1) CHAN_OUT : logic"];
+6 [label="(1, 1) CHAN_OUT : logic"];
+5 [label="(1, 1) CHAN_IN : logic"];
+7 [label="(1, 1) CHAN_IN : logic"];
+1 [label="IN(1) INPUT : logic"];
+9 [label="(1, 2) SPLIT"];
+10 [label="(1, 1) CHAN_IN : logic"];
+12 [label="(1, 1) CHAN_IN : logic"];
+2 [label="IN(1) INPUT : logic"];
+14 [label="(1, 2) SPLIT"];
+17 [label="(1, 1) not"];
+20 [label="(2, 1) nand"];
+23 [label="(2, 1) nand"];
+32 [label="(2, 1) nand"];
+33 [label="(2, 1) nand"];
+3 [label="OUT(1) OUTPUT : logic"];
+26 [label="(1, 1) CHAN_IN : logic"];
+25 [label="(1, 1) CHAN_OUT : logic"];
+34 [label="(1, 2) SPLIT"];
+4 [label="OUT(1) OUTPUT : logic"];
+30 [label="(1, 1) CHAN_IN : logic"];
+29 [label="(1, 1) CHAN_OUT : logic"];
+35 [label="(1, 2) SPLIT"];
+	30 -> 31;
+	28 -> 29;
+	26 -> 27;
+	24 -> 25;
+	21 -> 22;
+	18 -> 19;
+	15 -> 16;
+	12 -> 13;
+	10 -> 11;
+	7 -> 8;
+	5 -> 6;
+	1 -> 9;
+	9 -> 5;
+	9 -> 7;
+	2 -> 14;
+	14 -> 10;
+	14 -> 12;
+	6 -> 17;
+	17 -> 15;
+	8 -> 20;
+	11 -> 20;
+	20 -> 18;
+	16 -> 23;
+	13 -> 23;
+	23 -> 21;
+	31 -> 32;
+	19 -> 32;
+	32 -> 24;
+	27 -> 33;
+	22 -> 33;
+	33 -> 28;
+	25 -> 34;
+	34 -> 3;
+	34 -> 26;
+	29 -> 35;
+	35 -> 4;
+	35 -> 30;
+}
+
+// LOG : BYE
+```
+## Verilator
+```
+%Warning-UNOPTFLAT: ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:30: Signal unoptimizable: Feedback to clock or circular logic: 'FlipFlopDLin.qinv'
+   wire logic qinv;
+              ^~~~
+                    ... Use "/* verilator lint_off UNOPTFLAT */" and lint_on around source to disable this message.
+                    ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:30:      Example path: FlipFlopDLin.qinv
+                    ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:33:      Example path: ASSIGNW
+                    ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:28:      Example path: FlipFlopDLin.q
+                    ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:35:      Example path: ASSIGNW
+                    ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:30:      Example path: FlipFlopDLin.qinv
+%Error: Exiting due to 1 warning(s)
+```
+## FullAdderLin.sv
+```
+// LOG : Starting NetList 
+// (Port input logic "a" (Port input logic "b" (Port input logic "carryIn" (Port output logic "carryOut" (Port output logic "res" (Wire logic "a1" (Wire logic "a2" (Gate "s0" (Split (Shim output (Var a1)) (Shim output (Var a2)) (Shim input (Var a))) (Wire logic "b1" (Wire logic "b2" (Gate "s1" (Split (Shim output (Var b1)) (Shim output (Var b2)) (Shim input (Var b))) (Wire logic "x1" (Wire logic "x1a" (Wire logic "x1b" (Gate "s2" (Split (Shim output (Var x1a)) (Shim output (Var x1b)) (Shim input (Var x1))) (Wire logic "c1" (Wire logic "c2" (Gate "s3" (Split (Shim output (Var c1)) (Shim output (Var c2)) (Shim input (Var carryIn))) (Wire logic "x2" (Wire logic "x3" (Gate "g1" (GateB xor (Shim output (Var x1)) (Shim input (Var a1)) (Shim input (Var b1))) (Gate "g2" (GateB and (Shim output (Var x3)) (Shim input (Var a2)) (Shim input (Var b2))) (Gate "g3" (GateB xor (Shim output (Var res)) (Shim input (Var x1a)) (Shim input (Var c1))) (Gate "g4" (GateB and (Shim output (Var x2)) (Shim input (Var x1b)) (Shim input (Var c2))) (Gate "g5" (GateB or (Shim output (Var carryOut)) (Shim input (Var x2)) (Shim input (Var x3))) (Stop))))))))))))))))))))))))))
+// LOG : Parsing Successful
+// (Port input logic (Port input logic (Port input logic (Port output logic (Port output logic (Wire logic (Wire logic (Gate (Split (Project Write (Var 1)) (Project Write (Var 0)) (Var 6)) (Wire logic (Wire logic (Gate (Split (Project Write (Var 1)) (Project Write (Var 0)) (Var 8)) (Wire logic (Wire logic (Wire logic (Gate (Split (Project Write (Var 1)) (Project Write (Var 0)) (Project Read (Var 2))) (Wire logic (Wire logic (Gate (Split (Project Write (Var 1)) (Project Write (Var 0)) (Var 14)) (Wire logic (Wire logic (Gate (GateB xor (Project Write (Var 8)) (Project Read (Var 14)) (Project Read (Var 11))) (Gate (GateB and (Project Write (Var 1)) (Project Read (Var 14)) (Project Read (Var 11))) (Gate (GateB xor (Var 17) (Project Read (Var 9)) (Project Read (Var 6))) (Gate (GateB and (Project Write (Var 4)) (Project Read (Var 9)) (Project Read (Var 6))) (Gate (GateB or (Var 20) (Project Read (Var 5)) (Project Read (Var 4))) Stop)))))))))))))))))))))))))
+// LOG : Type Checking Complete
+// LOG : Soundness Check Complete
+digraph G {
+30 [label="(1, 1) CHAN_IN : logic"];
+31 [label="(1, 1) CHAN_OUT : logic"];
+28 [label="(1, 1) CHAN_IN : logic"];
+29 [label="(1, 1) CHAN_OUT : logic"];
+26 [label="(1, 1) CHAN_OUT : logic"];
+24 [label="(1, 1) CHAN_OUT : logic"];
+21 [label="(1, 1) CHAN_OUT : logic"];
+19 [label="(1, 1) CHAN_OUT : logic"];
+16 [label="(1, 1) CHAN_IN : logic"];
+14 [label="(1, 1) CHAN_OUT : logic"];
+12 [label="(1, 1) CHAN_OUT : logic"];
+9 [label="(1, 1) CHAN_OUT : logic"];
+7 [label="(1, 1) CHAN_OUT : logic"];
+5 [label="OUT(1) OUTPUT : logic"];
+4 [label="OUT(1) OUTPUT : logic"];
+6 [label="(1, 1) CHAN_IN : logic"];
+8 [label="(1, 1) CHAN_IN : logic"];
+1 [label="IN(1) INPUT : logic"];
+10 [label="(1, 2) SPLIT"];
+11 [label="(1, 1) CHAN_IN : logic"];
+13 [label="(1, 1) CHAN_IN : logic"];
+2 [label="IN(1) INPUT : logic"];
+15 [label="(1, 2) SPLIT"];
+18 [label="(1, 1) CHAN_IN : logic"];
+20 [label="(1, 1) CHAN_IN : logic"];
+17 [label="(1, 1) CHAN_OUT : logic"];
+22 [label="(1, 2) SPLIT"];
+23 [label="(1, 1) CHAN_IN : logic"];
+25 [label="(1, 1) CHAN_IN : logic"];
+3 [label="IN(1) INPUT : logic"];
+27 [label="(1, 2) SPLIT"];
+32 [label="(2, 1) xor"];
+33 [label="(2, 1) and"];
+34 [label="(2, 1) xor"];
+35 [label="(2, 1) and"];
+36 [label="(2, 1) or"];
+	30 -> 31;
+	28 -> 29;
+	25 -> 26;
+	23 -> 24;
+	20 -> 21;
+	18 -> 19;
+	16 -> 17;
+	13 -> 14;
+	11 -> 12;
+	8 -> 9;
+	6 -> 7;
+	1 -> 10;
+	10 -> 6;
+	10 -> 8;
+	2 -> 15;
+	15 -> 11;
+	15 -> 13;
+	17 -> 22;
+	22 -> 18;
+	22 -> 20;
+	3 -> 27;
+	27 -> 23;
+	27 -> 25;
+	7 -> 32;
+	12 -> 32;
+	32 -> 16;
+	9 -> 33;
+	14 -> 33;
+	33 -> 30;
+	19 -> 34;
+	24 -> 34;
+	34 -> 5;
+	21 -> 35;
+	26 -> 35;
+	35 -> 28;
+	29 -> 36;
+	31 -> 36;
+	36 -> 4;
+}
+
+// LOG : BYE
+```
+## Verilator
+```
+```
+## HalfAdderLin.sv
+```
+// LOG : Starting NetList 
+// (Port input logic "a" (Port input logic "b" (Port output logic "carry" (Port output logic "res" (Wire logic "a1" (Wire logic "a2" (Gate "s0" (Split (Shim output (Var a1)) (Shim output (Var a2)) (Shim input (Var a))) (Wire logic "b1" (Wire logic "b2" (Gate "s1" (Split (Shim output (Var b1)) (Shim output (Var b2)) (Shim input (Var b))) (Gate "g1" (GateB xor (Shim output (Var res)) (Shim input (Var a1)) (Shim input (Var b1))) (Gate "g2" (GateB and (Shim output (Var carry)) (Shim input (Var a2)) (Shim input (Var b2))) (Stop)))))))))))))
+// LOG : Parsing Successful
+// (Port input logic (Port input logic (Port output logic (Port output logic (Wire logic (Wire logic (Gate (Split (Project Write (Var 1)) (Project Write (Var 0)) (Var 5)) (Wire logic (Wire logic (Gate (Split (Project Write (Var 1)) (Project Write (Var 0)) (Var 7)) (Gate (GateB xor (Var 6) (Project Read (Var 5)) (Project Read (Var 2))) (Gate (GateB and (Var 8) (Project Read (Var 5)) (Project Read (Var 2))) Stop))))))))))))
+// LOG : Type Checking Complete
+// LOG : Soundness Check Complete
+digraph G {
+13 [label="(1, 1) CHAN_OUT : logic"];
+11 [label="(1, 1) CHAN_OUT : logic"];
+8 [label="(1, 1) CHAN_OUT : logic"];
+6 [label="(1, 1) CHAN_OUT : logic"];
+4 [label="OUT(1) OUTPUT : logic"];
+3 [label="OUT(1) OUTPUT : logic"];
+5 [label="(1, 1) CHAN_IN : logic"];
+7 [label="(1, 1) CHAN_IN : logic"];
+1 [label="IN(1) INPUT : logic"];
+9 [label="(1, 2) SPLIT"];
+10 [label="(1, 1) CHAN_IN : logic"];
+12 [label="(1, 1) CHAN_IN : logic"];
+2 [label="IN(1) INPUT : logic"];
+14 [label="(1, 2) SPLIT"];
+15 [label="(2, 1) xor"];
+16 [label="(2, 1) and"];
+	12 -> 13;
+	10 -> 11;
+	7 -> 8;
+	5 -> 6;
+	1 -> 9;
+	9 -> 5;
+	9 -> 7;
+	2 -> 14;
+	14 -> 10;
+	14 -> 12;
+	6 -> 15;
+	11 -> 15;
+	15 -> 4;
+	8 -> 16;
+	13 -> 16;
+	16 -> 3;
+}
+
+// LOG : BYE
+```
+## Verilator
+```
+```
+## Mux21Lin.sv
+```
+// LOG : Starting NetList 
+// (Port input logic "a" (Port input logic "b" (Port input logic "select" (Port output logic "res" (Wire logic "sa" (Wire logic "sb" (Gate "s0" (Split (Shim output (Var sa)) (Shim output (Var sb)) (Shim input (Var select))) (Wire logic "snot" (Wire logic "ao" (Wire logic "bo" (Gate "n1" (GateU not (Shim output (Var snot)) (Shim input (Var sa))) (Gate "a1" (GateB and (Shim output (Var ao)) (Shim input (Var snot)) (Shim input (Var a))) (Gate "a2" (GateB and (Shim output (Var bo)) (Shim input (Var sb)) (Shim input (Var b))) (Gate "a3" (GateB or (Shim output (Var res)) (Shim input (Var ao)) (Shim input (Var bo))) (Stop)))))))))))))))
+// LOG : Parsing Successful
+// (Port input logic (Port input logic (Port input logic (Port output logic (Wire logic (Wire logic (Gate (Split (Project Write (Var 1)) (Project Write (Var 0)) (Var 3)) (Wire logic (Wire logic (Wire logic (Gate (GateU not (Project Write (Var 2)) (Project Read (Var 5))) (Gate (GateB and (Project Write (Var 2)) (Project Read (Var 3)) (Var 10)) (Gate (GateB and (Project Write (Var 2)) (Project Read (Var 6)) (Var 10)) (Gate (GateB or (Var 9) (Project Read (Var 4)) (Project Read (Var 3))) Stop))))))))))))))
+// LOG : Type Checking Complete
+// LOG : Soundness Check Complete
+digraph G {
+14 [label="(1, 1) CHAN_IN : logic"];
+15 [label="(1, 1) CHAN_OUT : logic"];
+12 [label="(1, 1) CHAN_IN : logic"];
+13 [label="(1, 1) CHAN_OUT : logic"];
+10 [label="(1, 1) CHAN_IN : logic"];
+11 [label="(1, 1) CHAN_OUT : logic"];
+8 [label="(1, 1) CHAN_OUT : logic"];
+6 [label="(1, 1) CHAN_OUT : logic"];
+4 [label="OUT(1) OUTPUT : logic"];
+2 [label="IN(1) INPUT : logic"];
+1 [label="IN(1) INPUT : logic"];
+5 [label="(1, 1) CHAN_IN : logic"];
+7 [label="(1, 1) CHAN_IN : logic"];
+3 [label="IN(1) INPUT : logic"];
+9 [label="(1, 2) SPLIT"];
+16 [label="(1, 1) not"];
+17 [label="(2, 1) and"];
+18 [label="(2, 1) and"];
+19 [label="(2, 1) or"];
+	14 -> 15;
+	12 -> 13;
+	10 -> 11;
+	7 -> 8;
+	5 -> 6;
+	3 -> 9;
+	9 -> 5;
+	9 -> 7;
+	6 -> 16;
+	16 -> 10;
+	11 -> 17;
+	1 -> 17;
+	17 -> 12;
+	8 -> 18;
+	2 -> 18;
+	18 -> 14;
+	13 -> 19;
+	15 -> 19;
+	19 -> 4;
+}
+
+// LOG : BYE
+```
+## Verilator
+```
+```

@@ -382,20 +382,20 @@ interp c e g (Split outA outB inp)
   =  let c1 = S c
   in let s = size LOGIC
 
-  in let sVertex = both "SPLIT" c1 s
+  in let sVertex = node "SPLIT" c1 1 2
 
   in let R c2 e1 g1 av = interp c1 e  g  outA
   in let R c3 e2 g2 bv = interp c2 e1 g1 outB
   in let R c4 e3 g3 iv = interp c3 e2 g2 inp
 
-  in let esIS = replicate s (MkPair (ident iv)      (ident sVertex))
-  in let esSA = replicate s (MkPair (ident sVertex) (ident av))
-  in let esSB = replicate s (MkPair (ident sVertex) (ident bv))
+  in let esIS = (MkPair (ident iv)      (ident sVertex))
+  in let esSA = (MkPair (ident sVertex) (ident av))
+  in let esSB = (MkPair (ident sVertex) (ident bv))
 
   in R c4 e3
           g3
           (fromLists [av,bv,iv,sVertex]
-                     (esIS ++ esSA ++ esSB))
+                     ([esIS,esSA,esSB]))
 
 -- ### Collecting Wires
 --
@@ -408,20 +408,20 @@ interp c e g (Collect {type} out inA inB)
 
   in let s = size type
 
-  in let sVertex = both "COLLECT" c1 s
+  in let sVertex = node "COLLECT" c1 2 1
 
   in let R c2 e1 g1 ov = interp c1 e  g  out
   in let R c3 e2 g2 av = interp c2 e1 g1 inA
   in let R c4 e3 g3 bv = interp c3 e2 g2 inB
 
-  in let esAC = replicate s (MkPair (ident av)      (ident sVertex))
-  in let esBC = replicate s (MkPair (ident bv)      (ident sVertex))
-  in let esSO = replicate s (MkPair (ident sVertex) (ident ov))
+  in let esAC = (MkPair (ident av)      (ident sVertex))
+  in let esBC = (MkPair (ident bv)      (ident sVertex))
+  in let esSO = (MkPair (ident sVertex) (ident ov))
 
   in R c4 e3
           g3
           (fromLists [ov,av,bv,sVertex]
-                     (esAC ++ esBC ++ esSO))
+                     ([esAC,esBC,esSO]))
 
 -- ## Casting
 --
@@ -432,7 +432,7 @@ interp c e g (Collect {type} out inA inB)
 interp c e g (Cast cast port)
     =  let c1 = S c
 
-    in let cVertex = both "CAST" c1 1
+    in let cVertex = node "CAST" c1 1 1
 
     in let R c2 e1 g1 what = interp c1 e g port
 

@@ -30,8 +30,8 @@ digraph G {
 ```
 ## Verilator
 ```
-%Warning-UNUSED: Example.sv:2: Bits of signal are not used: 'ab'[2]
-                             : ... In instance Example
+%Warning-UNUSED: ../../shared/linear-non/MissingInputs.sv:2: Bits of signal are not used: 'ab'[2]
+                                                           : ... In instance MissingInputs
               , input  logic[2:0] ab
                                   ^~
                  ... Use "/* verilator lint_off UNUSED */" and lint_on around source to disable this message.

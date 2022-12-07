@@ -1,0 +1,284 @@
+Example Known Circuits
+## Circuits
+## FlipFlopDLin.sv
+```
+// LOG : Starting Linear NetList 
+// LOG : Parsing Successful
+// LOG : Type Checking Complete
+// LOG : Soundness Check Complete
+digraph G {
+31 [label="(1, 1) CHAN_OUT : logic"];
+28 [label="(1, 1) CHAN_IN : logic"];
+27 [label="(1, 1) CHAN_OUT : logic"];
+24 [label="(1, 1) CHAN_IN : logic"];
+21 [label="(1, 1) CHAN_IN : logic"];
+22 [label="(1, 1) CHAN_OUT : logic"];
+18 [label="(1, 1) CHAN_IN : logic"];
+19 [label="(1, 1) CHAN_OUT : logic"];
+15 [label="(1, 1) CHAN_IN : logic"];
+16 [label="(1, 1) CHAN_OUT : logic"];
+13 [label="(1, 1) CHAN_OUT : logic"];
+11 [label="(1, 1) CHAN_OUT : logic"];
+8 [label="(1, 1) CHAN_OUT : logic"];
+6 [label="(1, 1) CHAN_OUT : logic"];
+5 [label="(1, 1) CHAN_IN : logic"];
+7 [label="(1, 1) CHAN_IN : logic"];
+1 [label="IN(1) INPUT : logic"];
+9 [label="(1, 2) SPLIT"];
+10 [label="(1, 1) CHAN_IN : logic"];
+12 [label="(1, 1) CHAN_IN : logic"];
+2 [label="IN(1) INPUT : logic"];
+14 [label="(1, 2) SPLIT"];
+17 [label="(1, 1) not"];
+20 [label="(2, 1) nand"];
+23 [label="(2, 1) nand"];
+32 [label="(2, 1) nand"];
+33 [label="(2, 1) nand"];
+3 [label="OUT(1) OUTPUT : logic"];
+26 [label="(1, 1) CHAN_IN : logic"];
+25 [label="(1, 1) CHAN_OUT : logic"];
+34 [label="(1, 2) SPLIT"];
+4 [label="OUT(1) OUTPUT : logic"];
+30 [label="(1, 1) CHAN_IN : logic"];
+29 [label="(1, 1) CHAN_OUT : logic"];
+35 [label="(1, 2) SPLIT"];
+	30 -> 31;
+	28 -> 29;
+	26 -> 27;
+	24 -> 25;
+	21 -> 22;
+	18 -> 19;
+	15 -> 16;
+	12 -> 13;
+	10 -> 11;
+	7 -> 8;
+	5 -> 6;
+	1 -> 9;
+	9 -> 5;
+	9 -> 7;
+	2 -> 14;
+	14 -> 10;
+	14 -> 12;
+	6 -> 17;
+	17 -> 15;
+	20 -> 18;
+	8 -> 20;
+	11 -> 20;
+	23 -> 21;
+	16 -> 23;
+	13 -> 23;
+	32 -> 24;
+	31 -> 32;
+	19 -> 32;
+	33 -> 28;
+	27 -> 33;
+	22 -> 33;
+	25 -> 34;
+	34 -> 3;
+	34 -> 26;
+	29 -> 35;
+	35 -> 4;
+	35 -> 30;
+}
+
+// LOG : BYE
+```
+## Verilator
+```
+%Warning-UNOPTFLAT: ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:30: Signal unoptimizable: Feedback to clock or circular logic: 'FlipFlopDLin.qinv'
+   wire logic qinv;
+              ^~~~
+                    ... Use "/* verilator lint_off UNOPTFLAT */" and lint_on around source to disable this message.
+                    ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:30:      Example path: FlipFlopDLin.qinv
+                    ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:33:      Example path: ASSIGNW
+                    ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:28:      Example path: FlipFlopDLin.q
+                    ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:35:      Example path: ASSIGNW
+                    ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:30:      Example path: FlipFlopDLin.qinv
+%Error: Exiting due to 1 warning(s)
+```
+## FullAdderLin.sv
+```
+// LOG : Starting Linear NetList 
+// LOG : Parsing Successful
+// LOG : Type Checking Complete
+// LOG : Soundness Check Complete
+digraph G {
+30 [label="(1, 1) CHAN_IN : logic"];
+31 [label="(1, 1) CHAN_OUT : logic"];
+28 [label="(1, 1) CHAN_IN : logic"];
+29 [label="(1, 1) CHAN_OUT : logic"];
+26 [label="(1, 1) CHAN_OUT : logic"];
+24 [label="(1, 1) CHAN_OUT : logic"];
+21 [label="(1, 1) CHAN_OUT : logic"];
+19 [label="(1, 1) CHAN_OUT : logic"];
+16 [label="(1, 1) CHAN_IN : logic"];
+14 [label="(1, 1) CHAN_OUT : logic"];
+12 [label="(1, 1) CHAN_OUT : logic"];
+9 [label="(1, 1) CHAN_OUT : logic"];
+7 [label="(1, 1) CHAN_OUT : logic"];
+5 [label="OUT(1) OUTPUT : logic"];
+4 [label="OUT(1) OUTPUT : logic"];
+6 [label="(1, 1) CHAN_IN : logic"];
+8 [label="(1, 1) CHAN_IN : logic"];
+1 [label="IN(1) INPUT : logic"];
+10 [label="(1, 2) SPLIT"];
+11 [label="(1, 1) CHAN_IN : logic"];
+13 [label="(1, 1) CHAN_IN : logic"];
+2 [label="IN(1) INPUT : logic"];
+15 [label="(1, 2) SPLIT"];
+18 [label="(1, 1) CHAN_IN : logic"];
+20 [label="(1, 1) CHAN_IN : logic"];
+17 [label="(1, 1) CHAN_OUT : logic"];
+22 [label="(1, 2) SPLIT"];
+23 [label="(1, 1) CHAN_IN : logic"];
+25 [label="(1, 1) CHAN_IN : logic"];
+3 [label="IN(1) INPUT : logic"];
+27 [label="(1, 2) SPLIT"];
+32 [label="(2, 1) xor"];
+33 [label="(2, 1) and"];
+34 [label="(2, 1) xor"];
+35 [label="(2, 1) and"];
+36 [label="(2, 1) or"];
+	30 -> 31;
+	28 -> 29;
+	25 -> 26;
+	23 -> 24;
+	20 -> 21;
+	18 -> 19;
+	16 -> 17;
+	13 -> 14;
+	11 -> 12;
+	8 -> 9;
+	6 -> 7;
+	1 -> 10;
+	10 -> 6;
+	10 -> 8;
+	2 -> 15;
+	15 -> 11;
+	15 -> 13;
+	17 -> 22;
+	22 -> 18;
+	22 -> 20;
+	3 -> 27;
+	27 -> 23;
+	27 -> 25;
+	32 -> 16;
+	7 -> 32;
+	12 -> 32;
+	33 -> 30;
+	9 -> 33;
+	14 -> 33;
+	34 -> 5;
+	19 -> 34;
+	24 -> 34;
+	35 -> 28;
+	21 -> 35;
+	26 -> 35;
+	36 -> 4;
+	29 -> 36;
+	31 -> 36;
+}
+
+// LOG : BYE
+```
+## Verilator
+```
+```
+## HalfAdderLin.sv
+```
+// LOG : Starting Linear NetList 
+// LOG : Parsing Successful
+// LOG : Type Checking Complete
+// LOG : Soundness Check Complete
+digraph G {
+13 [label="(1, 1) CHAN_OUT : logic"];
+11 [label="(1, 1) CHAN_OUT : logic"];
+8 [label="(1, 1) CHAN_OUT : logic"];
+6 [label="(1, 1) CHAN_OUT : logic"];
+4 [label="OUT(1) OUTPUT : logic"];
+3 [label="OUT(1) OUTPUT : logic"];
+5 [label="(1, 1) CHAN_IN : logic"];
+7 [label="(1, 1) CHAN_IN : logic"];
+1 [label="IN(1) INPUT : logic"];
+9 [label="(1, 2) SPLIT"];
+10 [label="(1, 1) CHAN_IN : logic"];
+12 [label="(1, 1) CHAN_IN : logic"];
+2 [label="IN(1) INPUT : logic"];
+14 [label="(1, 2) SPLIT"];
+15 [label="(2, 1) xor"];
+16 [label="(2, 1) and"];
+	12 -> 13;
+	10 -> 11;
+	7 -> 8;
+	5 -> 6;
+	1 -> 9;
+	9 -> 5;
+	9 -> 7;
+	2 -> 14;
+	14 -> 10;
+	14 -> 12;
+	15 -> 4;
+	6 -> 15;
+	11 -> 15;
+	16 -> 3;
+	8 -> 16;
+	13 -> 16;
+}
+
+// LOG : BYE
+```
+## Verilator
+```
+```
+## Mux21Lin.sv
+```
+// LOG : Starting Linear NetList 
+// LOG : Parsing Successful
+// LOG : Type Checking Complete
+// LOG : Soundness Check Complete
+digraph G {
+14 [label="(1, 1) CHAN_IN : logic"];
+15 [label="(1, 1) CHAN_OUT : logic"];
+12 [label="(1, 1) CHAN_IN : logic"];
+13 [label="(1, 1) CHAN_OUT : logic"];
+10 [label="(1, 1) CHAN_IN : logic"];
+11 [label="(1, 1) CHAN_OUT : logic"];
+8 [label="(1, 1) CHAN_OUT : logic"];
+6 [label="(1, 1) CHAN_OUT : logic"];
+4 [label="OUT(1) OUTPUT : logic"];
+2 [label="IN(1) INPUT : logic"];
+1 [label="IN(1) INPUT : logic"];
+5 [label="(1, 1) CHAN_IN : logic"];
+7 [label="(1, 1) CHAN_IN : logic"];
+3 [label="IN(1) INPUT : logic"];
+9 [label="(1, 2) SPLIT"];
+16 [label="(1, 1) not"];
+17 [label="(2, 1) and"];
+18 [label="(2, 1) and"];
+19 [label="(2, 1) or"];
+	14 -> 15;
+	12 -> 13;
+	10 -> 11;
+	7 -> 8;
+	5 -> 6;
+	3 -> 9;
+	9 -> 5;
+	9 -> 7;
+	6 -> 16;
+	16 -> 10;
+	17 -> 12;
+	11 -> 17;
+	1 -> 17;
+	18 -> 14;
+	8 -> 18;
+	2 -> 18;
+	19 -> 4;
+	13 -> 19;
+	15 -> 19;
+}
+
+// LOG : BYE
+```
+## Verilator
+```
+```

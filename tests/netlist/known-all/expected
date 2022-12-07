@@ -1,0 +1,163 @@
+Example Known Circuits
+## Circuits
+### FlipFlopD.sv
+```
+// LOG : Starting NetList 
+// (Port input logic "i" (Port input logic "clock" (Port output logic "o" (Port output logic "oinv" (Wire logic "notI" (Gate "n" (GateU not (Shim output (Var notI)) (Shim input (Var i))) (Wire logic "na1o" (Gate "na1" (GateB nand (Shim output (Var na1o)) (Shim input (Var i)) (Shim input (Var clock))) (Wire logic "na2o" (Gate "na2" (GateB nand (Shim output (Var na2o)) (Shim input (Var notI)) (Shim input (Var clock))) (Gate "na3" (GateB nand (Shim output (Var o)) (Shim input (Var oinv)) (Shim input (Var na1o))) (Gate "na4" (GateB nand (Shim output (Var oinv)) (Shim input (Var o)) (Shim input (Var na2o))) (Stop)))))))))))))
+// LOG : Parsing Successful
+../../shared/known/FlipFlopD.sv:17:14-18: Type Mismatch:
+
+	Expected: TyPort(input,logic)
+	Given: TyPort(output,logic)
+
+```
+### Verilator
+```
+%Warning-UNOPT: ../../shared/known/FlipFlopD.sv:5: Signal unoptimizable: Feedback to public clock or circular logic: 'oinv'
+  , output logic oinv
+                 ^~~~
+                ... Use "/* verilator lint_off UNOPT */" and lint_on around source to disable this message.
+                ../../shared/known/FlipFlopD.sv:5:      Example path: oinv
+                ../../shared/known/FlipFlopD.sv:18:      Example path: ASSIGNW
+                ../../shared/known/FlipFlopD.sv:4:      Example path: o
+                ../../shared/known/FlipFlopD.sv:20:      Example path: ASSIGNW
+                ../../shared/known/FlipFlopD.sv:5:      Example path: oinv
+%Error: Exiting due to 1 warning(s)
+```
+### FullAdder.sv
+```
+// LOG : Starting NetList 
+// (Port input logic "a" (Port input logic "b" (Port input logic "carryIn" (Port output logic "carryOut" (Port output logic "res" (Wire logic "x1" (Wire logic "x2" (Wire logic "x3" (Gate "g1" (GateB xor (Shim output (Var x1)) (Shim input (Var a)) (Shim input (Var b))) (Gate "g2" (GateB and (Shim output (Var x3)) (Shim input (Var a)) (Shim input (Var b))) (Gate "g3" (GateB xor (Shim output (Var res)) (Shim input (Var x1)) (Shim input (Var carryIn))) (Gate "g4" (GateB and (Shim output (Var x2)) (Shim input (Var x1)) (Shim input (Var carryIn))) (Gate "g5" (GateB or (Shim output (Var carryOut)) (Shim input (Var x2)) (Shim input (Var x3))) (Stop))))))))))))))
+// LOG : Parsing Successful
+// (Port input logic (Port input logic (Port input logic (Port output logic (Port output logic (Wire logic (Wire logic (Wire logic (Gate (GateB xor (Project Write (Var 2)) (Var 7) (Var 6)) (Gate (GateB and (Project Write (Var 1)) (Var 8) (Var 7)) (Gate (GateB xor (Var 5) (Project Read (Var 4)) (Var 7)) (Gate (GateB and (Project Write (Var 4)) (Project Read (Var 5)) (Var 8)) (Gate (GateB or (Var 8) (Project Read (Var 5)) (Project Read (Var 4))) Stop)))))))))))))
+// LOG : Type Checking Complete
+// LOG : Soundness Error:
+digraph G {
+10 [label="(1, 1) CHAN_IN : logic"];
+11 [label="(1, 1) CHAN_OUT : logic"];
+8 [label="(1, 1) CHAN_IN : logic"];
+9 [label="(1, 1) CHAN_OUT : logic"];
+6 [label="(1, 1) CHAN_IN : logic"];
+7 [label="(1, 1) CHAN_OUT : logic"];
+5 [label="OUT(1) OUTPUT : logic"];
+4 [label="OUT(1) OUTPUT : logic"];
+3 [label="IN(1) INPUT : logic"];
+2 [label="IN(1) INPUT : logic"];
+1 [label="IN(1) INPUT : logic"];
+12 [label="(2, 1) xor"];
+13 [label="(2, 1) and"];
+14 [label="(2, 1) xor"];
+15 [label="(2, 1) and"];
+16 [label="(2, 1) or"];
+	10 -> 11;
+	8 -> 9;
+	6 -> 7;
+	1 -> 12;
+	2 -> 12;
+	12 -> 6;
+	1 -> 13;
+	2 -> 13;
+	13 -> 10;
+	7 -> 14;
+	3 -> 14;
+	14 -> 5;
+	7 -> 15;
+	3 -> 15;
+	15 -> 8;
+	9 -> 16;
+	11 -> 16;
+	16 -> 4;
+}
+
+//because:
+// Vertex 7
+//  has expected degree OUT 1
+//  but we found degree OUT 2
+
+
+```
+### Verilator
+```
+```
+### HalfAdder.sv
+```
+// LOG : Starting NetList 
+// (Port input logic "a" (Port input logic "b" (Port output logic "carry" (Port output logic "res" (Gate "g1" (GateB xor (Shim output (Var res)) (Shim input (Var a)) (Shim input (Var b))) (Gate "g2" (GateB and (Shim output (Var carry)) (Shim input (Var a)) (Shim input (Var b))) (Stop)))))))
+// LOG : Parsing Successful
+// (Port input logic (Port input logic (Port output logic (Port output logic (Gate (GateB xor (Var 0) (Var 3) (Var 2)) (Gate (GateB and (Var 2) (Var 4) (Var 3)) Stop))))))
+// LOG : Type Checking Complete
+// LOG : Soundness Error:
+digraph G {
+4 [label="OUT(1) OUTPUT : logic"];
+3 [label="OUT(1) OUTPUT : logic"];
+2 [label="IN(1) INPUT : logic"];
+1 [label="IN(1) INPUT : logic"];
+5 [label="(2, 1) xor"];
+6 [label="(2, 1) and"];
+	1 -> 5;
+	2 -> 5;
+	5 -> 4;
+	1 -> 6;
+	2 -> 6;
+	6 -> 3;
+}
+
+//because:
+// Vertex 2
+//  has expected degree OUT 1
+//  but we found degree OUT 2
+
+
+```
+### Verilator
+```
+```
+### Mux21.sv
+```
+// LOG : Starting NetList 
+// (Port input logic "a" (Port input logic "b" (Port input logic "select" (Port output logic "res" (Wire logic "snot" (Wire logic "ao" (Wire logic "bo" (Gate "n1" (GateU not (Shim output (Var snot)) (Shim input (Var select))) (Gate "a1" (GateB and (Shim output (Var ao)) (Shim input (Var snot)) (Shim input (Var a))) (Gate "a2" (GateB and (Shim output (Var bo)) (Shim input (Var select)) (Shim input (Var b))) (Gate "a3" (GateB or (Shim output (Var res)) (Shim input (Var ao)) (Shim input (Var bo))) (Stop))))))))))))
+// LOG : Parsing Successful
+// (Port input logic (Port input logic (Port input logic (Port output logic (Wire logic (Wire logic (Wire logic (Gate (GateU not (Project Write (Var 2)) (Var 4)) (Gate (GateB and (Project Write (Var 2)) (Project Read (Var 3)) (Var 7)) (Gate (GateB and (Project Write (Var 2)) (Var 6) (Var 7)) (Gate (GateB or (Var 6) (Project Read (Var 4)) (Project Read (Var 3))) Stop)))))))))))
+// LOG : Type Checking Complete
+// LOG : Soundness Error:
+digraph G {
+9 [label="(1, 1) CHAN_IN : logic"];
+10 [label="(1, 1) CHAN_OUT : logic"];
+7 [label="(1, 1) CHAN_IN : logic"];
+8 [label="(1, 1) CHAN_OUT : logic"];
+5 [label="(1, 1) CHAN_IN : logic"];
+6 [label="(1, 1) CHAN_OUT : logic"];
+4 [label="OUT(1) OUTPUT : logic"];
+3 [label="IN(1) INPUT : logic"];
+2 [label="IN(1) INPUT : logic"];
+1 [label="IN(1) INPUT : logic"];
+11 [label="(1, 1) not"];
+12 [label="(2, 1) and"];
+13 [label="(2, 1) and"];
+14 [label="(2, 1) or"];
+	9 -> 10;
+	7 -> 8;
+	5 -> 6;
+	3 -> 11;
+	11 -> 5;
+	6 -> 12;
+	1 -> 12;
+	12 -> 7;
+	3 -> 13;
+	2 -> 13;
+	13 -> 9;
+	8 -> 14;
+	10 -> 14;
+	14 -> 4;
+}
+
+//because:
+// Vertex 3
+//  has expected degree OUT 1
+//  but we found degree OUT 2
+
+
+```
+### Verilator
+```
+```

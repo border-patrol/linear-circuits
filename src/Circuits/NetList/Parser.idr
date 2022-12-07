@@ -213,7 +213,11 @@ namespace Terms
            pure (WDecl (newFC s e) t a)
 
   expr : Rule Body
-  expr = assign <|> wireDecl <|> gateNot <|> gateBin <|> gateMux
+  expr = assign <|> wireDecl
+      <|> gateNot
+      <|> gateBin
+      <|> gateMux
+      <|> split <|> collect
 
   foldBody : Location
           -> List Body
