@@ -27,10 +27,11 @@ digraph G {
 ```
 ## Verilator
 ```
-%Warning-UNUSED: ../../shared/linear-non/DanglingInput.sv:3: Signal is not used: 'right'
-                                                           : ... In instance DanglingInput
-              , input  logic right
-                             ^~~~~
-                 ... Use "/* verilator lint_off UNUSED */" and lint_on around source to disable this message.
+%Warning-UNUSEDSIGNAL: ../../shared/linear-non/DanglingInput.sv:3:30: Signal is not used: 'right'
+                                                                    : ... In instance DanglingInput
+    3 |               , input  logic right
+      |                              ^~~~~
+                       ... For warning description see https://verilator.org/warn/UNUSEDSIGNAL?v=5.002
+                       ... Use "/* verilator lint_off UNUSEDSIGNAL */" and lint_on around source to disable this message.
 %Error: Exiting due to 1 warning(s)
 ```

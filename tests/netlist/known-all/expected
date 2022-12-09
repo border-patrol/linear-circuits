@@ -13,15 +13,16 @@ Example Known Circuits
 ```
 ### Verilator
 ```
-%Warning-UNOPT: ../../shared/known/FlipFlopD.sv:5: Signal unoptimizable: Feedback to public clock or circular logic: 'oinv'
-  , output logic oinv
-                 ^~~~
-                ... Use "/* verilator lint_off UNOPT */" and lint_on around source to disable this message.
-                ../../shared/known/FlipFlopD.sv:5:      Example path: oinv
-                ../../shared/known/FlipFlopD.sv:18:      Example path: ASSIGNW
-                ../../shared/known/FlipFlopD.sv:4:      Example path: o
-                ../../shared/known/FlipFlopD.sv:20:      Example path: ASSIGNW
-                ../../shared/known/FlipFlopD.sv:5:      Example path: oinv
+%Warning-UNOPTFLAT: ../../shared/known/FlipFlopD.sv:4:18: Signal unoptimizable: Circular combinational logic: 'o'
+    4 |   , output logic o
+      |                  ^
+                    ... For warning description see https://verilator.org/warn/UNOPTFLAT?v=5.002
+                    ... Use "/* verilator lint_off UNOPTFLAT */" and lint_on around source to disable this message.
+                    ../../shared/known/FlipFlopD.sv:4:18:      Example path: o
+                    ../../shared/known/FlipFlopD.sv:20:9:      Example path: ASSIGNW
+                    ../../shared/known/FlipFlopD.sv:5:18:      Example path: oinv
+                    ../../shared/known/FlipFlopD.sv:18:9:      Example path: ASSIGNW
+                    ../../shared/known/FlipFlopD.sv:4:18:      Example path: o
 %Error: Exiting due to 1 warning(s)
 ```
 ### FullAdder.sv

@@ -87,15 +87,16 @@ digraph G {
 ```
 ## Verilator
 ```
-%Warning-UNOPTFLAT: ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:30: Signal unoptimizable: Feedback to clock or circular logic: 'FlipFlopDLin.qinv'
-   wire logic qinv;
-              ^~~~
+%Warning-UNOPTFLAT: ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:30:15: Signal unoptimizable: Circular combinational logic: 'FlipFlopDLin.qinv'
+   30 |    wire logic qinv;
+      |               ^~~~
+                    ... For warning description see https://verilator.org/warn/UNOPTFLAT?v=5.002
                     ... Use "/* verilator lint_off UNOPTFLAT */" and lint_on around source to disable this message.
-                    ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:30:      Example path: FlipFlopDLin.qinv
-                    ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:33:      Example path: ASSIGNW
-                    ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:28:      Example path: FlipFlopDLin.q
-                    ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:35:      Example path: ASSIGNW
-                    ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:30:      Example path: FlipFlopDLin.qinv
+                    ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:30:15:      Example path: FlipFlopDLin.qinv
+                    ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:33:9:      Example path: ASSIGNW
+                    ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:28:15:      Example path: FlipFlopDLin.q
+                    ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:35:9:      Example path: ASSIGNW
+                    ../../shared/support/../../shared/known-lin/FlipFlopDLin.sv:30:15:      Example path: FlipFlopDLin.qinv
 %Error: Exiting due to 1 warning(s)
 ```
 ## FullAdderLin.sv

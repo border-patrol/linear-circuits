@@ -10,10 +10,11 @@ ab := [USED, USED, FREE]
 ```
 ## Verilator
 ```
-%Warning-UNUSED: ../../shared/linear-non/MissingInputs.sv:2: Bits of signal are not used: 'ab'[2]
-                                                           : ... In instance MissingInputs
-              , input  logic[2:0] ab
-                                  ^~
-                 ... Use "/* verilator lint_off UNUSED */" and lint_on around source to disable this message.
+%Warning-UNUSEDSIGNAL: ../../shared/linear-non/MissingInputs.sv:2:35: Bits of signal are not used: 'ab'[2]
+                                                                    : ... In instance MissingInputs
+    2 |               , input  logic[2:0] ab
+      |                                   ^~
+                       ... For warning description see https://verilator.org/warn/UNUSEDSIGNAL?v=5.002
+                       ... Use "/* verilator lint_off UNUSEDSIGNAL */" and lint_on around source to disable this message.
 %Error: Exiting due to 1 warning(s)
 ```

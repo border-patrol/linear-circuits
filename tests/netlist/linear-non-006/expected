@@ -28,10 +28,11 @@ digraph G {
 ```
 ## Verilator
 ```
-%Warning-UNUSED: ../../shared/linear-non/DanglingArray.sv:3: Bits of signal are not used: 'bc'[2,0]
-                                                           : ... In instance DanglingArray
-              , input  logic[2:0] bc
-                                  ^~
-                 ... Use "/* verilator lint_off UNUSED */" and lint_on around source to disable this message.
+%Warning-UNUSEDSIGNAL: ../../shared/linear-non/DanglingArray.sv:3:35: Bits of signal are not used: 'bc'[2,0]
+                                                                    : ... In instance DanglingArray
+    3 |               , input  logic[2:0] bc
+      |                                   ^~
+                       ... For warning description see https://verilator.org/warn/UNUSEDSIGNAL?v=5.002
+                       ... Use "/* verilator lint_off UNUSEDSIGNAL */" and lint_on around source to disable this message.
 %Error: Exiting due to 1 warning(s)
 ```
