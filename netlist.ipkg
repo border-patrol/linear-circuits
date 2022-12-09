@@ -10,4 +10,25 @@ executable = "netlist"
 
 modules = Circuits.NetList.Main
 
+        , Circuits.Common
+        , Circuits.Common.Pretty
+        , Circuits.Common.Parser
+        , Circuits.Common.Lexer
+
+        , Circuits.Split
+
+        , Circuits.NetList.Core
+
+        , Circuits.NetList.AST
+        , Circuits.NetList.Terms
+        , Circuits.NetList.Pretty
+        , Circuits.NetList.Types
+
+        , Circuits.NetList.Check
+        , Circuits.NetList.Parser
+        , Circuits.NetList.Error
+        , Circuits.NetList.Lexer
+        , Circuits.NetList.Interp
+
+        , Circuits.NetList
 -- [ EOF ]

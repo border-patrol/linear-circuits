@@ -47,7 +47,7 @@ netlist-test-run: netlist-test-bin
 
 # [ Linear Netlist language ]
 
-.PHONY: linear linear-test-bin linear-test-update linear-test-fast
+.PHONY: linear linear-test-bin linear-test-update linear-test-fun
 
 linear:
 	$(IDRIS2) --build linear.ipkg

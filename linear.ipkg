@@ -10,4 +10,56 @@ executable = "netlistL"
 
 modules = Circuits.NetList.Linear.Main
 
+        , Circuits.NetList.Linear.Core
+        , Circuits.NetList.Linear.Usage
+        , Circuits.NetList.Linear.AST
+        , Circuits.NetList.Linear.Terms
+        , Circuits.NetList.Linear.Pretty
+        , Circuits.NetList.Linear.Check
+        , Circuits.NetList.Linear.Parser
+        , Circuits.NetList.Linear.Context
+
+        , Circuits.NetList.Linear.Usage.DataType
+        , Circuits.NetList.Linear.Usage.Item.Channel
+        , Circuits.NetList.Linear.Usage.Item.Channel.CanProjectAt
+        , Circuits.NetList.Linear.Usage.Item.Channel.Use
+        , Circuits.NetList.Linear.Usage.Item.Channel.CanProject
+        , Circuits.NetList.Linear.Usage.Item.Channel.UseAt
+        , Circuits.NetList.Linear.Usage.Item.Port
+        , Circuits.NetList.Linear.Usage.Item.Port.UsedAt
+        , Circuits.NetList.Linear.Usage.Item.Port.Free
+        , Circuits.NetList.Linear.Usage.Item.Port.Use
+        , Circuits.NetList.Linear.Usage.Item.Port.Used
+        , Circuits.NetList.Linear.Usage.Item.Port.FreeAt
+        , Circuits.NetList.Linear.Usage.Item.Port.UseAt
+        , Circuits.NetList.Linear.Usage.TermType
+        , Circuits.NetList.Linear.Usage.DataType.UsedAt
+        , Circuits.NetList.Linear.Usage.DataType.Free
+        , Circuits.NetList.Linear.Usage.DataType.Use.Partial
+        , Circuits.NetList.Linear.Usage.DataType.Use.Full
+        , Circuits.NetList.Linear.Usage.DataType.Used
+        , Circuits.NetList.Linear.Usage.DataType.Def
+        , Circuits.NetList.Linear.Usage.DataType.FreeAt
+        , Circuits.NetList.Linear.Usage.Context
+        , Circuits.NetList.Linear.Usage.TermType.Channel
+        , Circuits.NetList.Linear.Usage.TermType.Channel.Use
+        , Circuits.NetList.Linear.Usage.TermType.Port
+        , Circuits.NetList.Linear.Usage.TermType.Port.Use
+
+        , Circuits.NetList.Linear.Error
+
+        , Circuits.NetList.Linear.Check.Lookup
+        , Circuits.NetList.Linear.Check.Stop
+        , Circuits.NetList.Linear.Check.Lookup.PortAt
+        , Circuits.NetList.Linear.Check.Lookup.Chan
+        , Circuits.NetList.Linear.Check.Lookup.ProjectAt
+        , Circuits.NetList.Linear.Check.Lookup.Gate
+        , Circuits.NetList.Linear.Check.Lookup.Port
+        , Circuits.NetList.Linear.Check.Elab
+        , Circuits.NetList.Linear.Check.Elab.Helper
+        , Circuits.NetList.Linear.Check.Elab.Project
+        , Circuits.NetList.Linear.Check.API
+
+        , Circuits.NetList.Linear.Interp
+
 -- [ EOF ]
