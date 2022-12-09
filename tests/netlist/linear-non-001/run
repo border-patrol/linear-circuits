@@ -4,7 +4,7 @@ FILE=../../shared/linear-non/MissingInputs.sv
 
 echo "# Example Non-Linearly Wired Circuits"
 
-echo "Wire `input` has an unused entry."
+echo "Wire 'input' has an unused entry."
 
 echo "## Circuits"
 echo "\`\`\`"

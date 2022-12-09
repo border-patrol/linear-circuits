@@ -1,5 +1,5 @@
 # Example Non-Linearly Wired Circuits
-Wire  has an unused entry.
+Wire 'input' has an unused entry.
 ## Circuits
 ```
 // LOG : Starting Linear NetList 
