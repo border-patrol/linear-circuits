@@ -175,7 +175,7 @@ handleWith : Show ea => (when : ea -> Maybe ea)
 handleWith when prog next
   = tryCatch prog
              (\err => maybe next
-                            throw
+                            (throw)
                             (when err)
              )
 

@@ -41,6 +41,8 @@ import Circuits.NetList.Linear.Check.Lookup.ProjectAt
 whenExcept : Linear.Error -> Maybe Linear.Error
 whenExcept e@(TyCheck (NotBound str)) = Just e
 whenExcept e@(TyCheck (LinearityError strs)) = Just e
+whenExcept e@(TyCheck (Err fc e'))           = assert_total $ maybe Nothing (const $ Just e) (whenExcept (TyCheck e'))
+
 whenExcept _ = Nothing
 
 namespace Full
@@ -65,11 +67,13 @@ namespace Partial
   buildHow fc INOUT
     = throwAt fc (ErrI "Projecting INOUT")
 
-  %inline
+
   whenExcept : Linear.Error -> Maybe Linear.Error
   whenExcept e@(TyCheck (NotBound str))        = Just e
   whenExcept e@(TyCheck (LinearityError strs)) = Just e
   whenExcept e@(TyCheck (IOOB xs ys))          = Just e
+  whenExcept e@(TyCheck (OOB xs ys))           = Just e
+  whenExcept e@(TyCheck (Err fc e'))           = assert_total $ maybe Nothing (const $ Just e) (Partial.whenExcept (TyCheck e'))
   whenExcept _ = Nothing
 
   export
@@ -82,7 +86,7 @@ namespace Partial
                 -> Linear (DPair Ty (API.Result types))
   lookup fc ed idx str ctxt
 
-    = handleWith Partial.whenExcept
+    = handleWith (Partial.whenExcept)
                  (isFreePortAt fc idx str ctxt)
                  (do how <- buildHow fc ed
                      canProjectAt fc how idx str ctxt)
